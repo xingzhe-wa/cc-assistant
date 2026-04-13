@@ -4,7 +4,7 @@
 > **更新日期**: 2026-04-13  
 > **插件名称**: CC Assistant  
 > **开发模板**: [intellij-platform-plugin-template](https://github.com/JetBrains/intellij-platform-plugin-template)  
-> **核心原则**: 轻量、原生、双引擎、可扩展
+> **核心原则**: 轻量、原生、可扩展
 
 ---
 
@@ -30,13 +30,13 @@
 
 ### 1.1 产品定位
 
-CC Assistant 是一款为 JetBrains IDEA 设计的**双引擎 AI 编程助手插件**，通过集成 Claude Agent SDK 和 OpenAI Codex，为开发者提供智能对话、代码分析、自动提交等能力。
+CC Assistant 是一款为 JetBrains IDEA 设计的**AI 编程助手插件**，通过集成 Claude Agent SDK，为开发者提供智能对话、代码分析、自动提交等能力。
 
 ### 1.2 核心价值
 
 | 价值点 | 描述 |
 |--------|------|
-| **双引擎支持** | Claude Code + OpenAI Codex 双AI引擎，灵活切换 |
+| **Claude 集成** | Claude Agent SDK 深度集成，支持多模型切换 |
 | **轻量集成** | 基于 Agent SDK Daemon 模式，零冷启动延迟 |
 | **原生体验** | 深度融合 IntelliJ Platform，无缝融入开发流程 |
 | **美观交互** | 参考 Cursor 设计风格，提供现代化暗色主题 |
@@ -74,7 +74,7 @@ CC Assistant 是一款为 JetBrains IDEA 设计的**双引擎 AI 编程助手插
 │  │  1. 双AI引擎    │  │  2. 对话系统    │  │  3. Agent系统   │         │
 │  │  ─────────────  │  │  ─────────────  │  │  ─────────────  │         │
 │  │  • Claude Code  │  │  • @file引用    │  │  • 内置Agent    │         │
-│  │  • OpenAI Codex │  │  • 图片发送     │  │  • Skills指令   │         │
+│  │                 │  │  • 图片发送     │  │  • Skills指令   │         │
 │  │  • 统一权限模型 │  │  • 对话回溯     │  │  • MCP支持      │         │
 │  │  • Provider管理 │  │  • 提示词增强   │  │  • 子Agent追踪  │         │
 │  │                 │  │  • 流式输出     │  │                 │         │
@@ -121,7 +121,6 @@ CC Assistant 是一款为 JetBrains IDEA 设计的**双引擎 AI 编程助手插
 | 功能 | 描述 | 优先级 |
 |------|------|--------|
 | Claude Code | 支持 Opus 4.5/4.6、Sonnet、Haiku 等模型 | P0 |
-| OpenAI Codex | 代码生成引擎，支持 GPT-4o、o1 等 | P1 |
 | 统一权限模型 | 支持跨提供商映射，统一 permission 管理 | P1 |
 | Provider 切换 | 兼容 cc-switch，支持快捷切换 | P1 |
 | API Key 管理 | 安全存储，支持多 Provider 配置 | P0 |
@@ -184,7 +183,7 @@ CC Assistant 是一款为 JetBrains IDEA 设计的**双引擎 AI 编程助手插
 | 配置项 | 描述 | 优先级 |
 |--------|------|--------|
 | Basic Config | 行为设置、环境变量 | P0 |
-| Provider Settings | Claude/Codex API Key 管理 | P0 |
+| Provider Settings | Claude API Key 管理 | P0 |
 | Agent Settings | Agent 配置导入/导出 | P1 |
 | Prompt Settings | 系统提示词（全局/项目级别） | P1 |
 | MCP Settings | MCP 服务器配置 | P1 |
@@ -256,7 +255,6 @@ CC Assistant 是一款为 JetBrains IDEA 设计的**双引擎 AI 编程助手插
 │  强调色                                                      │
 │  ├── 主强调色      #3B82F6    RGB(59, 130, 246)   蓝色     │
 │  ├── Claude色      #D97706    RGB(217, 119, 6)    橙色     │
-│  ├── OpenAI色      #10B981    RGB(16, 185, 129)   绿色     │
 │  ├── 成功色        #10B981    RGB(16, 185, 129)   绿色     │
 │  ├── 警告色        #F59E0B    RGB(245, 158, 11)   橙色     │
 │  ├── 错误色        #EF4444    RGB(239, 68, 68)    红色     │
@@ -389,7 +387,7 @@ CC Assistant 是一款为 JetBrains IDEA 设计的**双引擎 AI 编程助手插
 │  │ 📋 复制  🔄 重新生成  ⏪ 回溯                       │   │
 │  └─────────────────────────────────────────────────────┘   │
 │  背景: #2D2D30  对齐: 左侧  代码块: #1E1E1E                 │
-│  Provider 标识: 🟠 Claude / 🟢 OpenAI                       │
+│  Provider 标识: 🟠 Claude                                  │
 ├─────────────────────────────────────────────────────────────┤
 │  思考片段 (Thinking)                                         │
 │  ┌─────────────────────────────────────────────────────┐   │
@@ -468,7 +466,7 @@ CC Assistant 采用 **Tool Window** 形式集成到 IDEA 右侧边栏。
 ┌─────────────────────────────────────────────────────────────┐
 │  ┌─────────────────────────────────────────────────────┐   │
 │  │ 🤖 CC Assistant                    [⚙️] [─] [✕]    │   │  ← Header
-│  │ 🟠 Claude Sonnet 4 | 🟢 OpenAI GPT-4o              │   │
+│  │ 🟠 Claude Sonnet 4                             │   │
 │  └─────────────────────────────────────────────────────┘   │
 │  ┌─────────────────────────────────────────────────────┐   │
 │  │ 🔍 搜索会话...                    [+ 新建] [⭐ 收藏]│   │  ← Session Toolbar
@@ -557,7 +555,7 @@ CC Assistant 采用 **Tool Window** 形式集成到 IDEA 右侧边栏。
 ├─────────────────────────────────────────────────────────────┤
 │  第二行 (Provider 状态):                                    │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │ 🟠 Claude Sonnet 4 | 🟢 OpenAI GPT-4o (备用)       │   │
+│  │ 🟠 Claude Sonnet 4                             │   │
 │  └─────────────────────────────────────────────────────┘   │
 │  显示当前活跃的 Provider 和模型                             │
 ├─────────────────────────────────────────────────────────────┤
@@ -749,10 +747,6 @@ CC Assistant 采用 **Tool Window** 形式集成到 IDEA 右侧边栏。
 │  │     ├── Opus 4.6                                    │   │
 │  │     ├── Sonnet 4 (当前)                             │   │
 │  │     └── Haiku 3.5                                   │   │
-│  │ 🟢 OpenAI                                           │   │
-│  │     ├── GPT-4o                                      │   │
-│  │     ├── GPT-4o-mini                                 │   │
-│  │     └── o1                                          │   │
 │  │ ─────────────────────                               │   │
 │  │ ⚙️ 管理 Provider...                                 │   │
 │  └─────────────────────────────────────────────────────┘   │
@@ -988,9 +982,6 @@ CC Assistant 采用 **Tool Window** 形式集成到 IDEA 右侧边栏。
 │  │   ├── API Key 管理                                       │
 │  │   ├── API Endpoint                                       │
 │  │   └── 默认模型选择                                       │
-│  ├── OpenAI                                                 │
-│  │   ├── API Key 管理                                       │
-│  │   └── 默认模型选择                                       │
 │  └── 自定义 Provider                                        │
 │      ├── 添加/删除 Provider                                 │
 │      └── API 配置                                           │
@@ -1078,22 +1069,6 @@ CC Assistant 采用 **Tool Window** 形式集成到 IDEA 右侧边栏。
 │                                                             │
 │  ─────────────────────────────────────────────────────────  │
 │                                                             │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │ 🟢 OpenAI                                      [▼] │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│  API Key                                                    │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │ sk-xxxx-xxxx-xxxx                               👁️ │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│  默认模型                                                   │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │ GPT-4o                                          ▼  │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│  ─────────────────────────────────────────────────────────  │
-│                                                             │
 │  [+ 添加自定义 Provider]                                    │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
@@ -1164,8 +1139,8 @@ CC Assistant 采用 **Tool Window** 形式集成到 IDEA 右侧边栏。
 │  5. 内存友好                                                │
 │     └── 弱引用缓存，及时释放资源                           │
 │                                                             │
-│  6. 双引擎支持                                              │
-│     └── 统一抽象层，支持多 Provider                        │
+│  6. Provider 抽象                                           │
+│     └── 统一抽象层，支持扩展                               │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -1711,7 +1686,7 @@ initialize();
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 6.5 双引擎 Provider 切换
+### 6.5 Provider 管理
 
 ```kotlin
 /**
@@ -1768,11 +1743,6 @@ class ProviderService {
                 ModelInfo("claude-sonnet-4-20250514", "Claude Sonnet 4", Provider.CLAUDE),
                 ModelInfo("claude-3-5-haiku-20241022", "Claude Haiku 3.5", Provider.CLAUDE)
             )
-            "openai" -> listOf(
-                ModelInfo("gpt-4o", "GPT-4o", Provider.OPENAI),
-                ModelInfo("gpt-4o-mini", "GPT-4o Mini", Provider.OPENAI),
-                ModelInfo("o1", "o1", Provider.OPENAI)
-            )
             else -> emptyList()
         }
     }
@@ -1787,7 +1757,7 @@ data class ProviderConfig(
     val type: ProviderType
 )
 
-enum class ProviderType { CLAUDE, OPENAI, CUSTOM }
+enum class ProviderType { CLAUDE, CUSTOM }
 ```
 
 ---
@@ -2455,15 +2425,14 @@ class UsageService {
     fun calculateCost(usage: Usage, model: String, provider: ProviderType): Double {
         val pricing = when (provider) {
             ProviderType.CLAUDE -> ClaudePricing.getPricing(model)
-            ProviderType.OPENAI -> OpenAIPricing.getPricing(model)
             else -> Pricing.default
         }
-        
+
         val inputCost = (usage.inputTokens / 1_000_000.0) * pricing.inputPrice
         val outputCost = (usage.outputTokens / 1_000_000.0) * pricing.outputPrice
         val cacheWriteCost = (usage.cacheCreationTokens / 1_000_000.0) * pricing.cacheWritePrice
         val cacheReadCost = (usage.cacheReadTokens / 1_000_000.0) * pricing.cacheReadPrice
-        
+
         return inputCost + outputCost + cacheWriteCost + cacheReadCost
     }
     
@@ -2504,20 +2473,7 @@ object ClaudePricing {
             cacheWritePrice = 1.0, cacheReadPrice = 0.08
         )
     )
-    
-    fun getPricing(model: String): Pricing = pricing[model] ?: Pricing.default
-}
 
-/**
- * OpenAI 模型定价
- */
-object OpenAIPricing {
-    private val pricing = mapOf(
-        "gpt-4o" to Pricing(inputPrice = 2.5, outputPrice = 10.0),
-        "gpt-4o-mini" to Pricing(inputPrice = 0.15, outputPrice = 0.6),
-        "o1" to Pricing(inputPrice = 15.0, outputPrice = 60.0)
-    )
-    
     fun getPricing(model: String): Pricing = pricing[model] ?: Pricing.default
 }
 
@@ -3210,7 +3166,6 @@ dependencies {
 | 用户未安装 SDK | 高 | 中 | 自动安装、引导安装 |
 | 功能不完整 | 中 | 中 | 分阶段交付、优先核心 |
 | 性能不达标 | 低 | 中 | 性能测试、优化迭代 |
-| 双引擎切换问题 | 中 | 中 | 统一抽象层、充分测试 |
 
 ### 12.3 项目风险
 
@@ -3259,14 +3214,6 @@ dependencies {
 | Claude Sonnet 4 | $3/M | $15/M | $3.75/M | $0.3/M |
 | Claude Haiku 3.5 | $0.8/M | $4/M | $1/M | $0.08/M |
 
-#### OpenAI 模型
-
-| 模型 | 输入价格 | 输出价格 |
-|------|----------|----------|
-| GPT-4o | $2.5/M | $10/M |
-| GPT-4o Mini | $0.15/M | $0.6/M |
-| o1 | $15/M | $60/M |
-
 ### C. 国际化资源示例
 
 ```properties
@@ -3284,7 +3231,6 @@ chat.rewind=回溯
 
 # Provider
 provider.claude=Claude (Anthropic)
-provider.openai=OpenAI
 provider.switch=切换 Provider
 
 # Mode
@@ -3334,7 +3280,6 @@ chat.rewind=Rewind
 
 # Provider
 provider.claude=Claude (Anthropic)
-provider.openai=OpenAI
 provider.switch=Switch Provider
 
 # Mode

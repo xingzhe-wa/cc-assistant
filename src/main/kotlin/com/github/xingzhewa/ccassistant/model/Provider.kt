@@ -7,7 +7,6 @@ import com.intellij.openapi.components.Service
  */
 enum class ProviderType {
     CLAUDE,
-    OPENAI,
     CUSTOM
 }
 
@@ -48,12 +47,6 @@ class ProviderService {
             ModelInfo("claude-sonnet-4-20250514", "Claude Sonnet 4", ProviderType.CLAUDE),
             ModelInfo("claude-3-5-haiku-20241022", "Claude Haiku 3.5", ProviderType.CLAUDE)
         )
-
-        val DEFAULT_OPENAI_MODELS = listOf(
-            ModelInfo("gpt-4o", "GPT-4o", ProviderType.OPENAI),
-            ModelInfo("gpt-4o-mini", "GPT-4o Mini", ProviderType.OPENAI),
-            ModelInfo("o1", "o1", ProviderType.OPENAI)
-        )
     }
 
     init {
@@ -64,13 +57,6 @@ class ProviderService {
             endpoint = "https://api.anthropic.com",
             defaultModel = "claude-sonnet-4-20250514",
             type = ProviderType.CLAUDE
-        )
-        providers["openai"] = ProviderConfig(
-            id = "openai",
-            name = "OpenAI",
-            endpoint = "https://api.openai.com",
-            defaultModel = "gpt-4o",
-            type = ProviderType.OPENAI
         )
     }
 
@@ -107,7 +93,6 @@ class ProviderService {
     fun getAvailableModels(providerId: String): List<ModelInfo> {
         return when (providerId) {
             "claude" -> DEFAULT_CLAUDE_MODELS
-            "openai" -> DEFAULT_OPENAI_MODELS
             else -> emptyList()
         }
     }
@@ -132,7 +117,7 @@ class ProviderService {
      * 移除 Provider
      */
     fun removeProvider(providerId: String) {
-        if (providerId != "claude" && providerId != "openai") {
+        if (providerId != "claude") {
             providers.remove(providerId)
             if (_activeProviderId == providerId) {
                 _activeProviderId = "claude"
