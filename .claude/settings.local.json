@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\\\.\\(js|ts|json\\)$\")",
+      "WebSearch",
+      "Bash(./gradlew compileKotlin)"
+    ]
+  }
+}
