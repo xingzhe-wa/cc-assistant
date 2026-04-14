@@ -1,9 +1,10 @@
 # CC Assistant 开发规划文档
 
-> **版本**: v1.0
-> **日期**: 2026-04-14
+> **版本**: v1.1
+> **日期**: 2026-04-15
 > **当前里程碑**: M1 (极简对话) 已完成基础框架
 > **下一步**: M2 (多会话 + JCEF 切换)
+> **与 API_Design.md v5.1 对齐**
 
 ---
 
@@ -46,7 +47,10 @@ File → Settings → Tools → CC Assistant
 └── Skill 管理
 ```
 
-**选型原则**: 默认 Swing，仅在 Swing 无法满足需求时引入 JCEF。当前仅消息渲染区需要 JCEF。
+**选型原则**:
+- **对话消息区 (M2+)**: **强制使用 JCEF**，Markdown/Diff/流式渲染需要前端能力
+- **其余所有区域**: 使用 Swing 原生组件
+- **降级条件**: 仅在 `JBCefApp.isSupported() = false` 时降级为纯文本
 
 ---
 
@@ -54,14 +58,14 @@ File → Settings → Tools → CC Assistant
 
 ### 总览
 
-| 里程碑 | 周期 | 核心交付物 | 状态 |
-|--------|------|------------|------|
-| **M0** | Day 1 | CLI 链路验证 | ✅ 完成 |
-| **M1** | Week 1 | 极简对话 (Swing) | ✅ 完成 |
-| **M2** | Week 2-3 | 多会话 + JCEF 切换 | 🔲 待开始 |
-| **M3** | Week 4 | MCP 支持 | 🔲 待开始 |
-| **M4** | Week 5-6 | 设置 + 供应商 UI | 🔲 待开始 |
-| **M5** | Week 7-8 | 打磨上线 | 🔲 待开始 |
+| 里程碑 | 周期 | 核心交付物 | 任务数 | 状态 |
+|--------|------|------------|--------|------|
+| **M0** | Day 1 | CLI 链路验证 | 5 文件 | ✅ 完成 |
+| **M1** | Week 1 | 极简对话 (Swing) | 6 文件 + 1 任务 | ✅ 完成 |
+| **M2** | Week 2-3 | 多会话 + JCEF 切换 | 13 任务 | 🔲 待开始 |
+| **M3** | Week 4 | MCP 支持 | 6 任务 | 🔲 待开始 |
+| **M4** | Week 5-6 | 设置 + 供应商 UI | 9 任务 | 🔲 待开始 |
+| **M5** | Week 7-8 | 打磨上线 | 10 任务 | 🔲 待开始 |
 
 ---
 
@@ -95,6 +99,30 @@ File → Settings → Tools → CC Assistant
 | `resources/providers/*.json` | 6 个预置供应商模板 (无 API Key) |
 | `model/Provider.kt` | 更新 `switchProvider()` 使用资源模板 |
 
+**M1 待补充**:
+| ID | 任务 | 技术 | 预估 | API 接口 |
+|----|------|------|------|---------|
+| M1-4 | CLI 安装引导 | Swing Dialog + BrowserUtil | 0.5天 | M1-004 |
+
+**M1-4 任务详情**:
+```
+前置条件: CliBridgeService.getInstance().isCliAvailable() == false
+
+交互流程:
+1. 用户打开 ToolWindow
+2. CliBridgeService 检测到 CLI 未安装
+3. 弹出 CliInstallGuideDialog
+   ├── 显示警告: "Claude Code CLI 未安装"
+   ├── [访问 Claude Code 官网] → BrowserUtil.open()
+   └── [重新检测] → 再次调用 isCliAvailable()
+4. 用户安装完成后点击 [重新检测]
+5. 检测成功 → 关闭弹窗 → 进入正常对话界面
+
+文件:
+- ui/dialog/CliInstallGuideDialog.kt (新建)
+- bridge/CliBridgeService.kt (新增 checkAndPromptCliInstallation())
+```
+
 **M1 局限性** (M2 解决):
 - 消息渲染用 JTextPane HTML，无完整 Markdown 支持
 - 无代码块语法高亮
@@ -125,14 +153,78 @@ File → Settings → Tools → CC Assistant
 
 **M2-B: 多会话管理**
 
-| ID | 任务 | 技术 | 预估 |
-|----|------|------|------|
-| M2-B1 | SessionService (会话 CRUD) | Kotlin + JSON | 1天 |
-| M2-B2 | 会话持久化 (~/.claude/sessions/) | JSON 文件存储 | 0.5天 |
-| M2-B3 | 会话 Tab 栏 UI | Swing JTabbedPane | 1天 |
-| M2-B4 | 新建/切换/删除会话交互 | Swing | 0.5天 |
-| M2-B5 | 会话标题自动生成 (取首条 prompt) | Kotlin | 0.5天 |
-| M2-B6 | 重启 IDE 后会话恢复 | PersistentStateComponent | 0.5天 |
+| ID | 任务 | 技术 | 预估 | API 接口 |
+|----|------|------|------|---------|
+| M2-B1 | SessionService (会话 CRUD) | Kotlin + JSON | 1天 | M2-004 |
+| M2-B2 | 会话持久化 (~/.claude/sessions/) | JSON 文件存储 | 0.5天 | M2-004 |
+| M2-B3 | 会话 Tab 栏 UI | Swing JTabbedPane | 1天 | M2-001~003 |
+| M2-B4 | 新建/切换/删除会话交互 | Swing | 0.5天 | M2-001~003 |
+| M2-B5 | 会话标题自动生成 (取首条 prompt) | Kotlin | 0.5天 | M2-005 |
+| M2-B6 | 重启 IDE 后会话恢复 | PersistentStateComponent | 0.5天 | M2-004 |
+
+**M2-B 任务详情**:
+```
+M2-B1 SessionService:
+├── createSession(workingDir): ChatSession
+├── saveSession(session: ChatSession)
+├── getSession(sessionId: String): ChatSession?
+├── deleteSession(sessionId: String)
+└── listSessions(): List<ChatSession>
+
+数据模型 ChatSession:
+├── id: String (插件内部 UUID)
+├── sessionId: String? (CLI 返回的 session_id，用于 --resume)
+├── title: String (自动生成或用户重命名)
+├── createdAt: Instant
+├── updatedAt: Instant
+├── workingDir: String (持久化工作目录)
+├── messages: MutableList<Message>
+└── isFavorite: Boolean
+
+存储位置: ~/.claude/sessions/{id}.json
+```
+
+**M2-C: 核心体验功能 (M2 新增)**
+
+| ID | 任务 | 技术 | 预估 | API 接口 |
+|----|------|------|------|---------|
+| M2-C1 | Rewind 回溯 UI | JCEF + JS | 1天 | M2-012 |
+| M2-C2 | RewindService | Kotlin | 0.5天 | M2-012 |
+| M2-C3 | 选中文本发送 | EditorAction + AnActionHandler | 1天 | M2-013 |
+| M2-C4 | Diff 审查弹窗 | Swing + DiffViewer | 1.5天 | M2-014 |
+
+**M2-C 任务详情**:
+```
+M2-C1 Rewind 回溯 UI:
+├── 在每条 AI 消息下方显示回溯点标记 (○)
+├── 点击回溯点 → 显示确认对话框
+├── 确认后 → 创建新会话，复制回溯点之前的消息
+└── JS 回调: window.rewindCallback.invoke(pointId)
+
+M2-C2 RewindService:
+├── getRewindPoints(sessionId): List<RewindPoint>
+│   └── 返回每条 AI 消息作为可回溯点
+├── rewind(sessionId, rewindPointId): String
+│   ├── 创建新会话
+│   ├── 复制回溯点之前的消息
+│   └── 返回新会话 ID (CLI session_id 后续异步更新)
+└── RewindPoint(id, index, preview, timestamp)
+
+M2-C3 选中文本发送 (Ctrl+Alt+K):
+├── 创建 SelectedTextHandler extends AnActionHandler
+├── 拦截 Ctrl+Alt+K 快捷键
+├── 获取编辑器选中的文本
+├── 打开/激活 CC Assistant ToolWindow
+└── 追加 "[选中代码]\n{selectedText}\n[/选中代码]" 到输入框
+
+M2-C4 Diff 审查弹窗:
+├── DiffReviewDialog(project, filePath, original, suggested, onAccept, onReject)
+├── 使用 IntelliJ DiffManager 创建对比视图
+├── 左侧: 原始内容 (只读)
+├── 右侧: 建议修改 (只读)
+├── 底部按钮: [拒绝] [应用修改]
+└── onAccept → 调用 FileDocumentManager 写入文件
+```
 
 **JCEF 技术方案**:
 ```
@@ -152,30 +244,82 @@ JCEF Browser (内嵌 Chromium)
 ```
 
 **验收标准**:
-- ✅ Markdown 完整渲染 (标题/列表/代码块/表格/链接)
-- ✅ 代码块语法高亮
-- ✅ 流式输出打字机效果
-- ✅ 消息复制按钮工作
-- ✅ 新建/切换/删除会话
-- ✅ 重启 IDE 后会话恢复
+- [ ] Markdown 完整渲染 (标题/列表/代码块/表格/链接)
+- [ ] 代码块语法高亮
+- [ ] 流式输出打字机效果
+- [ ] 消息复制按钮工作
+- [ ] 新建/切换/删除会话
+- [ ] 重启 IDE 后会话恢复
+- [ ] CLI 未安装时显示引导弹窗
+- [ ] Ctrl+Alt+K 发送选中文本
+- [ ] 回溯点可点击，创建新会话
+- [ ] Diff 审查弹窗可查看差异并应用/拒绝
 
 ---
 
 ### M3: MCP 支持 🔲
 
-**目标**: MCP 工具调用显示，权限确认
+**目标**: MCP 工具调用显示，权限确认，Plan 模式审批
 
-| ID | 任务 | 技术 |
-|----|------|------|
-| M3-FE1 | 工具调用状态卡片 (JCEF 组件) | HTML/CSS |
-| M3-FE2 | 权限确认 UI (approve/reject) | Swing Popup |
-| M3-BE1 | MCP 工具列表解析 | CliMessage 扩展 |
-| M3-BE2 | 工具结果展示 | JCEF |
+**前置依赖**: M2 (JCEF 消息渲染)
 
-**验收标准**:
-- ✅ 工具调用 (Read/Edit/Bash) 在 UI 显示状态
-- ✅ 权限确认弹窗工作
-- ✅ 工具结果可展开查看
+| ID | 任务 | 技术 | 预估 | API 接口 |
+|----|------|------|------|---------|
+| M3-FE1 | 工具调用状态卡片 (JCEF) | HTML/CSS/JS | 1天 | M3-001 |
+| M3-FE2 | 权限确认弹窗 (Plan 模式) | Swing JDialog | 1天 | M5-003 |
+| M3-FE3 | 工具结果详情展开 | JCEF JS | 0.5天 | M3-001 |
+| M3-BE1 | MCP 工具列表解析 | CliMessage 扩展 | 0.5天 | M3-001 |
+| M3-BE2 | 工具状态流转处理 | Kotlin | 0.5天 | M3-001 |
+| M3-BE3 | MCP 服务器配置 | Kotlin | 1天 | M3-002 |
+
+**M3 任务详情**:
+```
+M3-FE1 工具调用状态卡片:
+├── HTML 结构
+│   ├── 工具调用卡片 (.tool-use-card)
+│   ├── 工具名称 + 状态图标
+│   ├── 状态: ○ 待执行 → ⏳ 执行中 → ✓ 成功 / ✗ 失败
+│   └── 工具输入预览 (可展开)
+├── JS 交互
+│   ├── appendToolUse(toolName, status)
+│   ├── updateToolStatus(toolName, status)
+│   └── expandToolInput(toolName)
+└── 回调 Java
+    └── JBCefJSQuery: onToolUseExpand(toolName)
+
+M3-FE2 权限确认弹窗 (Plan 模式):
+├── 触发条件: CLI 不传 --permission-mode，CLI 暂停并等待确认
+├── 显示内容
+│   ├── 工具名称
+│   ├── 工具输入 JSON
+│   └── 预估影响
+├── 用户操作
+│   ├── [批准] → 发送 "approve" → CLI 继续执行
+│   └── [拒绝] → 发送 "reject" → CLI 中断执行
+└── 实现
+    ├── PermissionDialog(project, toolName, toolInput, onApprove)
+    └── bridge/CliBridgeService.sendPermissionResponse(approve: Boolean)
+
+M3-BE1 MCP 工具列表解析:
+├── CliMessage.ToolUseStart(name, input, status)
+├── CliMessage.ToolUseInputDelta(name, delta)
+├── ToolUseStatus: PENDING, RUNNING, SUCCESS, ERROR
+└── 解析 CLI NDJSON 中的 tool_use 类型消息
+
+M3-BE3 MCP 服务器配置:
+├── MCPServer(id, name, command, args, env)
+├── MCPService.addServer(config: MCPServer)
+├── MCPService.removeServer(serverId: String)
+├── MCPService.listServers(): List<MCPServer>
+└── 配置存储: AppConfigState.mcpServers
+```
+
+**M3 验收标准**:
+- [ ] 工具调用 (Read/Edit/Bash) 在 UI 显示 pending/running/success/error 状态
+- [ ] Plan 模式权限确认弹窗工作
+- [ ] 工具输入可展开查看详情
+- [ ] 批准/拒绝操作正确传递给 CLI
+- [ ] MCP 服务器可添加/删除/列表
 
 ---
 
@@ -207,23 +351,76 @@ Settings → Tools → CC Assistant (Swing Configurable)
             ~/.claude/settings.json 格式
 ```
 
-| ID | 任务 | 技术 |
-|----|------|------|
-| M4-FE1 | Settings Configurable (左右布局) | Swing JDialog |
-| M4-FE2 | 供应商列表页 (表格 + 操作按钮) | Swing JTable |
-| M4-FE3 | 供应商编辑页 (表单 + JSON 双向编辑) | Swing Form |
-| M4-FE4 | 对话区工具栏集成供应商下拉 | Swing JComboBox |
-| M4-BE1 | ProviderService UI 接入 (读取/写入) | Kotlin |
-| M4-BE2 | Token 统计 (UsageService) | Kotlin |
-| M4-BE3 | API Key 安全存储 | IDE PasswordSafe |
+| ID | 任务 | 技术 | 预估 | API 接口 |
+|----|------|------|------|---------|
+| M4-FE1 | Settings Configurable (左右布局) | Swing JDialog | 0.5天 | M4-001 |
+| M4-FE2 | 供应商列表页 (表格 + 操作按钮) | Swing JTable | 1天 | M4-001 |
+| M4-FE3 | 供应商编辑页 (表单 + JSON 双向编辑) | Swing Form | 1.5天 | M4-001, M4-003 |
+| M4-FE4 | 对话区工具栏集成供应商下拉 | Swing JComboBox | 0.5天 | M4-002 |
+| M4-FE5 | Token 统计面板 | Swing JPanel | 0.5天 | M4-005 |
+| M4-BE1 | ProviderService UI 接入 (读取/写入) | Kotlin | 0.5天 | M4-001~004 |
+| M4-BE2 | Token 统计 (UsageService) | Kotlin | 0.5天 | M4-005 |
+| M4-BE3 | API Key 安全存储 | IDE PasswordSafe | 0.5天 | M4-003 |
+| M4-BE4 | Provider 配置导出/导入 | Kotlin | 0.5天 | M4-004 |
 
-**验收标准**:
-- ✅ Settings 界面能打开，左右布局正确
-- ✅ 能新增/编辑/删除供应商
-- ✅ 快捷配置自动填充 URL 和模型
-- ✅ JSON 编辑器与表单双向同步
-- ✅ 对话区下拉切换供应商生效
-- ✅ API Key 不明文存储
+**M4 任务详情**:
+```
+M4-FE1 Settings Configurable:
+├── 实现 Configurable 接口
+├── createComponent(): JComponent
+│   └── 左右 SplitPane 布局
+├── isModified(): Boolean
+├── apply() → 保存配置
+└── reset() → 重置表单
+
+M4-FE2 供应商列表页:
+├── JTable 显示: 名称 | API Key (脱敏) | 状态 | 操作
+├── 操作按钮: [编辑] [导出 JSON] [删除]
+├── [新增供应商] 按钮 → 打开编辑页
+└── 右键菜单: [设为默认] [复制配置] [删除]
+
+M4-FE3 供应商编辑页 (表单 + JSON):
+├── 快捷配置按钮: [Claude] [DeepSeek] [Gemini] [GLM] [Kimi] [Qwen]
+│   └── 点击后自动填充 URL + 模型预设
+├── 表单字段
+│   ├── 供应商名称 (必填)
+│   ├── API Endpoint URL
+│   ├── API Key (PasswordField)
+│   └── 默认模型
+├── JSON 编辑器 (与表单双向同步)
+│   ├── 表单变更 → 更新 JSON
+│   └── JSON 变更 → 解析并更新表单
+└── 按钮: [取消] [保存]
+
+M4-FE4 供应商下拉选择器:
+├── 位置: 对话区 Header
+├── JComboBox<ProviderConfig>
+├── 切换时调用 ProviderService.switchProvider()
+└── 显示当前 Provider 图标 + 名称
+
+M4-BE3 API Key 安全存储:
+├── PasswordSafeUtil.saveApiKey(providerId, apiKey)
+├── PasswordSafeUtil.getApiKey(providerId): String?
+├── 存储位置: IDE PasswordSafe (非 settings.json)
+└── settings.json 只存储 providerId 和 endpoint
+
+M4-BE4 Provider 导出/导入:
+├── exportProviderConfig(providerId): String
+│   └── 返回 JSON 格式配置（不含 API Key）
+├── importProviderConfig(configJson): ProviderConfig?
+│   └── 解析 JSON 创建 ProviderConfig
+└── 用于用户备份/迁移配置
+```
+
+**M4 验收标准**:
+- [ ] Settings 界面能打开，左右布局正确
+- [ ] 能新增/编辑/删除供应商
+- [ ] 快捷配置自动填充 URL 和模型
+- [ ] JSON 编辑器与表单双向同步
+- [ ] 对话区下拉切换供应商生效
+- [ ] API Key 使用 PasswordSafe 存储
+- [ ] Token 统计面板显示今日/会话统计
+- [ ] Provider 配置可导出/导入
 
 ---
 
@@ -231,61 +428,186 @@ Settings → Tools → CC Assistant (Swing Configurable)
 
 **目标**: 稳定性，细节打磨，发布准备
 
-| ID | 任务 |
-|----|------|
-| M5-FE1 | @file 引用弹窗 |
-| M5-FE2 | Slash 命令弹窗 (/clear, /commit, /review) |
-| M5-FE3 | 思考片段折叠/展开 |
-| M5-FE4 | 历史会话面板 (搜索 + 收藏) |
-| M5-BE1 | 错误处理 + 自动重试 |
-| M5-BE2 | 内存泄漏检查 (JCEF dispose) |
-| M5-BE3 | 单元测试覆盖率 >70% |
+**前置依赖**: M2 (JCEF) + M3 (MCP) + M4 (Settings)
 
-**验收标准**:
-- ✅ 连续使用 1 小时无崩溃
-- ✅ 测试覆盖率 >70%
-- ✅ 插件可发布到 JetBrains Marketplace
+| ID | 任务 | 技术 | 预估 | API 接口 |
+|----|------|------|------|---------|
+| M5-FE1 | @file 引用弹窗 | Swing JWindow + FileIndex | 1天 | M5-001 |
+| M5-FE2 | Slash 命令弹窗 | Swing JWindow | 1天 | M5-002 |
+| M5-FE3 | 思考片段折叠/展开 | JCEF JS | 0.5天 | - |
+| M5-FE4 | 历史会话面板 (搜索 + 收藏) | Swing JList | 1天 | M2-006, M2-007 |
+| M5-FE5 | 会话导出功能 | Kotlin | 0.5天 | M2-009 |
+| M5-BE1 | 错误处理 + 自动重试 | Kotlin | 1天 | - |
+| M5-BE2 | 内存泄漏检查 (JCEF dispose) | - | 0.5天 | - |
+| M5-BE3 | 单元测试覆盖率 >70% | JUnit + MockK | 2天 | - |
+| M5-BE4 | 国际化 (中英文) | MyBundle | 1天 | - |
+| M5-BE5 | 插件发布配置 | Gradle | 0.5天 | - |
+
+**M5 任务详情**:
+```
+M5-FE1 @file 引用弹窗:
+├── 触发: 输入 @ 字符
+├── 位置: 输入框上方
+├── 文件搜索
+│   ├── 使用 ProjectFileIndex 搜索项目内文件
+│   ├── 按文件名模糊匹配
+│   └── 显示文件路径 + 最近修改时间
+├── 键盘导航
+│   ├── ↑/↓ 选择文件
+│   ├── Enter 确认
+│   └── Esc 关闭
+├── 选中后
+│   └── 输入框显示: @filename (蓝色高亮标签)
+└── 支持多文件引用
+
+M5-FE2 Slash 命令弹窗:
+├── 触发: 输入 / 字符
+├── 命令列表
+│   ├── /init       初始化项目
+│   ├── /review     代码审查
+│   ├── /commit     生成提交信息
+│   ├── /clear      清除会话
+│   ├── /compact    压缩上下文
+│   ├── /cost       显示成本统计
+│   └── /mcp        MCP 服务器管理
+├── 键盘导航: 同 @file 弹窗
+└── 选中后追加到输入框，用户可修改后发送
+
+M5-FE3 思考片段折叠/展开:
+├── 默认折叠状态
+├── 显示: "💭 思考过程 (已折叠) [▼]"
+├── 点击展开 → 显示完整思考内容
+├── 再次点击 → 折叠
+└── 记住用户偏好（展开/折叠）
+
+M5-FE4 历史会话面板:
+├── 位置: 对话区 Header 下方
+├── 搜索框: 实时过滤会话
+├── 收藏筛选: ⭐ 按钮
+├── 会话列表
+│   ├── 会话标题
+│   ├── 最后活跃时间
+│   └── 右键菜单: 收藏/重命名/导出/删除
+└── 新建会话按钮: [+] 新建
+
+M5-BE1 错误处理 + 自动重试:
+├── 错误分类
+│   ├── NETWORK_ERROR: 网络超时
+│   ├── API_KEY_INVALID: API Key 无效
+│   ├── RATE_LIMIT: 速率限制
+│   ├── SESSION_NOT_FOUND: session_id 无效
+│   └── UNKNOWN: 未知错误
+├── 用户提示
+│   ├── NETWORK_ERROR: "网络连接失败，是否重试？"
+│   ├── API_KEY_INVALID: "API Key 无效，请检查设置"
+│   └── RATE_LIMIT: "请求过于频繁，请在 X 秒后重试"
+├── 自动重试
+│   ├── NETWORK_ERROR: 3 次指数退避重试
+│   └── RATE_LIMIT: 等待后自动重试
+└── 日志记录: 错误类型 + 时间 + 上下文
+
+M5-BE2 内存泄漏检查:
+├── JCEF Browser 生命周期
+│   ├── ToolWindow 打开 → 创建 Browser
+│   ├── ToolWindow 关闭 → browser.dispose()
+│   └── ChatPanel dispose → messageRenderer.dispose()
+├── 验证方法
+│   ├── 打开/关闭 ToolWindow 10 次
+│   ├── 检查进程数是否稳定
+│   └── heap dump 无 Chromium 残留
+└── 常见泄漏场景
+    ├── JBCefJSQuery 回调未清理
+    ├── JS 定时器未清除
+    └── CSS/JS 资源未释放
+
+M5-BE4 国际化:
+├── 资源文件
+│   ├── messages/MyBundle.properties (英文)
+│   └── messages/MyBundle_zh_CN.properties (中文)
+├── 动态切换
+│   └── 跟随 IDE 语言设置
+└── 需要国际化的字符串
+    ├── UI 标签
+    ├── 错误消息
+    └── 提示文案
+```
+
+**M5 验收标准**:
+- [ ] @file 引用弹窗可搜索文件并插入
+- [ ] Slash 命令弹窗可选择并执行命令
+- [ ] 思考片段可折叠/展开
+- [ ] 历史会话面板支持搜索和收藏
+- [ ] 会话可导出为 Markdown/JSON/纯文本
+- [ ] 错误提示友好，自动重试工作
+- [ ] 连续使用 1 小时无内存泄漏
+- [ ] 测试覆盖率 >70%
+- [ ] 中英文切换正常
+- [ ] 插件可通过 JetBrains Marketplace 发布审核
 
 ---
 
-## 三、当前项目文件结构
+## 三、项目文件结构 (M5 完成时)
 
 ```
 src/main/kotlin/.../ccassistant/
 ├── bridge/                    # CLI 桥接层
-│   ├── CliMessage.kt         # NDJSON 消息类型
-│   ├── CliBridgeService.kt   # CLI 进程管理 (APP Service)
-│   ├── NdjsonParser.kt       # NDJSON 解析器 (Gson)
-│   └── CliMessageCallback.kt # 回调接口 (在 CliBridgeService.kt 中)
+│   ├── CliMessage.kt         # NDJSON 消息类型 (M0)
+│   ├── CliBridgeService.kt  # CLI 进程管理 (APP Service) (M0)
+│   ├── NdjsonParser.kt      # NDJSON 解析器 (M0)
+│   └── CliMessageCallback.kt # 细粒度回调接口 (M1)
 ├── model/
-│   └── Provider.kt           # 供应商服务 + 预置配置
+│   └── Provider.kt          # 供应商服务 + 预置配置 (M0)
 ├── config/
-│   └── AppConfigState.kt     # 应用配置持久化
+│   └── AppConfigState.kt    # 应用配置持久化 (M0)
 ├── ui/
-│   └── ChatPanel.kt          # 聊天面板 (M1: 纯 Swing, M2: JCEF)
+│   ├── ChatPanel.kt         # 聊天面板 (M1: Swing, M2: JCEF)
+│   ├── chat/
+│   │   ├── JcefMessageRenderer.kt  # JCEF 渲染器 (M2)
+│   │   ├── SessionTabBar.kt        # 会话 Tab 栏 (M2)
+│   │   └── SessionHistoryPanel.kt  # 历史会话面板 (M5)
+│   ├── dialog/
+│   │   ├── CliInstallGuideDialog.kt # CLI 安装引导 (M1)
+│   │   ├── DiffReviewDialog.kt      # Diff 审查 (M2)
+│   │   └── PermissionDialog.kt      # 权限确认 (M3)
+│   └── settings/
+│       └── ProviderSettingsPanel.kt # 设置面板 (M4)
+├── services/
+│   ├── SessionService.kt     # 会话管理 (M2)
+│   ├── RewindService.kt     # 回溯服务 (M2)
+│   ├── UsageService.kt      # Token 统计 (M4)
+│   ├── MCPService.kt        # MCP 管理 (M3)
+│   └── ProviderService.kt   # 供应商管理 (M4)
+├── editor/
+│   └── SelectedTextHandler.kt # 选中文本发送 (M2)
 ├── toolWindow/
 │   └── MyToolWindowFactory.kt
-├── services/
-│   └── MyProjectService.kt   # ← 待清理
-├── startup/
-│   └── MyProjectActivity.kt
-└── MyBundle.kt
+└── startup/
+    └── MyProjectActivity.kt
 
 src/main/resources/
-├── providers/                 # 6 个预置供应商 JSON
+├── providers/                 # 6 个预置供应商 JSON (M0)
+├── web/                      # JCEF 前端资源 (M2)
+│   ├── index.html
+│   ├── chat.css
+│   ├── chat.js
+│   ├── marked.js
+│   └── highlight.js
 ├── icons/
 │   └── toolWindow.svg
 ├── messages/
-│   └── MyBundle.properties
+│   ├── MyBundle.properties      # 英文 (M0)
+│   └── MyBundle_zh_CN.properties # 中文 (M5)
 └── META-INF/
     └── plugin.xml
 
 src/test/kotlin/.../ccassistant/
 ├── bridge/
-│   ├── NdjsonParserTest.kt   # 16 个测试
-│   └── CliBridgeServiceTest.kt
+│   ├── NdjsonParserTest.kt      # 16 个测试 (M0)
+│   └── CliBridgeServiceTest.kt   # CLI 服务测试 (M0)
 ├── model/
-│   └── ProviderServiceTest.kt
+│   └── ProviderServiceTest.kt    # Provider 测试 (M0)
+├── services/
+│   └── SessionServiceTest.kt     # 会话服务测试 (M2)
 └── MyPluginTest.kt
 ```
 
@@ -294,21 +616,50 @@ src/test/kotlin/.../ccassistant/
 ## 四、风险与注意事项
 
 ### JCEF 相关 (M2)
-- **版本兼容**: JCEF 在 IDEA 2022.3+ 内置，低于此版本需降级提示
-- **内存管理**: 必须在 ToolWindow 关闭时调用 `browser.dispose()`，否则内存泄漏
-- **线程安全**: JCEF 回调不在 EDT，UI 更新需 `invokeLater`
-- **冷启动**: 首次加载 JCEF 需 ~1-2s，需优化 (预加载/骨架屏)
+| 风险 | 等级 | 解决方案 | 验证方法 |
+|------|------|---------|---------|
+| 版本兼容 | 高 | IDEA 2022.3+ 内置，低于此版本显示降级提示 | `JBCefApp.isSupported()` |
+| 内存泄漏 | 高 | `ToolWindowFactory.dispose()` 中调用 `browser.dispose()` | 打开/关闭 10 次，检查进程数 |
+| 线程安全 | 中 | JCEF 回调不在 EDT，`ApplicationManager.invokeLater {}` | 人工测试多线程场景 |
+| 冷启动慢 | 中 | 骨架屏 + 预加载 | 首次加载计时 < 1.5s |
+| JS 回调泄漏 | 中 | `JBCefJSQuery` 实例需手动释放 | 检查 heap dump |
+
+### 会话管理 (M2)
+| 风险 | 等级 | 解决方案 | 验证方法 |
+|------|------|---------|---------|
+| 会话目录不存在 | 中 | 首次启动自动创建 `~/.claude/sessions/` | 新安装测试 |
+| session_id 丢失 | 高 | `ChatSession.sessionId` 持久化到 JSON | 重启 IDE 后验证 --resume |
+| Rewind 实现复杂度 | 中 | 基于现有消息复制，不修改 CLI 行为 | 功能测试 |
+| 多会话并发 | 低 | 单例 SessionService，线程安全 | 并发测试 |
+
+### Diff 审查 (M2)
+| 风险 | 等级 | 解决方案 | 验证方法 |
+|------|------|---------|---------|
+| 文件被外部修改 | 中 | 保存前检查文件 hash | - |
+| 大文件 Diff 性能 | 低 | 限制 Diff 文件大小 (>1MB 提示) | 性能测试 |
+
+### MCP 支持 (M3)
+| 风险 | 等级 | 解决方案 | 验证方法 |
+|------|------|---------|---------|
+| Plan 模式状态同步 | 高 | CLI 暂停时等待用户响应，超时提示 | 中断测试 |
+| 权限确认弹窗阻塞 | 中 | 使用非阻塞 Swing Dialog | 长时间等待测试 |
+| MCP 服务器配置格式 | 低 | JSON Schema 验证 | 异常输入测试 |
 
 ### 设置界面 (M4)
-- **JSON 双向编辑**: 表单 ↔ JSON 同步需要精确的 merge 策略
-- **API Key 安全**: 必须使用 IDE 的 `PasswordSafe` 存储，禁止明文
-- **供应商列表**: 预置 + 自定义混合管理
+| 风险 | 等级 | 解决方案 | 验证方法 |
+|------|------|---------|---------|
+| JSON 双向同步冲突 | 中 | 表单优先，JSON 只读模式可选 | 并发编辑测试 |
+| API Key 明文存储 | 高 | 必须使用 PasswordSafe | 安全审计 |
+| Provider 切换状态丢失 | 中 | 切换前检查是否有活跃会话 | 人工测试 |
 
 ### CLI 通信
-- **进程管理**: 长时间运行需监控进程健康，自动重启
-- **NDJSON 解析**: 不同 CLI 版本输出格式可能不同，需兼容
-- **并发控制**: 一次只允许一个 prompt 执行中
+| 风险 | 等级 | 解决方案 | 验证方法 |
+|------|------|---------|---------|
+| 进程僵死 | 中 | 超时中断 + 自动重启 | 网络中断测试 |
+| NDJSON 解析失败 | 中 | 容错处理，跳过畸形行 | CLI 异常输出测试 |
+| 并发 prompt | 高 | `isProcessing` 锁，禁止同时多个请求 | 并发测试 |
 
 ---
 
-*文档生成时间: 2026-04-14*
+*文档更新时间: 2026-04-15*
+*与 API_Design.md v5.1 对齐*
