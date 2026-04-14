@@ -1770,6 +1770,326 @@ data class DailyUsage(
 
 ---
 
+### M4-006: 基础设置接口 (关键新增)
+
+| 属性 | 值 |
+|------|-----|
+| **功能描述** | CLI 版本检测、自动更新、国际化语言配置 |
+| **优先级** | P0 |
+| **依赖** | M0-001, M4-001 |
+
+#### 前端接口 (Kotlin)
+```kotlin
+// 位置: ui/settings/BasicSettingsPanel.kt
+class BasicSettingsPanel : JPanel() {
+
+    private val cliVersionLabel = JLabel()
+    private val updateButton = JButton("检测更新")
+    private val languageCombo = JComboBox<Locale>()
+
+    init {
+        layout = GridBagLayout()
+
+        // CLI 版本检测区域
+        add(JLabel("CLI 版本:"), gbc(0, 0))
+        cliVersionLabel.text = CliBridgeService.getInstance().getCliVersion() ?: "未安装"
+        add(cliVersionLabel, gbc(1, 0))
+        updateButton.addActionListener { checkForUpdate() }
+        add(updateButton, gbc(2, 0))
+
+        // 自动更新开关
+        val autoCheckUpdate = JCheckBox("启动时自动检测 CLI 更新", true)
+        add(autoCheckUpdate, gbc(0, 1, 3))
+
+        // 语言选择
+        add(JLabel("界面语言:"), gbc(0, 2))
+        languageCombo.setModel(DefaultComboBoxModel(arrayOf(
+            Locale.SIMPLIFIED_CHINESE,  // 简体中文 (默认)
+            Locale.TRADITIONAL_CHINESE, // 繁体中文
+            Locale.ENGLISH,             // English
+            Locale.JAPANESE             // 日本語
+        )))
+        languageCombo.selectedItem = I18nService.getInstance().getCurrentLocale()
+        languageCombo.renderer = LocaleListCellRenderer()
+        add(languageCombo, gbc(1, 2, 2))
+    }
+
+    private fun checkForUpdate() {
+        val updateResult = CliUpdateService.getInstance().checkForUpdate()
+        if (updateResult.hasUpdate) {
+            val confirm = Messages.showYesNoDialog(
+                "发现新版本 ${updateResult.latestVersion}，是否立即更新？\n当前版本: ${updateResult.currentVersion}",
+                "CLI 更新"
+            )
+            if (confirm == Messages.YES) {
+                CliUpdateService.getInstance().performUpdate()
+            }
+        } else {
+            Messages.showInfoMessage("当前已是最新版本 ${updateResult.currentVersion}", "CLI 更新")
+        }
+    }
+}
+
+// 位置: service/CliUpdateService.kt
+@Service(Service.Level.APP)
+class CliUpdateService {
+
+    companion object {
+        fun getInstance(): CliUpdateService =
+            ApplicationManager.getApplication().getService(CliUpdateService::class.java)
+    }
+
+    /**
+     * 检查 CLI 更新
+     */
+    fun checkForUpdate(): UpdateResult {
+        val currentVersion = CliBridgeService.getInstance().getCliVersion()
+            ?: return UpdateResult(null, null, false)
+
+        val latestVersion = getLatestVersion()
+        val hasUpdate = latestVersion != null && latestVersion != currentVersion
+
+        return UpdateResult(currentVersion, latestVersion, hasUpdate)
+    }
+
+    /**
+     * 执行更新
+     */
+    fun performUpdate(): Boolean {
+        return try {
+            val process = ProcessBuilder("npm", "update", "-g", "@anthropic-ai/claude-code")
+                .redirectErrorStream(true)
+                .start()
+            process.waitFor(60, TimeUnit.SECONDS)
+            process.exitValue() == 0
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun getLatestVersion(): String? {
+        return try {
+            val process = ProcessBuilder("npm", "view", "@anthropic-ai/claude-code", "version")
+                .redirectErrorStream(true)
+                .start()
+            val output = process.inputStream.bufferedReader().readText().trim()
+            process.waitFor(10, TimeUnit.SECONDS)
+            output
+        } catch (e: Exception) {
+            null
+        }
+    }
+}
+
+data class UpdateResult(
+    val currentVersion: String?,
+    val latestVersion: String?,
+    val hasUpdate: Boolean
+)
+```
+
+#### 国际化服务接口
+```kotlin
+// 位置: service/I18nService.kt
+@Service(Service.Level.APP)
+class I18nService {
+
+    companion object {
+        fun getInstance(): I18nService =
+            ApplicationManager.getApplication().getService(I18nService::class.java)
+    }
+
+    /** 支持的语言列表 */
+    val supportedLocales: List<Locale> = listOf(
+        Locale.SIMPLIFIED_CHINESE,
+        Locale.TRADITIONAL_CHINESE,
+        Locale.ENGLISH,
+        Locale.JAPANESE
+    )
+
+    /**
+     * 获取当前语言
+     */
+    fun getCurrentLocale(): Locale {
+        return ConfigService.getInstance().state.locale
+    }
+
+    /**
+     * 设置语言 (重启后生效)
+     */
+    fun setLocale(locale: Locale) {
+        ConfigService.getInstance().state.locale = locale
+    }
+
+    /**
+     * 获取国际化字符串
+     */
+    fun getMessage(key: String): String {
+        return MyBundle.getResourceBundle(getCurrentLocale()).getString(key)
+    }
+}
+
+// AppConfigState 扩展
+data class AppConfigState(
+    var cliPath: String = "",
+    var autoSaveSession: Boolean = true,
+    var autoCheckUpdate: Boolean = true,
+    var locale: Locale = Locale.SIMPLIFIED_CHINESE,
+    var themeConfig: ThemeConfig = ThemeConfig()
+)
+```
+
+---
+
+### M4-007: 外观设置接口 (关键新增)
+
+| 属性 | 值 |
+|------|-----|
+| **功能描述** | 主题切换、对话背景、消息气泡背景配置 |
+| **优先级** | P0 |
+| **依赖** | M4-001, M2-010 (JCEF) |
+
+#### 前端接口 (Kotlin)
+```kotlin
+// 位置: ui/settings/AppearanceSettingsPanel.kt
+class AppearanceSettingsPanel(private val project: Project) : JPanel() {
+
+    private val themeCombo = JComboBox<String>()
+    private val chatBgTypeCombo = JComboBox<BackgroundType>()
+    private val chatBgColorChooser = JButton()
+    private val chatBgImageField = JTextField()
+    private val userBubbleColor = JButton()
+    private val aiBubbleColor = JButton()
+    private val resetButton = JButton("恢复默认")
+
+    init {
+        layout = GridBagLayout()
+
+        // 主题切换
+        add(JLabel("主题:"), gbc(0, 0))
+        themeCombo.setModel(DefaultComboBoxModel(arrayOf(
+            "跟随 IDE (默认)", "暗色经典", "暗色护眼", "浅色经典"
+        )))
+        add(themeCombo, gbc(1, 0, 2))
+
+        // 对话背景
+        add(JLabel("对话背景:"), gbc(0, 1))
+        chatBgTypeCombo.setModel(DefaultComboBoxModel(BackgroundType.values()))
+        add(chatBgTypeCombo, gbc(1, 1))
+
+        chatBgColorChooser.text = "选择颜色"
+        chatBgColorChooser.addActionListener { chooseChatBgColor() }
+        add(chatBgColorChooser, gbc(2, 1))
+
+        add(JButton("选择图片").apply {
+            addActionListener { chooseChatBgImage() }
+        }, gbc(1, 2))
+        add(chatBgImageField, gbc(2, 2))
+
+        // 消息气泡背景
+        add(JLabel("用户气泡颜色:"), gbc(0, 3))
+        userBubbleColor.background = Color(0x3B, 0x82, 0xF6)
+        userBubbleColor.addActionListener { chooseBubbleColor("user") }
+        add(userBubbleColor, gbc(1, 3, 2))
+
+        add(JLabel("AI 气泡颜色:"), gbc(0, 4))
+        aiBubbleColor.background = Color(0x2D, 0x2D, 0x30)
+        aiBubbleColor.addActionListener { chooseBubbleColor("ai") }
+        add(aiBubbleColor, gbc(1, 4, 2))
+
+        // 恢复默认
+        add(resetButton, gbc(0, 5))
+        resetButton.addActionListener { resetToDefaults() }
+    }
+}
+
+enum class BackgroundType { FOLLOW_THEME, SOLID_COLOR, IMAGE }
+```
+
+#### 主题服务接口
+```kotlin
+// 位置: service/ThemeService.kt
+@Service(Service.Level.APP)
+class ThemeService : Disposable {
+
+    companion object {
+        fun getInstance(): ThemeService =
+            ApplicationManager.getApplication().getService(ThemeService::class.java)
+    }
+
+    /**
+     * 获取当前主题配置
+     */
+    fun getActiveTheme(): ThemeConfig {
+        return ConfigService.getInstance().state.themeConfig
+    }
+
+    /**
+     * 应用主题
+     * @param themeConfig 主题配置
+     */
+    fun applyTheme(themeConfig: ThemeConfig) {
+        // 1. 更新 JCEF CSS 变量
+        val browser = getActiveBrowser() ?: return
+        browser.executeJavaScript("""
+            document.documentElement.style.setProperty('--chat-bg', '${themeConfig.chatBgCss}');
+            document.documentElement.style.setProperty('--user-bubble-bg', '${themeConfig.userBubbleColor}');
+            document.documentElement.style.setProperty('--ai-bubble-bg', '${themeConfig.aiBubbleColor}');
+        """)
+
+        // 2. 如果有背景图片，设置到 body
+        if (themeConfig.chatBgType == BackgroundType.IMAGE && themeConfig.chatBgImage != null) {
+            browser.executeJavaScript("""
+                document.body.style.backgroundImage = 'url(file://${themeConfig.chatBgImage})';
+            """)
+        }
+
+        // 3. 持久化
+        ConfigService.getInstance().state.themeConfig = themeConfig
+    }
+
+    /**
+     * 监听 IDE 主题变更 (LaF 变更时自动同步)
+     */
+    fun onIdeThemeChanged() {
+        val currentTheme = getActiveTheme()
+        if (currentTheme.themeMode == "follow_ide") {
+            applyTheme(currentTheme.copy(
+                isDark = UIManager.getColor("Panel.background").red < 128
+            ))
+        }
+    }
+
+    override fun dispose() {}
+}
+
+/**
+ * 主题配置
+ */
+data class ThemeConfig(
+    var themeMode: String = "follow_ide",     // follow_ide / dark_classic / dark_eye / light_classic
+    var isDark: Boolean = true,
+    var chatBgType: BackgroundType = BackgroundType.FOLLOW_THEME,
+    var chatBgColor: String = "#1E1E1E",
+    var chatBgImage: String? = null,
+    var userBubbleColor: String = "#3B82F6",
+    var aiBubbleColor: String = "#2D2D30"
+) : PersistentStateComponent<ThemeConfig> {
+    override fun getState(): ThemeConfig = this
+    override fun loadState(state: ThemeConfig) {
+        this.themeMode = state.themeMode
+        this.isDark = state.isDark
+        this.chatBgType = state.chatBgType
+        this.chatBgColor = state.chatBgColor
+        this.chatBgImage = state.chatBgImage
+        this.userBubbleColor = state.userBubbleColor
+        this.aiBubbleColor = state.aiBubbleColor
+    }
+}
+```
+
+---
+
 ## M5: 打磨上线
 
 ### M5-001: @file 文件引用接口 (关键新增)
@@ -1971,8 +2291,12 @@ class PermissionDialog(
 | MessageRenderer | 2 | M2-010, M2-011 |
 | ToolUseCard | 1 | M3-001 |
 | ProviderSettingsPanel | 1 | M4-001 |
+| BasicSettingsPanel | 1 | M4-006 |
+| AppearanceSettingsPanel | 1 | M4-007 |
 | ProviderSelector | 1 | M4-002 |
 | ProviderEditDialog | 1 | M4-003 |
+| CliUpdateService | 1 | M4-006 |
+| ThemeService | 1 | M4-007 |
 | ProviderService | 1 | M4-004 (导出) |
 | FileReferencePopup | 1 | M5-001 |
 | SlashCommandPopup | 1 | M5-002 |
@@ -1987,9 +2311,9 @@ class PermissionDialog(
 | M1 | 4 | M1-001, M1-002, M1-003, M1-004 |
 | M2 | 14 | M2-001~014 |
 | M3 | 1 | M3-001 |
-| M4 | 5 | M4-001~005 |
+| M4 | 7 | M4-001~007 |
 | M5 | 3 | M5-001~003 |
-| **总计** | **29** | - |
+| **总计** | **31** | - |
 
 ---
 
@@ -2059,6 +2383,8 @@ class PermissionDialog(
 | 17 | v5.1: 添加 M2-014 Diff 审查 | P0 | 用户信任度 |
 | 18 | v5.1: CliMessageCallback 拆分为细粒度 + onInterrupted | P1 | 回调设计完整 |
 | 19 | v5.1: 权限模式描述与架构对齐 (default/sandbox/yolo) | P1 | 文档一致性 |
+| 20 | v5.1: 添加 M4-006 基础设置 (CLI 更新 + 国际化) | P0 | ui.md 4.0 对齐 |
+| 21 | v5.1: 添加 M4-007 外观设置 (主题/背景/气泡) | P0 | ui.md 4.0 对齐 |
 
 ---
 

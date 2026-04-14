@@ -6,7 +6,8 @@
       "Bash(claude:*)",
       "Bash(where:*)",
       "Bash(export CLAUDE_CODE_GIT_BASH_PATH=\"D:\\\\SoftList\\\\Java\\\\Git\\\\usr\\\\bin\\\\bash.exe\")",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(./gradlew compileKotlin)"
     ]
   }
 }

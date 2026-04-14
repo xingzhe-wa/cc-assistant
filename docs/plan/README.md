@@ -64,7 +64,7 @@ File → Settings → Tools → CC Assistant
 | **M1** | Week 1 | 极简对话 (Swing) | 6 文件 + 1 任务 | ✅ 完成 |
 | **M2** | Week 2-3 | 多会话 + JCEF 切换 | 13 任务 | 🔲 待开始 |
 | **M3** | Week 4 | MCP 支持 | 6 任务 | 🔲 待开始 |
-| **M4** | Week 5-6 | 设置 + 供应商 UI | 9 任务 | 🔲 待开始 |
+| **M4** | Week 5-6 | 设置 + 供应商 UI | 14 任务 | 🔲 待开始 |
 | **M5** | Week 7-8 | 打磨上线 | 10 任务 | 🔲 待开始 |
 
 ---
@@ -358,10 +358,15 @@ Settings → Tools → CC Assistant (Swing Configurable)
 | M4-FE3 | 供应商编辑页 (表单 + JSON 双向编辑) | Swing Form | 1.5天 | M4-001, M4-003 |
 | M4-FE4 | 对话区工具栏集成供应商下拉 | Swing JComboBox | 0.5天 | M4-002 |
 | M4-FE5 | Token 统计面板 | Swing JPanel | 0.5天 | M4-005 |
+| M4-FE6 | 基础设置页 (CLI 检测/更新 + 语言) | Swing Form | 1天 | M4-006 |
+| M4-FE7 | 外观设置页 (主题/对话背景/气泡背景) | Swing Form + JColorChooser | 1.5天 | M4-007 |
 | M4-BE1 | ProviderService UI 接入 (读取/写入) | Kotlin | 0.5天 | M4-001~004 |
 | M4-BE2 | Token 统计 (UsageService) | Kotlin | 0.5天 | M4-005 |
 | M4-BE3 | API Key 安全存储 | IDE PasswordSafe | 0.5天 | M4-003 |
 | M4-BE4 | Provider 配置导出/导入 | Kotlin | 0.5天 | M4-004 |
+| M4-BE5 | CLI 版本检测 + 自动更新服务 | Kotlin + ProcessBuilder | 1天 | M4-006 |
+| M4-BE6 | 主题服务 (多主题 + IDE 跟随) | Kotlin + LaF Listener | 1天 | M4-007 |
+| M4-BE7 | 国际化服务 (简中/繁中/英/日) | MyBundle 扩展 | 1天 | M4-006 |
 
 **M4 任务详情**:
 ```
@@ -410,10 +415,86 @@ M4-BE4 Provider 导出/导入:
 ├── importProviderConfig(configJson): ProviderConfig?
 │   └── 解析 JSON 创建 ProviderConfig
 └── 用于用户备份/迁移配置
+
+M4-FE6 基础设置页:
+├── CLI 版本检测
+│   ├── 显示当前 CLI 版本: "Claude Code CLI v1.x.x ✅"
+│   ├── [检测更新] 按钮 → 调用 M4-BE5.checkForUpdate()
+│   ├── 有更新时显示: "发现新版本 v1.x.x [立即更新]"
+│   └── 未安装时显示: "未安装 [前往安装]" (跳转 M1-4)
+├── 自动更新开关
+│   ├── ☑ 启动时自动检测 CLI 更新
+│   └── 有更新时 Notification 提示 (非阻塞)
+├── 国际化语言配置
+│   ├── JComboBox<Locale>: 简体中文(默认) | 繁体中文 | English | 日本語
+│   ├── 切换后提示: "语言将在重启后生效"
+│   └── 保存到 AppConfigState.locale
+└── 工作目录配置
+    └── 默认使用 project.basePath
+
+M4-FE7 外观设置页:
+├── 主题切换
+│   ├── JComboBox: 跟随 IDE (默认) | 暗色经典 | 暗色护眼 | 浅色经典
+│   ├── "跟随 IDE" 模式: 监听 LafManagerListener 自动同步
+│   └── 自定义主题: 影响对话区 JCEF CSS 变量
+├── 对话背景
+│   ├── 选项: 跟随主题 (默认) | 纯色 | 图片
+│   ├── 纯色: JColorChooser 选择颜色
+│   ├── 图片: [选择图片] → 文件选择器 → 预览
+│   └── 存储到 AppConfigState.chatBackground
+└── 消息气泡背景
+    ├── 用户气泡: JColorChooser (默认 #3B82F6)
+    ├── AI 气泡: JColorChooser (默认 #2D2D30)
+    └── [恢复默认] 按钮
+
+M4-BE5 CLI 版本检测 + 自动更新:
+├── getCliVersion(): String? (已存在于 M0-001)
+├── getLatestCliVersion(): String?
+│   └── 执行: claude --version 或 npm view @anthropic-ai/claude-code version
+├── checkForUpdate(): UpdateResult
+│   ├── currentVersion: String
+│   ├── latestVersion: String
+│   └── hasUpdate: Boolean
+├── performUpdate(): Boolean
+│   └── 执行: npm update -g @anthropic-ai/claude-code
+└── 自动检测: 项目启动时检查 (可配置开关)
+
+M4-BE6 主题服务:
+├── ThemeService (APP Service)
+├── getActiveTheme(): ThemeConfig
+│   ├── name: String (跟随IDE / 暗色经典 / ...)
+│   ├── chatBackground: BackgroundConfig (跟随主题 / 纯色 / 图片)
+│   ├── userBubbleColor: String (#RRGGBB)
+│   └── aiBubbleColor: String (#RRGGBB)
+├── applyTheme(themeConfig: ThemeConfig)
+│   ├── 更新 JCEF CSS 变量 (browser.executeJavaScript)
+│   └── 更新 Swing 组件颜色
+├── 监听 IDE 主题变更
+│   └── LafManagerListener.onLookAndFeelChanged()
+└── 持久化: AppConfigState.themeConfig
+
+M4-BE7 国际化服务 (4 语言):
+├── I18nService (APP Service)
+├── 支持语言: zh_CN, zh_TW, en, ja
+├── getCurrentLocale(): Locale
+├── setLocale(locale: Locale)
+│   └── 保存到 AppConfigState.locale
+├── getMessage(key: String): String
+│   └── MyBundle.message(key) 自动选择语言包
+└── 资源文件
+    ├── MyBundle.properties (en)
+    ├── MyBundle_zh_CN.properties (简中, 默认)
+    ├── MyBundle_zh_TW.properties (繁中)
+    └── MyBundle_ja.properties (日文)
 ```
 
 **M4 验收标准**:
 - [ ] Settings 界面能打开，左右布局正确
+- [ ] 基础设置页: CLI 版本显示正确，可检测更新
+- [ ] 基础设置页: 语言切换保存正确（重启后生效）
+- [ ] 外观设置页: 主题切换即时生效（含 IDE 跟随模式）
+- [ ] 外观设置页: 对话背景可设置为纯色或图片
+- [ ] 外观设置页: 消息气泡颜色可自定义
 - [ ] 能新增/编辑/删除供应商
 - [ ] 快捷配置自动填充 URL 和模型
 - [ ] JSON 编辑器与表单双向同步
@@ -440,7 +521,7 @@ M4-BE4 Provider 导出/导入:
 | M5-BE1 | 错误处理 + 自动重试 | Kotlin | 1天 | - |
 | M5-BE2 | 内存泄漏检查 (JCEF dispose) | - | 0.5天 | - |
 | M5-BE3 | 单元测试覆盖率 >70% | JUnit + MockK | 2天 | - |
-| M5-BE4 | 国际化 (中英文) | MyBundle | 1天 | - |
+| M5-BE4 | 国际化 (简中/繁中/英/日) | MyBundle 扩展 | 2天 | - |
 | M5-BE5 | 插件发布配置 | Gradle | 0.5天 | - |
 
 **M5 任务详情**:
@@ -520,16 +601,20 @@ M5-BE2 内存泄漏检查:
     ├── JS 定时器未清除
     └── CSS/JS 资源未释放
 
-M5-BE4 国际化:
+M5-BE4 国际化 (简中/繁中/英/日):
 ├── 资源文件
 │   ├── messages/MyBundle.properties (英文)
-│   └── messages/MyBundle_zh_CN.properties (中文)
+│   ├── messages/MyBundle_zh_CN.properties (简体中文, 默认)
+│   ├── messages/MyBundle_zh_TW.properties (繁体中文)
+│   └── messages/MyBundle_ja.properties (日本語)
 ├── 动态切换
-│   └── 跟随 IDE 语言设置
+│   ├── 跟随 IDE 语言设置 (默认)
+│   └── 基础设置页手动选择语言
 └── 需要国际化的字符串
     ├── UI 标签
     ├── 错误消息
-    └── 提示文案
+    ├── 提示文案
+    └── Slash 命令描述
 ```
 
 **M5 验收标准**:
