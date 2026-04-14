@@ -1,10 +1,11 @@
 # CC Assistant 产品技术架构文档
 
-> **版本**: v5.0 (最终优化版)  
-> **更新日期**: 2026-04-13  
+> **版本**: v5.1 (接口对齐版)  
+> **更新日期**: 2026-04-15  
 > **插件名称**: CC Assistant  
 > **开发模板**: [intellij-platform-plugin-template](https://github.com/JetBrains/intellij-platform-plugin-template)  
 > **核心原则**: 轻量、原生、可扩展
+> **接口对齐**: 与 API_Design.md v5.1 保持一致
 
 ---
 

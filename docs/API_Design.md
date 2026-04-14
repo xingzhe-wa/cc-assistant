@@ -1,8 +1,9 @@
 # CC Assistant 接口设计方案
 
-> **版本**: v4.0 (复审修正)  
-> **更新日期**: 2026-04-14  
+> **版本**: v5.1 (产品对齐版)  
+> **更新日期**: 2026-04-15  
 > **设计原则**: 以功能和交互动作为驱动，端到端接口设计，与实际代码对齐
+> **与架构对齐**: v5.1 与 CC_Assistant_Technical_Architecture.md v5.0 保持一致
 
 ---
 
@@ -22,14 +23,19 @@ claude -p "后续消息" --resume sess_abc123 --output-format stream-json
 # 指定模型
 claude -p "用户输入" --model claude-opus-4-20250514 --output-format stream-json
 
-# 权限模式（架构决策：默认 accept-all）
-claude -p "用户输入" --permission-mode accept-all --output-format stream-json
+# 权限模式
+# - default: 每次操作需确认（M5 Plan 模式）
+# - sandbox: 沙箱模式，自动执行安全操作
+# - yolo: 全自动，无需确认（MVP 默认 accept-all）
+claude -p "用户输入" --permission-mode yolo --output-format stream-json
 ```
 
 - **prompt** 通过 `-p` 参数传入
 - **会话续接** 通过 `--resume session_id` 参数传入
 - **模型选择** 通过 `--model` 参数传入
-- **权限模式**：MVP 阶段使用 `accept-all`，不弹窗确认（M5 扩展 `delegate`）
+- **权限模式**：
+  - MVP 阶段使用 `yolo`（等同于 `accept-all`），AI 自由执行，不打断用户
+  - Plan 模式不传 `--permission-mode`，CLI 在需要确认时暂停，插件弹出 Swing 审批弹窗
 - **输出** 通过 stdout 以 NDJSON 格式流式输出
 - **中断** 直接 `process.destroy()` 杀进程
 
@@ -163,6 +169,65 @@ fun executePrompt(
 }
 ```
 
+#### 消息回调接口 (CliMessageCallback)
+
+```kotlin
+// 位置: bridge/CliMessageCallback.kt
+/**
+ * CLI 消息回调接口
+ * 细粒度回调设计，便于独立处理各类消息
+ */
+interface CliMessageCallback {
+
+    /** 流式文本增量 */
+    fun onTextDelta(text: String)
+
+    /** 思考片段增量 */
+    fun onThinkingDelta(text: String)
+
+    /** 工具调用开始 */
+    fun onToolUseStart(toolUse: CliMessage.ToolUseStart)
+
+    /** 工具调用输入增量 */
+    fun onToolUseInputDelta(toolUse: CliMessage.ToolUseInputDelta)
+
+    /** 最终结果（包含 session_id、cost_usd） */
+    fun onResult(result: CliMessage.Result)
+
+    /** 错误信息 */
+    fun onError(error: CliMessage.Error)
+
+    /** 中断回调（CLI 进程被 kill 后触发）*/
+    fun onInterrupted()
+}
+
+/**
+ * CLI 消息类型定义
+ */
+sealed class CliMessage {
+    data class TextDelta(val text: String) : CliMessage()
+    data class ThinkingDelta(val thinking: String) : CliMessage()
+    data class ToolUseStart(
+        val toolName: String,
+        val toolInput: String,
+        val status: ToolUseStatus
+    ) : CliMessage()
+    data class ToolUseInputDelta(
+        val toolName: String,
+        val delta: String
+    ) : CliMessage()
+    data class Result(
+        val content: String,
+        val sessionId: String,
+        val costUsd: Double,
+        val usage: Map<String, Int>
+    ) : CliMessage()
+    data class Error(val message: String, val code: String?) : CliMessage()
+}
+
+enum class ToolUseStatus { PENDING, RUNNING, SUCCESS, ERROR }
+```
+
 ---
 
 ## M1: 极简对话 (Swing 版)
@@ -207,17 +272,36 @@ class ChatPanel(
         
         // 注册回调并执行
         val callback = object : CliMessageCallback {
-            override fun onMessage(message: CliMessage) {
+            override fun onTextDelta(text: String) {
+                ApplicationManager.invokeLater { appendAiChunk(text) }
+            }
+
+            override fun onThinkingDelta(text: String) {
+                ApplicationManager.invokeLater { showThinking(text) }
+            }
+
+            override fun onToolUseStart(toolUse: CliMessage.ToolUseStart) {
+                ApplicationManager.invokeLater { showToolUseStart(toolUse) }
+            }
+
+            override fun onToolUseInputDelta(toolUse: CliMessage.ToolUseInputDelta) {
+                ApplicationManager.invokeLater { showToolUseDelta(toolUse) }
+            }
+
+            override fun onResult(result: CliMessage.Result) {
+                ApplicationManager.invokeLater { onResult(result) }
+            }
+
+            override fun onError(error: CliMessage.Error) {
+                ApplicationManager.invokeLater { showError(error) }
+            }
+
+            override fun onInterrupted() {
                 ApplicationManager.invokeLater {
-                    when (message) {
-                        is CliMessage.TextDelta -> appendAiChunk(message.text)
-                        is CliMessage.ThinkingDelta -> showThinking(message.text)
-                        is CliMessage.Result -> onResult(message)
-                        is CliMessage.Error -> onError(message)
-                        is CliMessage.ToolUseStart -> onToolUseStart(message)
-                        is CliMessage.ToolUseInputDelta -> onToolUseDelta(message)
-                        else -> {}
-                    }
+                    sendButton.text = "发送"
+                    inputArea.isEnabled = true
+                    sendButton.isEnabled = true
+                    appendSystemMessage("已中断")
                 }
             }
         }
@@ -290,20 +374,123 @@ fun interruptMessage() {
 ```kotlin
 // 位置: ui/chat/ModelSelector.kt
 class ModelSelector : JComboBox<ModelInfo>() {
-    
+
     private var selectedModel: ModelInfo? = null
-    
+
     init {
         val models = ProviderService.getInstance()
             .getModelsForProvider(currentProviderId)
-        
+
         models.forEach { addItem(it) }
         selectedItem = models.first()
-        
+
         addActionListener {
             selectedModel = selectedItem as? ModelInfo
         }
     }
+}
+```
+
+---
+
+### M1-004: CLI 安装引导接口 (关键新增)
+
+| 属性 | 值 |
+|------|-----|
+| **功能描述** | 检测 CLI 是否安装，未安装时引导用户安装 |
+| **优先级** | P0 |
+| **依赖** | M0-001 |
+
+#### UI 交互
+```
+┌─────────────────────────────────────────────────────────────┐
+│  CLI 未安装引导                                            │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ ⚠️  Claude Code CLI 未安装                          │   │
+│  │                                                     │   │
+│  │ 请先安装 Claude Code CLI 才能使用 CC Assistant      │   │
+│  │                                                     │   │
+│  │ [访问 Claude Code 官网]                             │   │
+│  │                                                     │   │
+│  │ 安装完成后点击 [重新检测]                            │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 前端接口 (Kotlin)
+```kotlin
+// 位置: ui/dialog/CliInstallGuideDialog.kt
+class CliInstallGuideDialog(private val project: Project) : DialogWrapper(project) {
+
+    override fun createCenterPanel(): JComponent {
+        return JPanel().apply {
+            layout = BorderLayout(16, 16)
+            border = BorderFactory.createEmptyBorder(24, 24, 24, 24)
+
+            // 警告图标 + 标题
+            add(JLabel("⚠️ Claude Code CLI 未安装", SwingConstants.CENTER), BorderLayout.NORTH)
+
+            // 说明文本
+            val descPanel = JPanel().apply {
+                layout = BoxLayout(this, BoxLayout.Y_AXIS)
+                alignmentX = CENTER_ALIGNMENT
+
+                add(JLabel("请先安装 Claude Code CLI 才能使用 CC Assistant"))
+                add(JLabel(" "))
+                add(JLabel("安装方式:"))
+                add(JLabel("npm install -g @anthropic-ai/claude-code"))
+            }
+            add(descPanel, BorderLayout.CENTER)
+
+            // 按钮面板
+            val buttonPanel = JPanel().apply {
+                layout = FlowLayout(FlowLayout.CENTER, 8, 0)
+
+                add(JButton("访问 Claude Code 官网").apply {
+                    addActionListener {
+                        BrowserUtil.open("https://docs.anthropic.com/claude-code")
+                    }
+                })
+
+                add(JButton("重新检测").apply {
+                    addActionListener {
+                        if (CliBridgeService.getInstance().isCliAvailable()) {
+                            close(OK_EXIT_CODE)
+                        } else {
+                            Messages.showInfoMessage("仍未检测到 CLI，请确认已正确安装", "检测结果")
+                        }
+                    }
+                })
+
+                add(JButton("取消").apply {
+                    addActionListener { close(CANCEL_EXIT_CODE) }
+                })
+            }
+            add(buttonPanel, BorderLayout.SOUTH)
+        }
+    }
+}
+
+// 位置: bridge/CliBridgeService.kt
+/**
+ * 检测 CLI 并在需要时显示安装引导
+ * @return true 如果 CLI 可用，false 如果用户取消安装引导
+ */
+fun checkAndPromptCliInstallation(): Boolean {
+    if (isCliAvailable()) return true
+
+    val result = Messages.showYesNoDialog(
+        "Claude Code CLI 未安装。\n\n是否打开官网下载页面？",
+        "CLI 未安装",
+        "打开官网",
+        "取消"
+    )
+
+    if (result == Messages.YES) {
+        BrowserUtil.open("https://docs.anthropic.com/claude-code")
+    }
+
+    return false
 }
 ```
 
@@ -928,6 +1115,283 @@ class JcefMessageRenderer(private val browser: JBCefBrowser) : MessageRenderer {
 
 ---
 
+### M2-012: Rewind 回溯接口 (关键新增)
+
+| 属性 | 值 |
+|------|-----|
+| **功能描述** | 回滚到历史消息点，重新生成响应 |
+| **优先级** | P0 |
+| **依赖** | M2-001, M2-004 |
+| **CLI 支持** | CLI 使用 `--resume` 机制，通过新建会话实现 |
+
+#### UI 交互
+```
+┌─────────────────────────────────────────────────────────────┐
+│  回溯点标记                                                │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ ○ 回溯点 1 - 10:25  [从这重新开始]                  │   │
+│  └─────────────────────────────────────────────────────┘   │
+│  在消息之间显示，点击可回滚                                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 前端接口 (Kotlin)
+```kotlin
+// 位置: service/RewindService.kt
+@Service(Service.Level.PROJECT)
+class RewindService(val project: Project) {
+
+    companion object {
+        fun getInstance(project: Project): RewindService =
+            project.getService(RewindService::class.java)
+    }
+
+    /**
+     * 获取可回溯点列表
+     * @param sessionId 会话 ID
+     * @return 回溯点列表，每条 AI 响应都是一个回溯点
+     */
+    fun getRewindPoints(sessionId: String): List<RewindPoint> {
+        val session = SessionService.getInstance(project).getSession(sessionId)
+            ?: return emptyList()
+
+        return session.messages.mapIndexedNotNull { index, message ->
+            if (message.role == Role.ASSISTANT && index > 0) {
+                RewindPoint(
+                    id = message.id,
+                    index = index,
+                    preview = message.content.take(50),
+                    timestamp = message.timestamp
+                )
+            } else null
+        }
+    }
+
+    /**
+     * 执行回溯：基于指定消息重新发起对话
+     * @param sessionId 原会话 ID
+     * @param rewindPointId 回溯点 ID
+     * @return 新会话 ID（CLI 返回的 session_id 后续异步更新）
+     */
+    fun rewind(sessionId: String, rewindPointId: String): String? {
+        val session = SessionService.getInstance(project).getSession(sessionId) ?: return null
+
+        val rewindPointIndex = session.messages.indexOfFirst { it.id == rewindPointId }
+        if (rewindPointIndex < 0) return null
+
+        // 1. 创建新会话
+        val newSession = SessionService.getInstance(project).createSession(
+            workingDir = session.workingDir
+        )
+
+        // 2. 复制回溯点之前的消息
+        session.messages.take(rewindPointIndex).forEach { newSession.messages.add(it.copy()) }
+
+        // 3. 保存新会话
+        SessionService.getInstance(project).saveSession(newSession)
+
+        return newSession.id
+    }
+}
+
+data class RewindPoint(
+    val id: String,
+    val index: Int,
+    val preview: String,
+    val timestamp: Instant
+)
+```
+
+#### JS 回调接口
+```javascript
+// 位置: resources/web/chat.js
+function showRewindPoints() {
+    document.querySelectorAll('.rewind-point').forEach(point => {
+        point.addEventListener('click', () => {
+            const pointId = point.dataset.pointId;
+            window.rewindCallback.invoke(pointId);
+        });
+    });
+}
+```
+
+---
+
+### M2-013: 选中文本发送接口 (关键新增)
+
+| 属性 | 值 |
+|------|-----|
+| **功能描述** | 发送编辑器中选中的代码到对话 |
+| **优先级** | P0 |
+| **依赖** | M2-001 |
+| **快捷键** | `Ctrl+Alt+K` |
+
+#### 前端接口 (Kotlin)
+```kotlin
+// 位置: editor/SelectedTextHandler.kt
+class SelectedTextHandler(private val project: Project) : AnActionHandler {
+
+    override fun handleEditorAction(editor: TextEditor, event: InputEvent?): Boolean {
+        val selectionModel = editor.editor.selectionModel
+        val selectedText = selectionModel.selectedText
+
+        if (selectedText.isNullOrBlank()) {
+            Messages.showInfoMessage("请先选择代码", "提示")
+            return false
+        }
+
+        // 获取或创建当前会话
+        val chatPanel = ToolWindowManager.getInstance(project)
+            .getToolWindow("CC Assistant")?.contentManager
+            ?.selectedContent?.component as? ChatPanel
+
+        if (chatPanel == null) {
+            // 打开 ToolWindow
+            val toolWindow = ToolWindowManager.getInstance(project)
+                .getOrActivateToolWindow("CC Assistant") ?: return false
+            return false  // ChatPanel 会在激活后处理
+        }
+
+        // 追加选中内容到输入框
+        chatPanel.appendToInput("[选中代码]\n${selectedText}\n[/选中代码]\n")
+        return true
+    }
+}
+```
+
+#### ChatPanel 扩展
+```kotlin
+// 位置: ui/chat/ChatPanel.kt
+class ChatPanel(private val project: Project) : JPanel() {
+
+    /**
+     * 追加文本到输入框（用于选中文本发送）
+     */
+    fun appendToInput(text: String) {
+        inputArea.text = inputArea.text + text
+        inputArea.caretPosition = inputArea.document.length
+        inputArea.requestFocus()
+    }
+}
+```
+
+---
+
+### M2-014: Diff 审查接口 (关键新增)
+
+| 属性 | 值 |
+|------|-----|
+| **功能描述** | AI 修改文件前预览差异，用户确认后应用 |
+| **优先级** | P0 |
+| **依赖** | M2-010, Git4Idea |
+
+#### UI 交互
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Diff 审查弹窗                                            │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 📝 App.kt - 建议修改                          [✕]  │   │
+│  ├─────────────────────────────────────────────────────┤   │
+│  │ - 原始内容                    + 建议修改            │   │
+│  │   if (dir == null)          │   if (dir == null)   │   │
+│  │   │                           │   if (dir.isEmpty())│   │
+│  │   │ return                    │   return            │   │
+│  ├─────────────────────────────────────────────────────┤   │
+│  │              [拒绝]              [应用修改]         │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 前端接口 (Kotlin)
+```kotlin
+// 位置: ui/dialog/DiffReviewDialog.kt
+class DiffReviewDialog(
+    private val project: Project,
+    private val filePath: String,
+    private val originalContent: String,
+    private val suggestedContent: String,
+    private val onAccept: () -> Unit,
+    private val onReject: () -> Unit
+) : DialogWrapper(project) {
+
+    override fun createCenterPanel(): JComponent {
+        return DiffViewer.create(
+            project,
+            filePath,
+            originalContent,
+            suggestedContent,
+            onAccept,
+            onReject
+        )
+    }
+}
+
+// 位置: ui/diff/DiffViewer.kt
+object DiffViewer {
+
+    fun create(
+        project: Project,
+        filePath: String,
+        original: String,
+        suggested: String,
+        onAccept: () -> Unit,
+        onReject: () -> Unit
+    ): JComponent {
+        val diffPanel = DiffPanel(project)
+
+        // 使用 IntelliJ 内置 Diff 机制
+        val originalDocument = EditorFactory.getInstance().createDocument(original)
+        val suggestedDocument = EditorFactory.getInstance().createDocument(suggested)
+
+        diffPanel.setContent(
+            DiffManager.getInstance().createFileEditor(
+                OriginalContent(originalDocument),
+                ModifiedContent(suggestedDocument)
+            )
+        )
+
+        return JPanel(BorderLayout()).apply {
+            add(diffPanel.component, BorderLayout.CENTER)
+
+            val buttonPanel = JPanel(FlowLayout(FlowLayout.RIGHT)).apply {
+                add(JButton("拒绝").apply {
+                    addActionListener {
+                        onReject()
+                        close(CANCEL_EXIT_CODE)
+                    }
+                })
+                add(JButton("应用修改").apply {
+                    addActionListener {
+                        onAccept()
+                        close(OK_EXIT_CODE)
+                    }
+                })
+            }
+            add(buttonPanel, BorderLayout.SOUTH)
+        }
+    }
+}
+```
+
+#### JS 回调接口
+```javascript
+// 位置: resources/web/chat.js
+function showDiffButton(button, originalContent, suggestedContent) {
+    button.addEventListener('click', async () => {
+        const result = await window.diffCallback.invoke({
+            filePath: button.dataset.filePath,
+            original: originalContent,
+            suggested: suggestedContent
+        });
+        if (result.accepted) {
+            showNotification('修改已应用');
+        }
+    });
+}
+```
+
+---
+
 ## M3: MCP 支持
 
 ### M3-001: MCP 工具调用显示接口
@@ -1496,10 +1960,13 @@ class PermissionDialog(
 | UI 组件 | 接口数量 | 接口 ID |
 |---------|---------|---------|
 | CliBridgeService | 2 | M0-001, M0-002 |
-| ChatPanel | 2 | M1-001, M1-002 |
+| CliInstallGuideDialog | 1 | M1-004 |
+| ChatPanel | 3 | M1-001, M1-002, M2-013 |
 | ModelSelector | 1 | M1-003 |
 | SessionTabBar | 3 | M2-001, M2-002, M2-003 |
-| SessionService | 6 | M2-004, M2-005, M2-007, M2-009, M4-004 (Usage) |
+| SessionService | 5 | M2-004, M2-005, M2-007, M2-009, M4-004 |
+| RewindService | 1 | M2-012 |
+| DiffReviewDialog | 1 | M2-014 |
 | SessionHistoryPanel | 1 | M2-006 |
 | MessageRenderer | 2 | M2-010, M2-011 |
 | ToolUseCard | 1 | M3-001 |
@@ -1510,19 +1977,19 @@ class PermissionDialog(
 | FileReferencePopup | 1 | M5-001 |
 | SlashCommandPopup | 1 | M5-002 |
 | PermissionDialog | 1 | M5-003 |
-| **总计** | **26** | - |
+| **总计** | **30** | - |
 
 ### 按里程碑分类
 
 | 里程碑 | 接口数量 | 接口列表 |
 |--------|---------|----------|
 | M0 | 2 | M0-001, M0-002 |
-| M1 | 3 | M1-001, M1-002, M1-003 |
-| M2 | 11 | M2-001~011 |
+| M1 | 4 | M1-001, M1-002, M1-003, M1-004 |
+| M2 | 14 | M2-001~014 |
 | M3 | 1 | M3-001 |
 | M4 | 5 | M4-001~005 |
 | M5 | 3 | M5-001~003 |
-| **总计** | **25** | - |
+| **总计** | **29** | - |
 
 ---
 
@@ -1533,35 +2000,39 @@ class PermissionDialog(
 ### Week 1: M0 + M1
 1. M0-001: CLI 检测
 2. M0-002: Stream-Json 测试
-3. M1-001: 发送消息（Swing 版）
-4. M1-002: 中断响应
-5. M1-003: 模型选择
+3. M1-004: CLI 安装引导（新增）
+4. M1-001: 发送消息（Swing 版）
+5. M1-002: 中断响应
+6. M1-003: 模型选择
 
 ### Week 2-3: M2 (多会话 + JCEF)
-6. M2-004: 会话持久化
-7. M2-001: 新建会话
-8. M2-002: 切换会话
-9. M2-003: 删除会话
-10. M2-005: 会话标题生成
-11. M2-010: JCEF 消息渲染
-12. M2-011: JCEF 复制回调
-13. M2-006: 历史会话面板
-14. M2-007: 收藏会话
-15. M2-008: 重命名会话
-16. M2-009: 导出会话
+7. M2-004: 会话持久化
+8. M2-001: 新建会话
+9. M2-002: 切换会话
+10. M2-003: 删除会话
+11. M2-005: 会话标题生成
+12. M2-010: JCEF 消息渲染
+13. M2-011: JCEF 复制回调
+14. M2-006: 历史会话面板
+15. M2-007: 收藏会话
+16. M2-008: 重命名会话
+17. M2-009: 导出会话
+18. M2-012: Rewind 回溯（新增）
+19. M2-013: 选中文本发送（新增）
+20. M2-014: Diff 审查（新增）
 
 ### Week 4: M3 + M4
-17. M3-001: MCP 工具调用显示
-18. M4-001: Provider 设置界面
-19. M4-002: Provider 切换
-20. M4-003: API Key 配置
-21. M4-004: Token 统计
-22. M4-005: Provider 导出
+21. M3-001: MCP 工具调用显示
+22. M4-001: Provider 设置界面
+23. M4-002: Provider 切换
+24. M4-003: API Key 配置
+25. M4-004: Token 统计
+26. M4-005: Provider 导出
 
 ### Week 5+: M5
-23. M5-001: @file 文件引用
-24. M5-002: Slash 指令
-25. M5-003: 权限确认
+27. M5-001: @file 文件引用
+28. M5-002: Slash 指令
+29. M5-003: 权限确认
 
 ---
 
@@ -1582,9 +2053,15 @@ class PermissionDialog(
 | 11 | 添加 M2-009 导出 | P1 | 功能完整 |
 | 12 | 添加 M4-004 Provider 导出 | P1 | 功能完整 |
 | 13 | 添加 M5-001 @file 引用 | P1 | 功能完整 |
+| 14 | v5.1: 添加 M1-004 CLI 安装引导 | P0 | 首次用户体验 |
+| 15 | v5.1: 添加 M2-012 Rewind 回溯 | P0 | 核心体验功能 |
+| 16 | v5.1: 添加 M2-013 选中文本发送 | P0 | 核心使用场景 |
+| 17 | v5.1: 添加 M2-014 Diff 审查 | P0 | 用户信任度 |
+| 18 | v5.1: CliMessageCallback 拆分为细粒度 + onInterrupted | P1 | 回调设计完整 |
+| 19 | v5.1: 权限模式描述与架构对齐 (default/sandbox/yolo) | P1 | 文档一致性 |
 
 ---
 
-*文档版本: v4.0*  
-*最后更新: 2026-04-14*  
-*基于复审反馈修正*
+*文档版本: v5.1*  
+*最后更新: 2026-04-15*  
+*与 CC_Assistant_Technical_Architecture.md v5.0 保持一致*

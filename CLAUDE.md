@@ -92,7 +92,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **MVP 优先级** (按顺序实现):
 1. **多会话管理** - 新建/切换/删除会话，`--resume` 续接
-2. **JCEF 消息渲染** - Markdown/Diff/流式渲染
+2. **JCEF 消息渲染** - Markdown/Diff/流式渲染（强制）
 3. **MCP 支持** - 工具调用显示，权限模式管理
 
 ### 已实现模块
@@ -188,12 +188,11 @@ val length = user!!.name!!.length!!
 - 需要新功能 → 先看 CLI 是否支持 → 不支持则提 Issue
 
 ### HC-009: UI 技术栈约束
-- **默认 Swing**: 所有 UI 区域默认使用 Swing 原生组件
-- **JCEF 仅限对话区**: 消息渲染区（M2 起）使用 JCEF，用于 Markdown/Diff/流式渲染
-- **其余区域禁止 JCEF**: 设置界面、会话管理、输入框、工具栏、历史面板等必须使用 Swing
+- **对话消息区 (M2+)**: **必须使用 JCEF**（强制要求），原因：对话区涉及 Markdown 渲染、代码高亮、Diff 可视化、流式打字机效果，交互复杂度高，Swing 无法优雅实现
+- **其余所有区域**: 使用 Swing 原生组件（Header、工具栏、输入框、历史面板、设置界面等）
 - **JCEF 禁止全屏**: JCEF 仅嵌入消息渲染区，不作为整个 ToolWindow 的渲染引擎
 - **JCEF 生命周期**: 必须在 ToolWindow 关闭时调用 `browser.dispose()` 释放 Chromium 资源
-- **JCEF 降级方案**: 检测 `JBCefApp.isSupported()`，不支持时降级为 Swing 纯文本
+- **JCEF 降级方案**: 仅在 `JBCefApp.isSupported()` 返回 false 时，才降级为 Swing 纯文本（降级时产品能力降级，但不应导致功能完全不可用）
 
 ### HC-010: MVP 范围控制
 - 新功能必须按 MVP 优先级顺序实现
@@ -394,14 +393,15 @@ Java/Kotlin → 自定义的 daemon.js → Agent SDK → Claude API
 
 ### JCEF 混合架构 (M2 起)
 
-> **已确认决策**: 对话消息渲染区使用 JCEF，其余所有 UI 保持 Swing。
+> **已确认决策**: 对话消息渲染区**强制使用 JCEF**，其余所有 UI 保持 Swing。
+> 原因：对话区交互复杂度高（Markdown 渲染、代码高亮、Diff 可视化、流式打字机效果），Swing 无法优雅实现。
 
 **架构分层**:
 ```
 ┌─ ToolWindow (Swing 容器) ──────────────────────────┐
 │ 标题栏 + 会话 Tab (Swing)                           │
 ├────────────────────────────────────────────────────┤
-│ 消息渲染区 (JCEF Browser)          ← M2 引入       │
+│ 消息渲染区 (JCEF Browser)          ← M2 强制引入  │
 │ ├── Java → JS: executeJavaScript()                 │
 │ ├── JS → Java: JBCefJSQuery                        │
 │ ├── marked.js + highlight.js + diff2html           │
@@ -633,7 +633,7 @@ scope: optional, indicates the affected module
 ## 参考文档
 
 ### 项目文档
-- **技术架构**: `docs/CC_Assistant_Technical_Architecture.md` - 完整的技术架构设计 (v6.0)
+- **技术架构**: `docs/CC_Assistant_Technical_Architecture.md` - 完整的技术架构设计 (v5.1)
 - **UI 设计**: `docs/ui.md` - 界面布局详细设计
 - **开发规划**: `docs/plan/README.md` - 里程碑规划与任务拆解
 
@@ -650,4 +650,4 @@ scope: optional, indicates the affected module
 
 ---
 
-*最后更新: 2026-04-14*
+*最后更新: 2026-04-15*
