@@ -1957,26 +1957,25 @@ sealed class SessionState {
  */
 @Service(Service.Level.PROJECT)
 class SessionService(val project: Project) : PersistentStateComponent<SessionsState> {
-    
+
     private val sessions = mutableMapOf<String, ChatSession>()
     private var activeSessionId: String? = null
-    private val stateMachine = StateMachine<SessionState>(SessionState.Idle)
-    
+
     /**
      * 创建新会话
      */
-    fun createSession(): ChatSession {
+    fun createSession(workingDir: String? = null): ChatSession {
         val session = ChatSession(
             id = UUID.randomUUID().toString(),
             createdAt = Instant.now(),
-            messages = mutableListOf(),
-            rewindPoints = mutableListOf()
+            workingDir = workingDir ?: project.basePath,
+            messages = mutableListOf()
         )
         sessions[session.id] = session
         setActiveSession(session.id)
         return session
     }
-    
+
     /**
      * 添加消息
      */
@@ -1984,51 +1983,14 @@ class SessionService(val project: Project) : PersistentStateComponent<SessionsSt
         sessions[sessionId]?.let { session ->
             session.messages.add(message)
             session.updatedAt = Instant.now()
-            
+
             // 发布消息事件
             project.messageBus
                 .syncPublisher(SessionTopics.MESSAGE_ADDED)
                 .onMessageAdded(sessionId, message)
         }
     }
-    
-    /**
-     * 创建回溯点
-     */
-    fun createRewindPoint(sessionId: String, description: String = ""): RewindPoint? {
-        return sessions[sessionId]?.let { session ->
-            val point = RewindPoint(
-                id = UUID.randomUUID().toString(),
-                messageIndex = session.messages.size - 1,
-                description = description,
-                createdAt = Instant.now()
-            )
-            session.rewindPoints.add(point)
-            point
-        }
-    }
-    
-    /**
-     * 回滚到指定回溯点
-     */
-    fun rewindTo(sessionId: String, rewindPointId: String): Boolean {
-        sessions[sessionId]?.let { session ->
-            val point = session.rewindPoints.find { it.id == rewindPointId }
-            if (point != null && point.messageIndex < session.messages.size) {
-                session.messages = session.messages.subList(0, point.messageIndex + 1).toMutableList()
-                session.updatedAt = Instant.now()
-                
-                // 发布回滚事件
-                project.messageBus
-                    .syncPublisher(SessionTopics.SESSION_REWOUND)
-                    .onSessionRewound(sessionId, point)
-                
-                return true
-            }
-        }
-        return false
-    }
-    
+
     /**
      * 收藏会话
      */
@@ -2037,7 +1999,7 @@ class SessionService(val project: Project) : PersistentStateComponent<SessionsSt
             session.isFavorite = !session.isFavorite
         }
     }
-    
+
     /**
      * 导出会话
      */
@@ -2061,11 +2023,11 @@ data class ChatSession(
     var updatedAt: Instant = createdAt,
     var title: String? = null,
     var messages: MutableList<Message> = mutableListOf(),
-    var rewindPoints: MutableList<RewindPoint> = mutableListOf(),
     var isFavorite: Boolean = false,
-    var context: ConversationContext = ConversationContext(),
     var provider: String = "claude",
-    var model: String = "claude-sonnet-4-20250514"
+    var model: String = "claude-sonnet-4-20250514",
+    var cliSessionId: String? = null,  // CLI 返回的 session_id，用于 --resume
+    var workingDir: String? = null    // 执行 working directory，用于 --resume 时恢复上下文
 )
 
 /**
@@ -2081,13 +2043,6 @@ data class Message(
     val fileReferences: List<FileReference> = emptyList(),
     val thinkingContent: String? = null,
     val toolCalls: List<ToolCall> = emptyList()
-)
-
-data class RewindPoint(
-    val id: String,
-    val messageIndex: Int,
-    val description: String,
-    val createdAt: Instant
 )
 
 data class FileReference(
@@ -2108,124 +2063,15 @@ enum class ToolCallStatus { PENDING, RUNNING, SUCCESS, ERROR }
 enum class ExportFormat { MARKDOWN, JSON, PLAIN_TEXT }
 ```
 
-### 8.2 上下文管理模块
+### 8.2 V2 预留: 上下文管理
 
-```kotlin
-/**
- * 上下文服务
- */
-@Service(Service.Level.PROJECT)
-class ContextService(val project: Project) {
-    
-    private val contextCache = mutableMapOf<String, ContextSnapshot>()
-    private val compressor = ContextCompressor()
-    
-    /**
-     * 构建上下文
-     */
-    fun buildContext(sessionId: String, newMessage: Message): ConversationContext {
-        val session = SessionService.getInstance(project).getSession(sessionId)
-            ?: return ConversationContext()
-        
-        val context = ConversationContext(
-            messages = session.messages,
-            fileReferences = collectFileReferences(session.messages + newMessage),
-            projectContext = getProjectContext(),
-            skills = SkillService.getInstance(project).getEnabledSkills(),
-            agent = AgentService.getInstance(project).getActiveAgent()
-        )
-        
-        // 检查是否需要压缩
-        if (estimateTokenCount(context) > getCompressThreshold()) {
-            return compressor.compress(context)
-        }
-        
-        return context
-    }
-    
-    /**
-     * 收集文件引用
-     */
-    private fun collectFileReferences(messages: List<Message>): List<FileContext> {
-        val references = mutableListOf<FileContext>()
-        
-        messages.forEach { message ->
-            message.fileReferences.forEach { ref ->
-                val file = LocalFileSystem.getInstance().findFileByPath(ref.path)
-                if (file != null) {
-                    references.add(FileContext(
-                        path = ref.path,
-                        content = readFileContent(file, ref.startLine, ref.endLine),
-                        language = file.fileType.name
-                    ))
-                }
-            }
-        }
-        
-        return references.distinctBy { it.path }
-    }
-    
-    /**
-     * 获取项目上下文
-     */
-    private fun getProjectContext(): ProjectContext {
-        return ProjectContext(
-            name = project.name,
-            basePath = project.basePath,
-            structure = getProjectStructure(),
-            gitBranch = getCurrentGitBranch()
-        )
-    }
-    
-    /**
-     * 估算 Token 数量
-     */
-    private fun estimateTokenCount(context: ConversationContext): Int {
-        // 简化估算：每4个字符约1个token
-        val messagesTokens = context.messages.sumOf { 
-            (it.content.length + (it.thinkingContent?.length ?: 0)) / 4 
-        }
-        val filesTokens = context.fileReferences.sumOf { 
-            it.content.length / 4 
-        }
-        return messagesTokens + filesTokens
-    }
-}
+> **已删除**。CLI 通过 `--resume` 自动管理上下文，插件不需要维护压缩逻辑。
 
-/**
- * 上下文压缩器
- */
-class ContextCompressor {
-    
-    fun compress(context: ConversationContext): ConversationContext {
-        // 保留最近的消息
-        val recentMessages = context.messages.takeLast(10)
-        
-        // 压缩历史消息为摘要
-        val summary = generateSummary(context.messages.dropLast(10))
-        
-        return context.copy(
-            messages = listOf(
-                Message(
-                    id = UUID.randomUUID().toString(),
-                    role = Role.SYSTEM,
-                    content = "历史对话摘要：\n$summary",
-                    timestamp = Instant.now()
-                )
-            ) + recentMessages
-        )
-    }
-    
-    private fun generateSummary(messages: List<Message>): String {
-        // 使用 AI 生成摘要
-        return messages.map { 
-            "${it.role}: ${it.content.take(200)}..." 
-        }.joinToString("\n")
-    }
-}
-```
+**V2 预留功能**:
+- 支持手动上下文窗口调整
+- 支持按项目/文件过滤上下文
 
-### 8.3 Agent 管理模块
+### 8.3 V2 预留: Agent 管理
 
 ```kotlin
 /**
@@ -2353,13 +2199,13 @@ data class Agent(
     val description: String,
     val systemPrompt: String,
     val model: String = "claude-sonnet-4-20250514",
-    val permissionMode: PermissionMode = PermissionMode.DEFAULT,
+    val permissionMode: PermissionMode = PermissionMode.ACCEPT_ALL,
     val tools: List<String> = emptyList(),
     val subAgents: List<String> = emptyList(),
     val createdAt: Instant = Instant.now()
 )
 
-enum class PermissionMode { DEFAULT, SANDBOX, YOLO }
+enum class PermissionMode { ACCEPT_ALL, PLAN, DELEGATE }
 
 data class AgentProgress(
     val stage: String,
@@ -2506,7 +2352,7 @@ data class DailyUsage(
 )
 ```
 
-### 8.5 Commit 生成模块
+### 8.5 V2 预留: Commit 生成
 
 ```kotlin
 /**

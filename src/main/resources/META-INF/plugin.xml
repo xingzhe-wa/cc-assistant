@@ -9,7 +9,7 @@
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.xingzhewa.ccassistant.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
+        <toolWindow factoryClass="com.github.xingzhewa.ccassistant.toolWindow.MyToolWindowFactory" id="CC Assistant" anchor="right" icon="/icons/toolWindow.svg"/>
         <postStartupActivity implementation="com.github.xingzhewa.ccassistant.startup.MyProjectActivity" />
     </extensions>
 </idea-plugin>

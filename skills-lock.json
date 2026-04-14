@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "huashu-nuwa": {
+      "source": "alchaincyf/nuwa-skill",
+      "sourceType": "github",
+      "computedHash": "2eb3fa4e66ed9f3b8667fc2c85a00dd283c25e7eea2c8c2da80ae0eeffdd7f87"
+    },
+    "steve-jobs-perspective": {
+      "source": "alchaincyf/steve-jobs-skill",
+      "sourceType": "github",
+      "computedHash": "3d2645cec48b6fc36c9b7299488a25d0bba2546264861c494b6ea6e53d585794"
+    }
+  }
+}

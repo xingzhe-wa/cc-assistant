@@ -1,0 +1,15 @@
+{
+  "env": {
+    "ANTHROPIC_AUTH_TOKEN": "AIzaSyDQGaj-GjKRmK-jgkStJTlXJIm17Woljjc",
+    "ANTHROPIC_BASE_URL": "https://generativelanguage.googleapis.com/v1beta/openai",
+    "API_TIMEOUT_MS": "600000",
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "200000",
+    "ANTHROPIC_MODEL": "gemini-2.5-pro",
+    "ANTHROPIC_SMALL_FAST_MODEL": "gemini-2.5-pro",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": 1
+  },
+  "permissions": {
+    "allow": [],
+    "deny": []
+  }
+}

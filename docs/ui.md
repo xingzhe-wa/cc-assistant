@@ -1,4 +1,4 @@
-CC Assistant UI 布局
+CC Assistant UI 布局简述
 
 1.会话界面
 标题栏：

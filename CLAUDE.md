@@ -8,8 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 > 本文件是 CC Assistant 项目的最高层约束定义，所有 AI 编码任务都必须遵守。
 >
-> **项目进度追踪**: 见 `docs/plan/00-项目进度.md`
-> **当前检查点**: CP-0 (项目初始化)
+> **详细设计文档**: `docs/CC_Assistant_Technical_Architecture.md`
+> **开发规范**: `docs/dev/` 目录
 
 ---
 
@@ -19,8 +19,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **类型**: IntelliJ Platform 插件
 - **语言**: Kotlin 21
 - **构建工具**: Gradle (Kotlin DSL)
-- **最低 IDE 版本**: 2024.1+
-- **目标**: 集成 Claude Agent SDK 到 IntelliJ IDE，提供对话式 AI 编程助手
+- **最低 IDE 版本**: 2024.1+ (sinceBuild = 252)
+- **目标**: Claude Code CLI 的 JetBrains IDE UI 壳子，提供内嵌对话界面
+- **架构原则**: Claude Code CLI 直连模式，不自行封装 SDK
 
 ---
 
@@ -51,12 +52,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # 查看测试报告
 # 报告位置: build/reports/tests/test/index.html
+
+# 代码覆盖率
+./gradlew koverXmlReport
 ```
 
 ### 运行与调试
 ```bash
 # 在开发 IDE 中运行插件
 # 使用 IntelliJ IDEA 的 "Run Plugin" 配置
+
+# 运行 UI 测试
+./gradlew runIdeForUiTests
 
 # 验证插件
 ./gradlew verifyPlugin
@@ -67,33 +74,48 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### 代码检查
 ```bash
-# Kotlin 代码检查（如果配置了 ktlint）
-./gradlew lintKotlin
-
-# 格式化代码（如果配置了 spotless）
-./gradlew spotlessApply
+# Qodana 代码质量检查
+./gradlew qodana
 ```
 
 ---
 
 ## 当前项目状态
 
-### 已实现模块 (CP-0 阶段)
+### MVP 开发阶段
+
+项目当前处于 **M1: 极简对话 (已完成)** 阶段，下一步为 **M2: 多会话 + JCEF 切换**。详细里程碑见 `docs/CC_Assistant_Technical_Architecture.md` 第 11 节。
+
+**已确认架构决策**:
+- 多轮对话: `--resume <session_id>` (CLI 原生支持，已验证)
+- 权限模式: 默认 `--permission-mode accept-all`，Plan 模式保留审批弹窗
+
+**MVP 优先级** (按顺序实现):
+1. **多会话管理** - 新建/切换/删除会话，`--resume` 续接
+2. **JCEF 消息渲染** - Markdown/Diff/流式渲染
+3. **MCP 支持** - 工具调用显示，权限模式管理
+
+### 已实现模块
 
 | 模块 | 文件路径 | 状态 | 说明 |
 |-----|---------|-----|------|
-| ProviderService | `model/Provider.kt` | ✅ 完成 | Provider 管理，支持 Claude 默认配置 |
-| DaemonBridgeService | `bridge/DaemonBridgeService.kt` | ⏳ 占位 | Daemon 进程桥接（待实现） |
+| CliBridgeService | `bridge/CliBridgeService.kt` | ✅ 完成 | CLI 进程管理 (APP Service) |
+| NdjsonParser | `bridge/NdjsonParser.kt` | ✅ 完成 | NDJSON 解析器 (Gson) |
+| CliMessage | `bridge/CliMessage.kt` | ✅ 完成 | 消息类型定义 |
+| ProviderService | `model/Provider.kt` | ✅ 完成 | Provider 管理 + 资源模板加载 |
+| ChatPanel | `ui/ChatPanel.kt` | ✅ M1完成 | Swing 聊天面板 (M2 切换 JCEF) |
+| ToolWindow | `toolWindow/MyToolWindowFactory.kt` | ✅ 完成 | 接入 ChatPanel |
 | ConfigService | `config/AppConfigState.kt` | ✅ 完成 | 应用配置持久化 |
-| ToolWindow | `toolWindow/MyToolWindowFactory.kt` | ⏳ 样板 | 需替换为实际 UI |
+| Provider 模板 | `resources/providers/*.json` | ✅ 完成 | 6 个预置供应商 JSON |
 
 ### 待清理样板代码
-- `MyToolWindowFactory.kt` - 包含示例代码，需替换为实际的 CC Assistant UI
 - `MyProjectService.kt` - 样板服务，可删除或改造
 - `MyBundle.kt` - 国际化基础类，保留但需扩展
 
 ### 测试覆盖
-- `ProviderServiceTest.kt` - Provider 服务单元测试（9 个测试用例，100% 通过）
+- `NdjsonParserTest.kt` - NDJSON 解析测试（16 个测试用例）
+- `CliBridgeServiceTest.kt` - CLI 服务测试
+- `ProviderServiceTest.kt` - Provider 服务测试（6 个测试用例）
 
 ---
 
@@ -159,6 +181,50 @@ val length = user?.name?.length ?: 0
 val length = user!!.name!!.length!!
 ```
 
+### HC-008: CLI-First 原则
+- **禁止**自行封装 Agent SDK 或实现 SDK 级别的功能
+- Claude Code CLI 是唯一的 AI 能力来源
+- 如果 CLI 不支持的功能，插件也不支持
+- 需要新功能 → 先看 CLI 是否支持 → 不支持则提 Issue
+
+### HC-009: UI 技术栈约束
+- **默认 Swing**: 所有 UI 区域默认使用 Swing 原生组件
+- **JCEF 仅限对话区**: 消息渲染区（M2 起）使用 JCEF，用于 Markdown/Diff/流式渲染
+- **其余区域禁止 JCEF**: 设置界面、会话管理、输入框、工具栏、历史面板等必须使用 Swing
+- **JCEF 禁止全屏**: JCEF 仅嵌入消息渲染区，不作为整个 ToolWindow 的渲染引擎
+- **JCEF 生命周期**: 必须在 ToolWindow 关闭时调用 `browser.dispose()` 释放 Chromium 资源
+- **JCEF 降级方案**: 检测 `JBCefApp.isSupported()`，不支持时降级为 Swing 纯文本
+
+### HC-010: MVP 范围控制
+- 新功能必须按 MVP 优先级顺序实现
+- 未经评审不能添加 MVP 范围外的功能
+- 扩展功能 (V2) 必须在 MVP 稳定后再规划
+
+### HC-011: 会话续接约束 (`--resume`)
+- 多轮对话**必须**通过 CLI 的 `--resume <session_id>` 实现，禁止自行维护对话历史
+- CLI result 消息中的 `session_id` 是续接的唯一标识，插件必须持久化
+- `executePrompt()` 必须支持 `sessionId` 参数，传入时自动附加 `--resume`
+- 新会话不传 `--resume`，CLI 返回新的 `session_id`
+
+```kotlin
+// ✅ 正确
+fun executePrompt(
+    prompt: String,
+    workingDir: String? = null,
+    sessionId: String? = null,  // 传入 session_id → --resume
+    model: String? = null       // 传入 model → --model
+): Boolean
+
+// ❌ 禁止：自行拼接 prompt 拼接对话历史
+val fullPrompt = previousMessages + "\n" + newMessage
+```
+
+### HC-012: 权限模式约束
+- **默认模式 (agent/auto)**: 使用 `--permission-mode accept-all`，AI 自由执行，不打断用户
+- **Plan 模式**: 不传 `--permission-mode`，CLI 在需要确认时暂停，插件弹出 Swing 审批弹窗
+- 禁止在非 Plan 模式下添加审批弹窗（会打断用户心流）
+- Plan 模式审批弹窗必须使用 Swing 原生 Dialog，禁止使用 JCEF
+
 ---
 
 ## 软约束 (SOFT CONSTRAINTS)
@@ -208,304 +274,148 @@ try {
 
 ---
 
-## 详细设计规范 (来自 docs/dev)
+## Vibe Coding 工作流
 
-> 本章节内容来自详细设计文档，所有实现必须严格遵守对应的接口规范。
->
-> - **接口设计**: `docs/dev/04-接口设计.md`
-> - **任务拆解**: `docs/dev/05-任务拆解与验收标准.md`
-> - **技术架构**: `docs/CC_Assistant_Technical_Architecture.md`
+> 本项目采用 **Vibe Coding** (直觉式编程) 模式，以下是工作流指引。
 
-### 核心交互规范
+### 每次开发的启动流程
 
-#### 1. 对话功能 (docs/dev/04-接口设计.md#1-对话功能)
+```
+1. 确认当前里程碑优先级
+   → 查看 CLAUDE.md "MVP 开发阶段" 或 docs/CC_Assistant_Technical_Architecture.md 第 11 节
 
-**前端职责**:
-- `InputAreaPanel`: 接收用户输入，验证，@file/@/触发
-- `MessageAreaPanel`: 渲染用户/AI消息，支持流式追加
-- `StatusBarPanel`: 显示对话状态（空闲/思考/流式/错误）
+2. 明确本周目标
+   → 例如："这周要完成 M1 - 极简对话"
 
-**后端职责**:
-- `ChatService`: 协调对话流程，处理消息发送和接收
-- `SessionService`: 管理会话和消息存储
-- `ContextService`: 构建对话上下文（文件引用、项目信息）
-- `DaemonBridgeService`: 与 daemon.js 通信
-
-**接口定义**:
-```kotlin
-interface ChatService {
-    fun sendMessage(request: SendMessageRequest): CompletableFuture<SendMessageResponse>
-    fun registerStreamListener(listener: StreamListener)
-    fun cancelCurrentMessage()
-}
+3. 从任务清单选一个任务
+   → 优先选没有依赖的并行任务
 ```
 
-**验收标准**: 见 `docs/dev/05-任务拆解与验收标准.md#1-对话功能`
+### 开发节奏
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  单次开发循环 (2-4 小时)                                    │
+├─────────────────────────────────────────────────────────────┤
+│  1. 选一个具体任务                                          │
+│     "实现流式文本渲染到 JTextPane"                          │
+│                                                             │
+│  2. 先写一个能跑的最小 demo                                 │
+│     - 不追求完美，先让功能工作                               │
+│     - 用 println 调试                                       │
+│                                                             │
+│  3. 验证功能工作                                           │
+│     - 编译通过                                              │
+│     - 功能正常                                              │
+│                                                             │
+│  4. 清理代码                                               │
+│     - 移除调试代码                                          │
+│     - 添加必要注释                                          │
+│     - 重构明显的坏味道                                       │
+│                                                             │
+│  5. 提交                                                   │
+│     - commit message: "feat(chat): add streaming text render"│
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 避免的陷阱
+
+```
+❌ 不要一开始就设计完整架构
+   → 先让 CLI 调用链路通
+
+❌ 不要同时做多个功能
+   → 一次只做一个功能
+
+❌ 不要在 demo 阶段追求完美
+   → "能用就行"是 demo 的最高评价
+
+❌ 不要引入复杂的抽象
+   → unless 你真的需要三个地方用它
+
+❌ 不要过早优化
+   → profile 过了再优化
+
+✅ 每次只改一个文件
+   → 降低回归风险
+
+✅ 频繁运行测试
+   → 每次小改后都运行
+
+✅ 保持 CLI 独立可用
+   → 你的插件只是 CLI 的 UI 壳子
+```
+
+### 功能验证检查清单
+
+每完成一个功能后，自问：
+
+```
+□ 编译通过了吗？      ./gradlew compileKotlin
+□ 测试通过了吗？      ./gradlew test
+□ 功能能工作了吗？    手动测试
+□ 日志干净吗？        没有 ERROR/WARN
+□ 内存泄漏了吗？      长时间运行检查
+□ 有没有引入新依赖？  确认必要
+```
 
 ---
 
-#### 2. 流式输出 (docs/dev/04-接口设计.md#2-流式输出)
+## 核心架构模式
 
-**前端职责**:
-- `StreamingMessageCard`: 实时渲染AI响应，节流更新(~60fps)
-- `StreamingIndicator`: 显示流式状态动画
+### CLI 直连模式
 
-**后端职责**:
-- `NDJSONParser`: 解析 daemon.js 输出的 NDJSON 流
-- `StreamManager`: 管理流式缓冲和分发
+> **核心决策**: 本插件不自行封装 Agent SDK，而是直接调用 Claude Code CLI。
+> CLI 是 SDK 的封装，提供完整的 AI 能力，开箱即用。
 
-**接口定义**:
-```kotlin
-interface StreamManager {
-    fun startStream(messageId: String, consumer: (String) -> Unit)
-    fun appendText(messageId: String, text: String)
-    fun completeStream(messageId: String)
-    fun cancelStream(messageId: String)
-}
+**正确路径**:
+```
+Java/Kotlin 层 (CliBridgeService)
+    │  ProcessBuilder: claude -p "prompt" --output-format stream-json
+    │  多轮对话: claude -p "prompt" --resume <session_id> --output-format stream-json
+    │  权限控制: --permission-mode accept-all (默认) 或不传 (Plan 模式)
+    │  stdout: 读取 NDJSON 响应 (NdjsonParser 解析)
+    ▼
+Claude Code CLI (自带 SDK)
+    │  流式输出 stream-json 格式
+    │  result 消息包含 session_id → 持久化用于 --resume
+    ▼
+CliMessage (TextDelta/Thinking/ToolUse/Result/Error)
+    │  通过 CliMessageCallback 分发
+    ▼
+UI 层 (ChatPanel → JCEF Browser 或 Swing JTextPane)
 ```
 
-**验收标准**: 见 `docs/dev/05-任务拆解与验收标准.md#2-流式输出`
-
----
-
-#### 3. 供应商管理 (docs/dev/04-接口设计.md#3-供应商管理)
-
-**前端职责**:
-- `ProviderSelector`: 显示当前Provider，支持切换
-- `ModelSelector`: 显示当前模型，支持切换
-- `ProviderSettingsDialog`: 管理Provider配置
-
-**后端职责**:
-- `ProviderService`: 管理Provider配置的增删改查
-- API Key验证
-- Daemon通知（切换Provider）
-
-**接口定义**:
-```kotlin
-interface ProviderService {
-    fun getAllProviders(): List<ProviderConfig>
-    fun getActiveProvider(): ProviderConfig
-    fun switchProvider(providerId: String): Boolean
-    suspend fun validateProvider(config: ProviderConfig): ValidationResult
-}
+**错误路径**:
+```
+Java/Kotlin → 自定义的 daemon.js → Agent SDK → Claude API
+              ❌ 不要自己封装 SDK
 ```
 
-**验收标准**: 见 `docs/dev/05-任务拆解与验收标准.md#3-供应商管理`
+### JCEF 混合架构 (M2 起)
 
----
+> **已确认决策**: 对话消息渲染区使用 JCEF，其余所有 UI 保持 Swing。
 
-#### 4. 对话模式切换 (docs/dev/04-接口设计.md#4-对话模式切换)
-
-**前端职责**:
-- `ChatModeSelector`: 显示当前模式（Auto/Thinking/Plan）
-- 模式说明面板
-
-**后端职责**:
-- `ChatModeService`: 管理对话模式配置
-- 模式参数转换（temperature, thinking等）
-
-**接口定义**:
-```kotlin
-interface ChatModeService {
-    fun getCurrentMode(): ChatMode
-    fun setMode(mode: ChatMode): Boolean
-    fun getModeConfig(mode: ChatMode): ChatModeConfig
-}
+**架构分层**:
+```
+┌─ ToolWindow (Swing 容器) ──────────────────────────┐
+│ 标题栏 + 会话 Tab (Swing)                           │
+├────────────────────────────────────────────────────┤
+│ 消息渲染区 (JCEF Browser)          ← M2 引入       │
+│ ├── Java → JS: executeJavaScript()                 │
+│ ├── JS → Java: JBCefJSQuery                        │
+│ ├── marked.js + highlight.js + diff2html           │
+│ └── insertAdjacentHTML 流式追加                     │
+├────────────────────────────────────────────────────┤
+│ 输入框 + 工具栏 (Swing)                             │
+└────────────────────────────────────────────────────┘
 ```
 
-**验收标准**: 见 `docs/dev/05-任务拆解与验收标准.md#4-对话模式切换`
-
----
-
-#### 5. 模型思考 (docs/dev/04-接口设计.md#5-模型思考)
-
-**前端职责**:
-- `ThinkingBlockPanel`: 显示AI思考过程，支持折叠/展开
-- 思考内容实时追加
-
-**后端职责**:
-- 处理daemon.js的thinking事件
-- 思考内容存储到消息
-
-**接口定义**:
-```kotlin
-interface ThinkingListener {
-    fun onThinkingStart(messageId: String)
-    fun onThinkingContent(messageId: String, content: String)
-    fun onThinkingComplete(messageId: String, fullContent: String)
-}
-```
-
-**验收标准**: 见 `docs/dev/05-任务拆解与验收标准.md#5-模型思考`
-
----
-
-#### 6. 提示词增强 (docs/dev/04-接口设计.md#6-提示词增强)
-
-**前端职责**:
-- `PromptEnhancementPanel`: 显示增强前后对比
-- 接受/拒绝按钮
-
-**后端职责**:
-- `PromptEnhancementService`: 规则引擎，应用增强规则
-- 上下文构建（文件引用、选中文本等）
-
-**接口定义**:
-```kotlin
-interface PromptEnhancementService {
-    suspend fun enhancePrompt(
-        originalPrompt: String,
-        context: EnhancementContext
-    ): EnhancementResult
-}
-```
-
-**验收标准**: 见 `docs/dev/05-任务拆解与验收标准.md#6-提示词增强`
-
----
-
-#### 7. 主题切换 (docs/dev/04-接口设计.md#7-主题切换)
-
-**前端职责**:
-- `ThemeService.getThemeColor()`: 获取主题颜色
-- `ThemedComponent`: 主题感知组件基类
-
-**后端职责**:
-- `ThemeService`: 管理主题配置，IDE主题检测
-- 主题事件发布
-
-**接口定义**:
-```kotlin
-interface ThemeService {
-    fun getCurrentTheme(): Theme
-    fun setTheme(theme: Theme): Boolean
-    fun getThemeColor(colorKey: String): Color
-    fun applyTheme(component: Component)
-}
-```
-
-**验收标准**: 见 `docs/dev/05-任务拆解与验收标准.md#7-主题切换`
-
----
-
-#### 8. 国际化 (docs/dev/04-接口设计.md#8-国际化)
-
-**前端职责**:
-- `I18nComponent`: 国际化支持组件
-- 语言自动更新
-
-**后端职责**:
-- `I18nService`: 提供翻译API
-- 资源文件加载
-- IDE语言检测
-
-**接口定义**:
-```kotlin
-interface I18nService {
-    fun getMessage(key: String, vararg params: Any): String
-    fun getCurrentLanguage(): Language
-    fun setLanguage(language: Language): Boolean
-}
-```
-
-**验收标准**: 见 `docs/dev/05-任务拆解与验收标准.md#8-国际化`
-
----
-
-#### 9. 文件引用 (@file) (docs/dev/04-接口设计.md#9-文件引用)
-
-**前端职责**:
-- `FileReferencePopup`: 文件搜索弹窗
-- 引用标签显示和管理
-
-**后端职责**:
-- 文件索引和搜索
-- 文件内容读取
-- 行范围提取
-
-**接口定义**:
-```kotlin
-interface FileReferenceService {
-    fun searchFiles(query: String): List<VirtualFile>
-    fun readFileContent(file: VirtualFile, startLine: Int?, endLine: Int?): String
-}
-```
-
-**验收标准**: 见 `docs/dev/05-任务拆解与验收标准.md#9-文件引用`
-
----
-
-#### 10. 附件处理 (docs/dev/04-接口设计.md#10-附件处理)
-
-**前端职责**:
-- `AttachmentPreview`: 附件预览组件
-- 拖拽上传支持
-
-**后端职责**:
-- 图片Base64编码
-- 附件验证（大小、类型）
-- 内存管理
-
-**接口定义**:
-```kotlin
-interface AttachmentService {
-    fun encodeImage(image: BufferedImage): String
-    fun validateAttachment(file: VirtualFile): ValidationResult
-}
-```
-
-**验收标准**: 见 `docs/dev/05-任务拆解与验收标准.md#10-附件处理`
-
----
-
-#### 11. 会话管理 (docs/dev/04-接口设计.md#11-会话管理)
-
-**前端职责**:
-- `SessionListPanel`: 会话列表，搜索，收藏
-- 会话切换动画
-
-**后端职责**:
-- `SessionService`: 会话CRUD，回溯点管理
-- 会话持久化
-
-**接口定义**:
-```kotlin
-interface SessionService {
-    fun createSession(): ChatSession
-    fun getActiveSession(): ChatSession?
-    fun switchSession(sessionId: String): Boolean
-    fun createRewindPoint(sessionId: String, description: String): RewindPoint
-    fun rewindTo(sessionId: String, rewindPointId: String): Boolean
-}
-```
-
-**验收标准**: 见 `docs/dev/05-任务拆解与验收标准.md#11-会话管理`
-
----
-
-#### 12. Agent 执行 (docs/dev/04-接口设计.md#12-agent执行)
-
-**前端职责**:
-- `AgentStatusPanel`: 显示Agent执行状态
-- 任务列表，子Agent追踪
-
-**后端职责**:
-- `AgentService`: Agent配置和执行
-- 进度回调
-
-**接口定义**:
-```kotlin
-interface AgentService {
-    fun getActiveAgent(): Agent
-    fun executeAgent(agent: Agent, context: ConversationContext, onProgress: (AgentProgress) -> Unit): AgentResult
-}
-```
-
-**验收标准**: 见 `docs/dev/05-任务拆解与验收标准.md#12-agent执行`
-
----
-
-## 架构模式
+**JCEF 开发约束**:
+- JCEF 实例必须在 `dispose()` 中调用 `browser.dispose()` 释放资源
+- JS 回调不在 EDT 线程，UI 更新必须 `ApplicationManager.invokeLater()`
+- 检测 `JBCefApp.isSupported()`，不支持时降级 Swing JTextPane
+- 前端资源 (HTML/CSS/JS) 放在 `resources/web/` 目录
 
 ### 服务层模式
 
@@ -570,48 +480,53 @@ class DaemonBridgeService {
 
 ---
 
-## CI/CD
-
-### GitHub 工作流
-
-- **构建测试**: `.github/workflows/build.yml` - 每次推送自动构建测试
-- **发布**: `.github/workflows/release.yml` - 标签触发发布流程
-- **UI 测试**: `.github/workflows/run-ui-tests.yml` - UI 测试专用流程
-
-### 依赖更新
-
-使用 Dependabot 自动更新依赖：
-- 配置文件: `.github/dependabot.yml`
-
----
-
 ## 项目特定约定
 
 ### Provider 管理
 
-当前项目仅支持 Claude Provider：
-- 默认 Provider ID: `"claude"`
-- 默认模型: `"claude-sonnet-4-20250514"`
-- 支持的模型: Opus 4, Sonnet 4, Haiku 3.5
+> **架构决策**: 通过覆盖 `~/.claude/settings.json` 实现 Provider 切换。
+> Claude Code CLI 读取该文件，根据 `env` 配置路由到不同 Provider。
 
-添加自定义 Provider:
+**预置 Provider**:
+
+| Provider ID | Base URL | 典型模型 |
+|------------|----------|----------|
+| `claude` | `https://api.anthropic.com` | claude-opus-4, claude-sonnet-4 |
+| `deepseek` | `https://api.deepseek.com/anthropic` | deepseek-reasoner |
+| `gemini` | `https://generativelanguage.googleapis.com/v1beta/openai` | gemini-2.5-pro |
+| `glm` | `https://open.bigmodel.cn/api/anthropic` | GLM-4.7, glm-4.5-air |
+| `kimi` | `https://api.moonshot.cn/anthropic` | kimi-k2-turbo-preview |
+| `qwen` | `https://dashscope.aliyuncs.com/api/v2/apps/claude-code-proxy` | qwen3-coder-plus |
+
+**切换机制**:
 ```kotlin
-val customProvider = ProviderConfig(
-    id = "custom",
-    name = "Custom Provider",
-    apiKey = "...",
-    endpoint = "https://custom.api.com",
-    defaultModel = "custom-model",
-    type = ProviderType.CUSTOM
-)
-providerService.addProvider(customProvider)
+// 1. 读取预置配置
+val presetJson = loadPresetProviderSettings(providerId)
+
+// 2. 合并到 ~/.claude/settings.json
+val targetFile = File(System.getProperty("user.home"), ".claude/settings.json")
+targetFile.writeText(presetJson)
+
+// 3. 重启 CLI 进程使配置生效
+daemonBridge.restart()
+```
+
+**预置配置文件位置**:
+```
+src/main/resources/providers/
+├── settings-claude.json
+├── settings-deepseek.json
+├── settings-gemini.json
+├── settings-glm.json
+├── settings-kimi.json
+└── settings-qwen.json
 ```
 
 ### 安全约定
 
-- API Key 必须通过 `ConfigService` 存储到持久化配置
+- API Key 存储在 `~/.claude/settings.json` (由 Claude Code CLI 管理)
+- 插件仅负责读写该文件，不直接存储 API Key
 - 禁止在日志中输出完整的 API Key
-- API Key 验证应在 Provider 切换时进行
 
 ### 国际化约定
 
@@ -675,20 +590,18 @@ scope: optional, indicates the affected module
 
 ---
 
-## 执行计划
+## CI/CD
 
-> 详细执行计划见 `docs/plan/` 目录，采用 Harness Engineering 检查点机制。
+### GitHub 工作流
 
-### 检查点列表
+- **构建测试**: `.github/workflows/build.yml` - 每次推送自动构建测试
+- **发布**: `.github/workflows/release.yml` - 标签触发发布流程
+- **UI 测试**: `.github/workflows/run-ui-tests.yml` - UI 测试专用流程
 
-| 检查点 | 描述 | 对应文档 | 状态 |
-|-------|-----|---------|------|
-| CP-0 | 项目初始化 | - | ⏳ |
-| CP-1 | 基础框架 | `docs/dev/05#阶段1` | ⏳ |
-| CP-2 | 会话功能 | `docs/dev/05#阶段2` | ⏳ |
-| CP-3 | 设置功能 | `docs/dev/05#阶段3` | ⏳ |
-| CP-4 | 集成功能 | `docs/dev/05#阶段4` | ⏳ |
-| CP-5 | 优化测试 | `docs/dev/05#阶段5` | ⏳ |
+### 依赖更新
+
+使用 Dependabot 自动更新依赖：
+- 配置文件: `.github/dependabot.yml`
 
 ---
 
@@ -709,19 +622,32 @@ scope: optional, indicates the affected module
 - 后台任务使用: `ApplicationManager.getApplication().executeOnPooledThread { ... }`
 - 服务获取: `project.service<XxxService>()`
 
----
-
-## 下一步开发
-
-根据 `docs/plan/01-CP0-项目初始化.md`，当前待完成任务：
-
-1. [ ] 清理样板代码 (`MyToolWindowFactory`, `MyProjectService`)
-2. [ ] 验证编译无错误
-3. [ ] 验证所有测试通过
-4. [ ] 验证插件可正常加载
-
-完成后即可进入 CP-1 (基础框架) 阶段。
+### JCEF 开发问题
+- **JCEF 不支持**: 检测 `JBCefApp.isSupported()`，不支持时降级 Swing
+- **JS 回调线程**: JS → Java 回调不在 EDT，UI 更新需 `invokeLater()`
+- **内存泄漏**: ToolWindow 关闭时必须调用 `browser.dispose()` 释放资源
+- **白屏问题**: 检查 HTML/CSS 路径，使用 `JBCefApp.loadResource()` 加载资源
 
 ---
 
-*最后更新: 2026-04-14 | 检查点: CP-0*
+## 参考文档
+
+### 项目文档
+- **技术架构**: `docs/CC_Assistant_Technical_Architecture.md` - 完整的技术架构设计 (v6.0)
+- **UI 设计**: `docs/ui.md` - 界面布局详细设计
+- **开发规划**: `docs/plan/README.md` - 里程碑规划与任务拆解
+
+### 外部参考
+- [IntelliJ Platform Dev Documentation](https://plugins.jetbrains.com/docs/intellij/welcome.html)
+- [IntelliJ Platform Plugin Template](https://github.com/JetBrains/intellij-platform-plugin-template)
+- [Claude Code CLI](https://docs.anthropic.com/claude-code) - Claude Code CLI 官方文档
+- [JCEF in IntelliJ](https://plugins.jetbrains.com/docs/intellij/jcef.html) - JCEF 内嵌浏览器
+- [JBCefJSQuery API](https://github.com/JetBrains/intellij-community/tree/master/platform/jcef) - Java ↔ JS 双向通信
+
+### 参考项目（类似 AI 插件）
+- [AI IntelliJ Plugin](https://github.com/didalgolab/ai-intellij-plugin) - 多模型 AI 助手插件
+- [Devoxx Genie](https://github.com/devoxx/devoxxgenieideaplugin) - 本地 LLM 支持
+
+---
+
+*最后更新: 2026-04-14*

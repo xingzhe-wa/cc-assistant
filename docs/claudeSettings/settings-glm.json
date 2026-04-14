@@ -1,0 +1,13 @@
+{
+    "env": {
+        "ANTHROPIC_AUTH_TOKEN": "b15ca9a4ede14ca38f4aae408ca079c0.sK9nbc40LdBSPtMq",
+        "ANTHROPIC_BASE_URL": "https://open.bigmodel.cn/api/anthropic",
+        "API_TIMEOUT_MS": "600000",
+        "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "200000",
+        "CLAUDE_CODE_MAX_INPUT_TOKENS": "200000",
+        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": 1,
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-4.5-air",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL": "GLM-4.7",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL": "GLM-4.7"
+    }
+}
