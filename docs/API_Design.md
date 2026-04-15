@@ -1,6 +1,6 @@
 # CC Assistant 接口设计方案
 
-> **版本**: v5.1 (产品对齐版)  
+> **版本**: v5.2 (M2-C5/C6 新增版)  
 > **更新日期**: 2026-04-15  
 > **设计原则**: 以功能和交互动作为驱动，端到端接口设计，与实际代码对齐
 > **与架构对齐**: v5.1 与 CC_Assistant_Technical_Architecture.md v5.0 保持一致
@@ -1392,6 +1392,248 @@ function showDiffButton(button, originalContent, suggestedContent) {
 
 ---
 
+### M2-C5: 历史会话加载接口
+
+| 属性 | 值 |
+|------|-----|
+| **功能描述** | 从历史会话面板加载会话，复制到新 Tab |
+| **优先级** | P1 |
+| **依赖** | M2-004, M2-006 |
+| **关键语义** | COPY (复制) 而非 MOVE (移动)，原会话不受影响 |
+
+#### UI 交互
+```
+┌─────────────────────────────────────────────────────────────┐
+│  历史会话面板 → 加载到新 Tab                               │
+│  点击会话 → 创建新 Tab，复制完整消息                         │
+│                                                             │
+│  Tab1 (当前)          Tab2 (新 Tab)                        │
+│  ┌─────────────┐      ┌─────────────┐                    │
+│  │ 你好        │      │ 你好        │ ← 复制自 Tab1       │
+│  │ AI: 嗨！    │      │ AI: 嗨！    │ ← 复制自 Tab1       │
+│  │ 你好吗？    │      │ 你好吗？    │ ← 复制自 Tab1       │
+│  └─────────────┘      │ (新消息...) │ ← 新增             │
+│                       └─────────────┘                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 前端接口 (Kotlin)
+```kotlin
+// 位置: ui/chat/SessionTabBar.kt
+/**
+ * 加载会话到新 Tab (复制，非移动)
+ * @param sessionId 要加载的会话 ID
+ * @return 新创建的 Tab 对应的会话 ID
+ */
+fun loadSessionAsNewTab(sessionId: String): String? {
+    val sourceSession = SessionService.getInstance(project).getSession(sessionId)
+        ?: return null
+
+    // 1. 创建新会话 (UUID 新建，sessionId 置空)
+    val newSession = Session(
+        id = UUID.randomUUID().toString(),
+        sessionId = null,  // CLI 首次调用后返回新的 session_id
+        title = "[引用] ${sourceSession.title}",
+        createdAt = Instant.now(),
+        workingDir = sourceSession.workingDir,
+        messages = sourceSession.messages.toMutableList(),  // 深拷贝消息
+        isFavorite = false
+    )
+
+    // 2. 保存新会话
+    SessionService.getInstance(project).saveSession(newSession)
+
+    // 3. 创建新 Tab
+    addSessionTab(newSession)
+    switchToSession(newSession.id)
+
+    return newSession.id
+}
+```
+
+#### JS 回调接口
+```javascript
+// 位置: resources/web/chat.js
+// 历史会话面板点击事件
+function onHistorySessionClick(sessionId) {
+    // 通过 JBCefJSQuery 调用 Java
+    window.loadSessionCallback.invoke(sessionId);
+}
+```
+
+---
+
+### M2-C6: 消息引用 (Quote) 接口
+
+| 属性 | 值 |
+|------|-----|
+| **功能描述** | 引用其他会话的消息追加到当前输入框 |
+| **优先级** | P1 |
+| **依赖** | M2-004, M2-010 (JCEF) |
+| **触发方式** | 长按/右键 AI 消息 → "引用此消息" |
+| **核心区别** | Rewind 丢弃后续消息；Quote 保留当前对话 |
+
+#### UI 交互
+```
+┌─────────────────────────────────────────────────────────────┐
+│  引用显示格式                                              │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ ↩ 引用自 [代码优化讨论 - 10:30]:                     │   │
+│  │ "建议将这个方法抽取为独立函数，可以提高可读性..."     │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  输入框追加:                                               │
+│  > 引用自 [代码优化讨论 - 10:30]:                          │
+│  > 建议将这个方法抽取为独立函数，可以提高可读性...          │
+│                                                             │
+│  [发送]                                                    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 消息右键菜单
+```
+AI 消息气泡 (JCEF)
+├── 复制
+├── 引用此消息        ← 新增
+├── 重新生成
+└── [分隔线]
+    回溯到此处        ← M2-C2 Rewind
+```
+
+#### 前端接口 (Kotlin)
+```kotlin
+// 位置: ui/chat/ChatPanel.kt
+/**
+ * 追加引用文本到输入框
+ * @param quotedMessage 引用消息的内容
+ * @param sourceSessionTitle 来源会话标题
+ * @param timestamp 时间戳 (格式: HH:mm)
+ */
+fun appendQuoteToInput(
+    quotedMessage: String,
+    sourceSessionTitle: String,
+    timestamp: String
+) {
+    val formattedQuote = buildString {
+        appendLine("> 引用自 [$sourceSessionTitle - $timestamp]:")
+        quotedMessage.lines().forEach { line ->
+            append("> ")
+            appendLine(line)
+        }
+        appendLine()
+    }
+    appendToInput(formattedQuote)
+}
+```
+
+#### SessionService 扩展
+```kotlin
+// 位置: service/SessionService.kt
+/**
+ * 获取消息详情 (用于引用)
+ * @param sessionId 会话 ID
+ * @param messageId 消息 ID
+ * @return 消息内容及元信息
+ */
+fun getMessageDetail(sessionId: String, messageId: String): MessageDetail? {
+    val session = getSession(sessionId) ?: return null
+    val message = session.messages.find { it.id == messageId } ?: return null
+
+    return MessageDetail(
+        content = message.content,
+        sessionTitle = session.title,
+        timestamp = DateTimeFormatter.ofPattern("HH:mm").format(message.timestamp),
+        role = message.role
+    )
+}
+
+data class MessageDetail(
+    val content: String,
+    val sessionTitle: String,
+    val timestamp: String,
+    val role: Role
+)
+```
+
+#### JS 回调接口
+```javascript
+// 位置: resources/web/chat.js
+// AI 消息气泡右键菜单
+function showAIMessageContextMenu(event, messageId, sessionId) {
+    event.preventDefault();
+
+    const contextMenu = document.createElement('div');
+    contextMenu.className = 'context-menu';
+    contextMenu.innerHTML = `
+        <div class="menu-item" data-action="copy">复制</div>
+        <div class="menu-item" data-action="quote">引用此消息</div>
+        <div class="menu-item" data-action="regenerate">重新生成</div>
+        <div class="menu-separator"></div>
+        <div class="menu-item" data-action="rewind">回溯到此处</div>
+    `;
+
+    contextMenu.querySelectorAll('.menu-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const action = item.dataset.action;
+            if (action === 'quote') {
+                // 获取消息内容并调用 Java
+                const content = event.target.closest('.message-content').innerText;
+                window.quoteCallback.invoke({
+                    messageId: messageId,
+                    sessionId: sessionId,
+                    content: content
+                });
+            }
+            // ... 其他 action 处理
+            closeContextMenu();
+        });
+    });
+
+    document.body.appendChild(contextMenu);
+    positionContextMenu(contextMenu, event);
+}
+```
+
+#### 引用文本格式化规则
+```kotlin
+// 位置: service/QuoteService.kt
+/**
+ * 格式化引用文本
+ * - 移除 Markdown 格式符号，保留纯文本
+ * - 截断超长引用 (超过 500 字符截断并添加 "...")
+ * - 处理多行引用
+ */
+fun formatQuote(message: MessageDetail): String {
+    val plainText = stripMarkdown(message.content)
+    val truncated = if (plainText.length > 500) {
+        plainText.take(500) + "..."
+    } else {
+        plainText
+    }
+
+    return buildString {
+        appendLine("> 引用自 [${message.sessionTitle} - ${message.timestamp}]:")
+        truncated.lines().forEach { line ->
+            append("> ")
+            appendLine(line)
+        }
+        appendLine()
+    }
+}
+
+private fun stripMarkdown(text: String): String {
+    return text
+        .replace(Regex("```[\\s\\S]*?```"), "[代码块]")  // 代码块
+        .replace(Regex("`[^`]+`"), "[代码]")            // 行内代码
+        .replace(Regex("\\*\\*([^*]+)\\*\\*"), "$1")    // 粗体
+        .replace(Regex("\\*([^*]+)\\*"), "$1")          // 斜体
+        .replace(Regex("\\[([^\\]]+)\\]\\([^)]+\\)"), "$1")  // 链接
+        .trim()
+}
+```
+
+---
+
 ## M3: MCP 支持
 
 ### M3-001: MCP 工具调用显示接口
@@ -2288,6 +2530,7 @@ class PermissionDialog(
 | RewindService | 1 | M2-012 |
 | DiffReviewDialog | 1 | M2-014 |
 | SessionHistoryPanel | 1 | M2-006 |
+| QuoteService | 1 | M2-C6 |
 | MessageRenderer | 2 | M2-010, M2-011 |
 | ToolUseCard | 1 | M3-001 |
 | ProviderSettingsPanel | 1 | M4-001 |
@@ -2301,7 +2544,7 @@ class PermissionDialog(
 | FileReferencePopup | 1 | M5-001 |
 | SlashCommandPopup | 1 | M5-002 |
 | PermissionDialog | 1 | M5-003 |
-| **总计** | **30** | - |
+| **总计** | **32** | - |
 
 ### 按里程碑分类
 
@@ -2309,7 +2552,7 @@ class PermissionDialog(
 |--------|---------|----------|
 | M0 | 2 | M0-001, M0-002 |
 | M1 | 4 | M1-001, M1-002, M1-003, M1-004 |
-| M2 | 14 | M2-001~014 |
+| M2 | 16 | M2-001~014, M2-C5, M2-C6 |
 | M3 | 1 | M3-001 |
 | M4 | 7 | M4-001~007 |
 | M5 | 3 | M5-001~003 |
@@ -2341,9 +2584,11 @@ class PermissionDialog(
 15. M2-007: 收藏会话
 16. M2-008: 重命名会话
 17. M2-009: 导出会话
-18. M2-012: Rewind 回溯（新增）
-19. M2-013: 选中文本发送（新增）
-20. M2-014: Diff 审查（新增）
+18. M2-012: Rewind 回溯
+19. M2-013: 选中文本发送
+20. M2-014: Diff 审查
+21. M2-C5: 历史会话加载 (引用)
+22. M2-C6: 消息引用 (Quote)
 
 ### Week 4: M3 + M4
 21. M3-001: MCP 工具调用显示
@@ -2385,8 +2630,12 @@ class PermissionDialog(
 | 19 | v5.1: 权限模式描述与架构对齐 (default/sandbox/yolo) | P1 | 文档一致性 |
 | 20 | v5.1: 添加 M4-006 基础设置 (CLI 更新 + 国际化) | P0 | ui.md 4.0 对齐 |
 | 21 | v5.1: 添加 M4-007 外观设置 (主题/背景/气泡) | P0 | ui.md 4.0 对齐 |
+| 22 | v5.2: 添加 M2-C5 历史会话加载 (引用) | P1 | 多会话核心交互 |
+| 23 | v5.2: 添加 M2-C6 消息引用 (Quote) | P1 | 跨会话引用场景 |
 
 ---
+
+*文档版本: v5.2*
 
 *文档版本: v5.1*  
 *最后更新: 2026-04-15*  

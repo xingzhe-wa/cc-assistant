@@ -62,7 +62,7 @@ File → Settings → Tools → CC Assistant
 |--------|------|------------|--------|------|
 | **M0** | Day 1 | CLI 链路验证 | 5 文件 | ✅ 完成 |
 | **M1** | Week 1 | 极简对话 (Swing) | 6 文件 + 1 任务 | ✅ 完成 |
-| **M2** | Week 2-3 | 多会话 + JCEF 切换 | 13 任务 | 🔲 待开始 |
+| **M2** | Week 2-3 | 多会话 + JCEF 切换 | 15 任务 | 🔲 待开始 |
 | **M3** | Week 4 | MCP 支持 | 6 任务 | 🔲 待开始 |
 | **M4** | Week 5-6 | 设置 + 供应商 UI | 14 任务 | 🔲 待开始 |
 | **M5** | Week 7-8 | 打磨上线 | 10 任务 | 🔲 待开始 |
@@ -192,6 +192,8 @@ M2-B1 SessionService:
 | M2-C2 | RewindService | Kotlin | 0.5天 | M2-012 |
 | M2-C3 | 选中文本发送 | EditorAction + AnActionHandler | 1天 | M2-013 |
 | M2-C4 | Diff 审查弹窗 | Swing + DiffViewer | 1.5天 | M2-014 |
+| M2-C5 | 历史会话加载 | Swing JList + SessionService | 1天 | M2-006 |
+| M2-C6 | 消息引用 (Quote) | JCEF JS + SessionService | 1天 | M2-015 |
 
 **M2-C 任务详情**:
 ```
@@ -224,6 +226,41 @@ M2-C4 Diff 审查弹窗:
 ├── 右侧: 建议修改 (只读)
 ├── 底部按钮: [拒绝] [应用修改]
 └── onAccept → 调用 FileDocumentManager 写入文件
+
+M2-C5 历史会话加载:
+├── 触发: 在历史会话面板点击某个会话项
+├── 行为: 新建 Tab，加载该会话的完整历史消息
+│   └── 注意: 是复制 (copy)，不是移动 (move)，原会话保留在历史列表
+├── 实现步骤
+│   ├── 1. SessionService.getSession(sessionId) 读取会话 JSON
+│   ├── 2. SessionService.createSession() 创建新会话 Tab
+│   ├── 3. 遍历原会话 messages，逐条 append 到 JCEF
+│   └── 4. currentSessionId = 原 sessionId (用于 --resume)
+└── 区分: "切换会话" (M2-B4) vs "加载历史" (M2-C5)
+    ├── 切换: 已有 Tab，直接切换，当前编辑内容可能丢失
+    └── 加载: 新建 Tab，复制历史，可在新建 Tab 继续对话
+
+M2-C6 消息引用 (Quote):
+├── 场景: 用户在对话中想引用某历史会话的某条消息
+│   └── 类似 Email 引用回复，但这里是跨会话引用
+├── 数据模型
+│   ├── MessageQuote(sessionId: String, messageId: String)
+│   └── 引用时存储: sessionId (哪个会话) + messageId (哪条消息)
+├── 引用格式 (显示在消息区域内)
+│   └── ┌─────────────────────────────────────────┐
+│       │ ↩ 引用自「会话标题」10:30              │
+│       │ "这是被引用的消息内容..."               │
+│       └─────────────────────────────────────────┘
+├── 实现步骤
+│   ├── 1. 长按/右键 AI 消息 → 显示 "引用此消息"
+│   ├── 2. 点击后，消息标记为 MessageQuote
+│   ├── 3. 发送时，CLI prompt 包含引用上下文
+│   │   └── "引用自 [会话A - 10:30]: 消息内容..."
+│   └── 4. JCEF 渲染时，遇到 MessageQuote 显示引用块
+├── 与 Rewind 的区别
+│   ├── Rewind: 回溯后丢弃后续消息，从头生成
+│   └── Quote: 保留当前对话，附加引用上下文
+└── API: SessionService.quoteMessage(sessionId, messageId): Message
 ```
 
 **JCEF 技术方案**:
@@ -254,6 +291,8 @@ JCEF Browser (内嵌 Chromium)
 - [ ] Ctrl+Alt+K 发送选中文本
 - [ ] 回溯点可点击，创建新会话
 - [ ] Diff 审查弹窗可查看差异并应用/拒绝
+- [ ] 历史会话面板点击会话 → 新建 Tab 加载历史
+- [ ] AI 消息可引用 → 显示引用块，发送时附加上下文
 
 ---
 
@@ -746,5 +785,5 @@ src/test/kotlin/.../ccassistant/
 
 ---
 
-*文档更新时间: 2026-04-15*
+*文档更新时间: 2026-04-16*
 *与 API_Design.md v5.1 对齐*

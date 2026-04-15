@@ -91,9 +91,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 权限模式: 默认 `--permission-mode accept-all`，Plan 模式保留审批弹窗
 
 **MVP 优先级** (按顺序实现):
-1. **多会话管理** - 新建/切换/删除会话，`--resume` 续接
-2. **JCEF 消息渲染** - Markdown/Diff/流式渲染（强制）
-3. **MCP 支持** - 工具调用显示，权限模式管理
+1. **JCEF 消息渲染** - Markdown/Diff/流式渲染（强制，M2-A）
+2. **多会话管理** - 新建/切换/删除会话，`--resume` 续接（M2-B）
+3. **会话加载 (引用)** - 从历史会话复制完整消息到新 Tab（M2-C5）
+4. **消息引用 (Quote)** - 引用其他会话消息追加到当前输入框（M2-C6）
+5. **MCP 支持** - 工具调用显示，权限模式管理（M3）
 
 ### 已实现模块
 
@@ -223,6 +225,13 @@ val fullPrompt = previousMessages + "\n" + newMessage
 - **Plan 模式**: 不传 `--permission-mode`，CLI 在需要确认时暂停，插件弹出 Swing 审批弹窗
 - 禁止在非 Plan 模式下添加审批弹窗（会打断用户心流）
 - Plan 模式审批弹窗必须使用 Swing 原生 Dialog，禁止使用 JCEF
+
+### HC-013: 会话复制与引用约束
+- **会话加载 (M2-C5)**: 必须创建新会话并**复制**消息，不修改原会话
+- **会话加载**: 新会话的 `sessionId` 必须为 `null`（CLI 首次调用后返回新的）
+- **消息引用 (M2-C6)**: 引用文本必须格式化为 Markdown 引用格式 `> ...`
+- **消息引用**: 引用前必须执行 Markdown stripping，保留纯文本
+- **Rewind vs Quote**: Rewind 丢弃后续消息创建新分支；Quote 保留当前对话追加引用
 
 ---
 
