@@ -9,5 +9,8 @@
       "Bash(python:*)",
       "Bash(./gradlew compileKotlin)"
     ]
+  },
+  "enabledPlugins": {
+    "superpowers@superpowers-marketplace": true
   }
 }
