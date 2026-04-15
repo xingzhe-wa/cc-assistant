@@ -155,6 +155,9 @@ File → Settings → Tools → CC Assistant
 1. 会话持久化，能新建/切换/删除
 2. 消息渲染区从 Swing 切换到 JCEF
 
+> 前端优先开发详见 [frontend-first-plan.md](./frontend-first-plan.md)（v1.2）
+> 新增任务 FE-003a/b、FE-006b/c、FE-013a~g、FE-019a~c、FE-045~047 均在该文档
+
 #### M2 任务拆解
 
 **M2-A: JCEF 消息渲染区 (优先)**
