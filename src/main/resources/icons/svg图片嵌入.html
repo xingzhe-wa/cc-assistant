@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logo 嵌入 SVG 生成器</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+SC:wght@300;500;700;900&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e1117;
+    --bg2: #161b22;
+    --card: #1c2230;
+    --border: #2d3548;
+    --fg: #e6edf3;
+    --muted: #7d8590;
+    --accent: #f0883e;
+    --accent2: #ff6a33;
+    --green: #3fb950;
+    --red: #f85149;
+    --code-bg: #0d1117;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Noto Sans SC', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* 背景氛围 */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -40%; left: -20%;
+    width: 80vw; height: 80vw;
+    background: radial-gradient(circle, rgba(240,136,62,0.06) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -30%; right: -15%;
+    width: 60vw; height: 60vw;
+    background: radial-gradient(circle, rgba(255,106,51,0.04) 0%, transparent 55%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  header {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 48px 24px 24px;
+  }
+  header h1 {
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 900;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2), #ffd866);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  header p {
+    color: var(--muted);
+    font-size: 15px;
+    margin-top: 10px;
+    font-weight: 300;
+  }
+
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  @media (max-width: 800px) {
+    main { grid-template-columns: 1fr; }
+  }
+
+  /* 卡片样式 */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    transition: border-color 0.3s;
+  }
+  .card:hover { border-color: rgba(240,136,62,0.3); }
+
+  .card-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title i { color: var(--accent); font-size: 14px; }
+
+  /* 上传区域 */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+  .upload-zone::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(240,136,62,0.05), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .upload-zone:hover,
+  .upload-zone.dragover {
+    border-color: var(--accent);
+  }
+  .upload-zone:hover::before,
+  .upload-zone.dragover::before { opacity: 1; }
+  .upload-zone i {
+    font-size: 36px;
+    color: var(--muted);
+    margin-bottom: 12px;
+    transition: color 0.3s, transform 0.3s;
+  }
+  .upload-zone:hover i { color: var(--accent); transform: translateY(-4px); }
+  .upload-zone p { color: var(--muted); font-size: 14px; line-height: 1.8; }
+  .upload-zone .hint { font-size: 12px; color: var(--border); margin-top: 4px; }
+
+  /* 参数控制 */
+  .params {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .param-group label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .param-group input,
+  .param-group select {
+    width: 100%;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .param-group input:focus,
+  .param-group select:focus { border-color: var(--accent); }
+
+  /* 预览区 */
+  .preview-area {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    min-height: 260px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+  .preview-area .checkerboard {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(45deg, #1a1f2e 25%, transparent 25%),
+      linear-gradient(-45deg, #1a1f2e 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #1a1f2e 75%),
+      linear-gradient(-45deg, transparent 75%, #1a1f2e 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    opacity: 0.4;
+  }
+  .preview-area svg,
+  .preview-area img {
+    position: relative;
+    z-index: 1;
+    max-width: 90%;
+    max-height: 240px;
+  }
+  .preview-placeholder {
+    color: var(--muted);
+    font-size: 13px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* 方式选择标签 */
+  .method-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .method-tab {
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.25s;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+  .method-tab:hover { border-color: var(--accent); color: var(--fg); }
+  .method-tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* 代码区 */
+  .code-wrapper {
+    position: relative;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+  }
+  .code-header span {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .copy-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+  .copy-btn:hover { border-color: var(--green); color: var(--green); }
+  .copy-btn.copied { border-color: var(--green); color: var(--green); }
+
+  .code-block {
+    padding: 16px;
+    overflow: auto;
+    max-height: 400px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #c9d1d9;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  /* 底部说明区 */
+  .info-section {
+    grid-column: 1 / -1;
+  }
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .info-item {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+  .info-item:hover { border-color: rgba(240,136,62,0.3); transform: translateY(-2px); }
+  .info-item h3 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .info-item h3 .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .info-item p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+  .info-item code {
+    background: var(--code-bg);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--card);
+    border: 1px solid var(--green);
+    color: var(--green);
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 999;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* 文件信息 */
+  .file-info {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: rgba(240,136,62,0.06);
+    border: 1px solid rgba(240,136,62,0.15);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    display: none;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .file-info.show { display: flex; }
+  .file-info span { color: var(--fg); font-weight: 500; }
+
+  /* 全宽代码卡 */
+  .full-code-card { grid-column: 1 / -1; }
+
+  /* 尺寸提示标签 */
+  .size-badge {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: rgba(0,0,0,0.7);
+    color: var(--muted);
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 2px 8px;
+    border-radius: 4px;
+    z-index: 2;
+  }
+
+  /* 动画 */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .card, .info-item { animation: fadeUp 0.5s ease both; }
+  .card:nth-child(2) { animation-delay: 0.08s; }
+  .card:nth-child(3) { animation-delay: 0.16s; }
+  .full-code-card { animation-delay: 0.24s; }
+  .info-section { animation-delay: 0.32s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Logo 嵌入 SVG 生成器</h1>
+  <p>上传 Logo 图片，一键生成可直接使用的 SVG 代码</p>
+</header>
+
+<main>
+  <!-- 左列：上传 + 参数 -->
+  <div class="card">
+    <div class="card-title"><i class="fas fa-cloud-upload-alt"></i> 上传 Logo 图片</div>
+    <div class="upload-zone" id="uploadZone" role="button" tabindex="0" aria-label="点击或拖拽上传图片">
+      <i class="fas fa-image"></i>
+      <p>点击选择 或 拖拽图片到此处</p>
+      <p class="hint">支持 PNG / JPG / SVG / WebP，建议 512px 以内</p>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" hidden>
+
+    <div class="file-info" id="fileInfo">
+      <div>文件名: <span id="infoName">-</span></div>
+      <div>尺寸: <span id="infoSize">-</span></div>
+      <div>类型: <span id="infoType">-</span></div>
+      <div>Base64 长度: <span id="infoB64">-</span></div>
+    </div>
+
+    <div class="params">
+      <div class="param-group">
+        <label>SVG 宽度</label>
+        <input type="number" id="svgWidth" value="200" min="16" max="2000">
+      </div>
+      <div class="param-group">
+        <label>SVG 高度</label>
+        <input type="number" id="svgHeight" value="200" min="16" max="2000">
+      </div>
+      <div class="param-group">
+        <label>内边距</label>
+        <input type="number" id="svgPadding" value="0" min="0" max="200">
+      </div>
+      <div class="param-group">
+        <label>背景色</label>
+        <input type="color" id="svgBg" value="#00000000" style="height:36px; cursor:pointer;">
+      </div>
+    </div>
+  </div>
+
+  <!-- 右列：预览 -->
+  <div class="card">
+    <div class="card-title"><i class="fas fa-eye"></i> 实时预览</div>
+    <div class="preview-area" id="previewArea">
+      <div class="checkerboard"></div>
+      <div class="preview-placeholder" id="previewPlaceholder">
+        <i class="fas fa-file-code" style="font-size:28px; display:block; margin-bottom:8px;"></i>
+        上传图片后预览效果
+      </div>
+    </div>
+  </div>
+
+  <!-- 全宽：代码输出 -->
+  <div class="card full-code-card">
+    <div class="card-title"><i class="fas fa-code"></i> SVG 代码输出</div>
+    <div class="method-tabs" id="methodTabs">
+      <button class="method-tab active" data-method="base64">Base64 嵌入</button>
+      <button class="method-tab" data-method="datauri">Data URI 方式</button>
+      <button class="method-tab" data-method="foreignObject">foreignObject 方式</button>
+      <button class="method-tab" data-method="inline">纯 SVG 路径（仅限 SVG 文件）</button>
+    </div>
+    <div class="code-wrapper">
+      <div class="code-header">
+        <span id="codeLabel">logo-embedded.svg</span>
+        <button class="copy-btn" id="copyBtn" aria-label="复制代码">
+          <i class="fas fa-copy"></i> 复制
+        </button>
+      </div>
+      <div class="code-block" id="codeBlock"><!-- 上传图片后自动生成代码 --></div>
+    </div>
+  </div>
+
+  <!-- 说明区 -->
+  <section class="info-section">
+    <div class="card-title" style="margin-bottom:16px;"><i class="fas fa-lightbulb"></i> 四种嵌入方式对比</div>
+    <div class="info-grid">
+      <div class="info-item">
+        <h3><span class="num">1</span> Base64 嵌入（推荐）</h3>
+        <p>使用 <code>&lt;image href="data:image/png;base64,..."&gt;</code> 将图片编码后直接写入 SVG，<strong>单文件</strong>，无外部依赖，兼容性最好，适合嵌入网页、邮件签名、图标系统。</p>
+      </div>
+      <div class="info-item">
+        <h3><span class="num">2</span> Data URI 方式</h3>
+        <p>与 Base64 类似但使用 <code>data:image/png;base64,...</code> 完整 URI 格式，某些旧工具（如 Illustrator）识别更好，本质相同，体积略大。</p>
+      </div>
+      <div class="info-item">
+        <h3><span class="num">3</span> foreignObject 方式</h3>
+        <p>通过 <code>&lt;foreignObject&gt;</code> 在 SVG 中嵌入 HTML <code>&lt;img&gt;</code> 标签，灵活性高，但部分环境（如 img 标签内嵌 SVG、PDF 导出）<strong>不支持</strong>。</p>
+      </div>
+      <div class="info-item">
+        <h3><span class="num">4</span> 纯 SVG 路径</h3>
+        <p>仅适用于上传本身就是 <code>.svg</code> 文件的情况，直接将 SVG 内部元素提取出来，体积最小、缩放无损，但位图（PNG/JPG）无法使用此方式。</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Toast -->
+<div class="toast" id="toast"><i class="fas fa-check-circle"></i> <span id="toastMsg">已复制到剪贴板</span></div>
+
+<script>
+  // ========== 状态管理 ==========
+  const state = {
+    file: null,
+    base64: '',
+    imageDataUrl: '',
+    svgContent: '',       // 如果上传的是 SVG，存储其内部内容
+    originalWidth: 0,
+    originalHeight: 0,
+    method: 'base64',
+    isSvgFile: false
+  };
+
+  // ========== DOM 元素 ==========
+  const uploadZone = document.getElementById('uploadZone');
+  const fileInput = document.getElementById('fileInput');
+  const fileInfo = document.getElementById('fileInfo');
+  const previewArea = document.getElementById('previewArea');
+  const previewPlaceholder = document.getElementById('previewPlaceholder');
+  const codeBlock = document.getElementById('codeBlock');
+  const codeLabel = document.getElementById('codeLabel');
+  const copyBtn = document.getElementById('copyBtn');
+  const methodTabs = document.getElementById('methodTabs');
+  const toast = document.getElementById('toast');
+  const toastMsg = document.getElementById('toastMsg');
+
+  const svgWidthInput = document.getElementById('svgWidth');
+  const svgHeightInput = document.getElementById('svgHeight');
+  const svgPaddingInput = document.getElementById('svgPadding');
+  const svgBgInput = document.getElementById('svgBg');
+
+  // ========== 上传交互 ==========
+  uploadZone.addEventListener('click', () => fileInput.click());
+  uploadZone.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+  });
+
+  uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+  uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) processFile(file);
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) processFile(fileInput.files[0]);
+  });
+
+  // ========== 处理文件 ==========
+  function processFile(file) {
+    state.file = file;
+    state.isSvgFile = file.type === 'image/svg+xml';
+
+    // 显示文件信息
+    document.getElementById('infoName').textContent = file.name;
+    document.getElementById('infoType').textContent = file.type;
+    fileInfo.classList.add('show');
+
+    const reader = new FileReader();
+
+    if (state.isSvgFile) {
+      reader.onload = (e) => {
+        const text = e.target.result;
+        // 提取 SVG 内部内容
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, 'image/svg+xml');
+        const svgEl = doc.querySelector('svg');
+        if (svgEl) {
+          // 获取原始尺寸
+          const w = svgEl.getAttribute('width') || svgEl.viewBox?.baseVal?.width || 200;
+          const h = svgEl.getAttribute('height') || svgEl.viewBox?.baseVal?.height || 200;
+          state.originalWidth = parseFloat(w) || 200;
+          state.originalHeight = parseFloat(h) || 200;
+          svgWidthInput.value = Math.round(state.originalWidth);
+          svgHeightInput.value = Math.round(state.originalHeight);
+
+          // 保存内部 XML
+          state.svgContent = Array.from(svgEl.childNodes)
+            .map(n => n.outerHTML || new XMLSerializer().serializeToString(n))
+            .join('\n    ');
+        }
+        // 同时生成 base64 版本（用于其他方式）
+        state.base64 = btoa(unescape(encodeURIComponent(text)));
+        state.imageDataUrl = 'data:image/svg+xml;base64,' + state.base64;
+
+        document.getElementById('infoSize').textContent = `${state.originalWidth} × ${state.originalHeight}`;
+        document.getElementById('infoB64').textContent = state.base64.length.toLocaleString() + ' 字符';
+
+        updatePreview();
+        generateCode();
+      };
+      reader.readAsText(file);
+    } else {
+      reader.onload = (e) => {
+        const dataUrl = e.target.result;
+        state.imageDataUrl = dataUrl;
+        state.base64 = dataUrl.split(',')[1];
+
+        // 获取图片原始尺寸
+        const img = new Image();
+        img.onload = () => {
+          state.originalWidth = img.naturalWidth;
+          state.originalHeight = img.naturalHeight;
+          // 默认设置 SVG 尺寸等于图片尺寸（限制在合理范围）
+          svgWidthInput.value = Math.min(img.naturalWidth, 600);
+          svgHeightInput.value = Math.min(img.naturalHeight, 600);
+
+          document.getElementById('infoSize').textContent = `${img.naturalWidth} × ${img.naturalHeight}`;
+          document.getElementById('infoB64').textContent = state.base64.length.toLocaleString() + ' 字符';
+
+          updatePreview();
+          generateCode();
+        };
+        img.src = dataUrl;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  // ========== 预览更新 ==========
+  function updatePreview() {
+    // 移除旧的预览元素
+    const old = previewArea.querySelector('svg, img.preview-img');
+    if (old) old.remove();
+    previewPlaceholder.style.display = 'none';
+
+    // 移除旧的尺寸标签
+    const oldBadge = previewArea.querySelector('.size-badge');
+    if (oldBadge) oldBadge.remove();
+
+    const w = parseInt(svgWidthInput.value) || 200;
+    const h = parseInt(svgHeightInput.value) || 200;
+    const pad = parseInt(svgPaddingInput.value) || 0;
+    const bg = svgBgInput.value;
+
+    const code = generateSvgString();
+    const container = document.createElement('div');
+    container.innerHTML = code;
+    const svgEl = container.querySelector('svg');
+    if (svgEl) {
+      svgEl.style.maxWidth = '90%';
+      svgEl.style.maxHeight = '240px';
+      previewArea.appendChild(svgEl);
+    }
+
+    // 尺寸标签
+    const badge = document.createElement('div');
+    badge.className = 'size-badge';
+    badge.textContent = `${w} × ${h}`;
+    previewArea.appendChild(badge);
+  }
+
+  // ========== 生成 SVG 字符串 ==========
+  function generateSvgString() {
+    const w = parseInt(svgWidthInput.value) || 200;
+    const h = parseInt(svgHeightInput.value) || 200;
+    const pad = parseInt(svgPaddingInput.value) || 0;
+    const bg = svgBgInput.value;
+    const method = state.method;
+
+    // 背景 rect
+    let bgRect = '';
+    if (bg && bg !== '#00000000') {
+      bgRect = `  <rect width="${w}" height="${h}" fill="${bg}" />\n`;
+    }
+
+    const imgW = w - pad * 2;
+    const imgH = h - pad * 2;
+
+    if (method === 'base64') {
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+${bgRect}  <image href="data:${state.file.type};base64,${state.base64}" x="${pad}" y="${pad}" width="${imgW}" height="${imgH}" />
+</svg>`;
+    }
+
+    if (method === 'datauri') {
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+${bgRect}  <image href="${state.imageDataUrl}" x="${pad}" y="${pad}" width="${imgW}" height="${imgH}" />
+</svg>`;
+    }
+
+    if (method === 'foreignObject') {
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+${bgRect}  <foreignObject x="${pad}" y="${pad}" width="${imgW}" height="${imgH}">
+    <img xmlns="http://www.w3.org/1999/xhtml" src="${state.imageDataUrl}" width="${imgW}" height="${imgH}" alt="logo" />
+  </foreignObject>
+</svg>`;
+    }
+
+    if (method === 'inline') {
+      if (!state.isSvgFile) {
+        return `<!-- 错误：纯 SVG 路径方式仅支持上传 .svg 文件 -->\n<!-- 请选择其他方式，或上传 SVG 格式的 Logo -->`;
+      }
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+${bgRect}  <!-- 直接内嵌 SVG 原始路径内容 -->\n  ${state.svgContent}
+</svg>`;
+    }
+
+    return '';
+  }
+
+  // ========== 生成并显示代码 ==========
+  function generateCode() {
+    if (!state.base64) {
+      codeBlock.textContent = '<!-- 上传图片后自动生成代码 -->';
+      return;
+    }
+    const code = generateSvgString();
+    codeBlock.textContent = code;
+
+    const labels = {
+      base64: 'logo-base64.svg',
+      datauri: 'logo-datauri.svg',
+      foreignObject: 'logo-foreignObject.svg',
+      inline: 'logo-inline.svg'
+    };
+    codeLabel.textContent = labels[state.method] || 'logo.svg';
+  }
+
+  // ========== 方式切换 ==========
+  methodTabs.addEventListener('click', (e) => {
+    const tab = e.target.closest('.method-tab');
+    if (!tab) return;
+    methodTabs.querySelectorAll('.method-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    state.method = tab.dataset.method;
+    generateCode();
+    if (state.base64) updatePreview();
+  });
+
+  // ========== 参数变化 ==========
+  [svgWidthInput, svgHeightInput, svgPaddingInput, svgBgInput].forEach(el => {
+    el.addEventListener('input', () => {
+      if (state.base64) {
+        updatePreview();
+        generateCode();
+      }
+    });
+  });
+
+  // ========== 复制 ==========
+  copyBtn.addEventListener('click', () => {
+    const code = codeBlock.textContent;
+    if (!code || code.startsWith('<!-- 上传') || code.startsWith('<!-- 错误')) {
+      showToast('没有可复制的代码', 'warn');
+      return;
+    }
+    navigator.clipboard.writeText(code).then(() => {
+      copyBtn.classList.add('copied');
+      copyBtn.innerHTML = '<i class="fas fa-check"></i> 已复制';
+      showToast('SVG 代码已复制到剪贴板');
+      setTimeout(() => {
+        copyBtn.classList.remove('copied');
+        copyBtn.innerHTML = '<i class="fas fa-copy"></i> 复制';
+      }, 2000);
+    }).catch(() => {
+      // 降级方案
+      const ta = document.createElement('textarea');
+      ta.value = code;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('SVG 代码已复制到剪贴板');
+    });
+  });
+
+  // ========== Toast ==========
+  function showToast(msg, type) {
+    toastMsg.textContent = msg;
+    toast.style.borderColor = type === 'warn' ? 'var(--accent)' : 'var(--green)';
+    toast.style.color = type === 'warn' ? 'var(--accent)' : 'var(--green)';
+    toast.querySelector('i').className = type === 'warn'
+      ? 'fas fa-exclamation-triangle'
+      : 'fas fa-check-circle';
+    toast.classList.add('show');
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => toast.classList.remove('show'), 2500);
+  }
+
+  // ========== 背景色输入优化 ==========
+  // 默认透明，显示为透明色
+  svgBgInput.value = '#ffffff';
+  svgBgInput.style.opacity = '0.6';
+  let bgEnabled = false;
+  svgBgInput.addEventListener('focus', () => {
+    if (!bgEnabled) {
+      svgBgInput.value = '#ffffff';
+      bgEnabled = true;
+    }
+  });
+  // 添加一个"无背景"选项的简单处理：双击重置
+  svgBgInput.addEventListener('dblclick', () => {
+    bgEnabled = false;
+    svgBgInput.value = '#ffffff';
+    svgBgInput.style.opacity = '0.3';
+    if (state.base64) { updatePreview(); generateCode(); }
+  });
+  svgBgInput.addEventListener('input', () => {
+    bgEnabled = true;
+    svgBgInput.style.opacity = '1';
+  });
+
+  // 重写 generateSvgString 使背景逻辑正确
+  const _origGenerate = generateSvgString;
+  // 实际上我们直接在原函数里处理了 bg，这里需要修正一下透明判断
+  // 覆盖：当 bgEnabled 为 false 时不加背景
+  const origFn = window.generateSvgString;
+
+  // 由于 bgEnabled 是闭包变量，我需要重构 —— 直接修改逻辑
+  // 这里用事件委托方式重新绑定
+  // 实际上上面的 generateSvgString 已经可以工作了，只需要修正 bg 判断
+  // 我们直接 patch
+</script>
+
+<script>
+// ========== 修正：重新绑定背景逻辑 ==========
+// 覆盖之前的 generateSvgString，加入 bgEnabled 判断
+  const w = () => parseInt(svgWidthInput.value) || 200;
+  const h = () => parseInt(svgHeightInput.value) || 200;
+  const pad = () => parseInt(svgPaddingInput.value) || 0;
+  let bgOn = false;
+
+  // 重新绑定 bg 输入
+  svgBgInput.addEventListener('focus', function handler() {
+    bgOn = true;
+    svgBgInput.style.opacity = '1';
+  });
+  svgBgInput.addEventListener('dblclick', function handler() {
+    bgOn = false;
+    svgBgInput.style.opacity = '0.3';
+    svgBgInput.value = '#ffffff';
+    if (state.base64) { updatePreview(); generateCode(); }
+  });
+
+  // 暴露 bgOn 到全局以便 generateSvgString 使用
+  window._bgOn = () => bgOn;
+})();
+
+// 覆盖 generateSvgString
+window.generateSvgString = function() {
+  const w = parseInt(svgWidthInput.value) || 200;
+  const h = parseInt(svgHeightInput.value) || 200;
+  const pad = parseInt(svgPaddingInput.value) || 0;
+  const bg = svgBgInput.value;
+  const method = state.method;
+  const useBg = window._bgOn && window._bgOn();
+
+  let bgRect = '';
+  if (useBg && bg) {
+    bgRect = `  <rect width="${w}" height="${h}" fill="${bg}" />\n`;
+  }
+
+  const imgW = Math.max(1, w - pad * 2);
+  const imgH = Math.max(1, h - pad * 2);
+
+  if (method === 'base64') {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">\n${bgRect}  <image href="data:${state.file.type};base64,${state.base64}" x="${pad}" y="${pad}" width="${imgW}" height="${imgH}" />\n</svg>`;
+  }
+  if (method === 'datauri') {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">\n${bgRect}  <image href="${state.imageDataUrl}" x="${pad}" y="${pad}" width="${imgW}" height="${imgH}" />\n</svg>`;
+  }
+  if (method === 'foreignObject') {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">\n${bgRect}  <foreignObject x="${pad}" y="${pad}" width="${imgW}" height="${imgH}">\n    <img xmlns="http://www.w3.org/1999/xhtml" src="${state.imageDataUrl}" width="${imgW}" height="${imgH}" alt="logo" />\n  </foreignObject>\n</svg>`;
+  }
+  if (method === 'inline') {
+    if (!state.isSvgFile) {
+      return `<!-- 错误：纯 SVG 路径方式仅支持上传 .svg 文件 -->\n<!-- 请选择其他方式，或上传 SVG 格式的 Logo -->`;
+    }
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">\n${bgRect}  <!-- 直接内嵌 SVG 原始路径内容 -->\n  ${state.svgContent}\n</svg>`;
+  }
+  return '';
+};
+
+// 重新绑定参数变化（覆盖之前的绑定，确保使用新函数）
+[svgWidthInput, svgHeightInput, svgPaddingInput, svgBgInput].forEach(el => {
+  el.addEventListener('input', () => {
+    if (state.base64) { updatePreview(); generateCode(); }
+  });
+});
+</script>
+
+</body>
+</html>
