@@ -1,0 +1,1 @@
+- [docs-sync-synchronization](docs-sync-synchronization.md) — CC Assistant三文档同步Skill，保持API_Design、架构文档、plan对齐

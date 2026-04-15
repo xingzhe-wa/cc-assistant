@@ -1,10 +1,9 @@
 # CC Assistant 开发规划文档
 
-> **版本**: v1.1
+> **版本**: v5.2 (与 API_Design.md v5.2、CC_Assistant_Technical_Architecture.md v5.2 对齐)
 > **日期**: 2026-04-15
 > **当前里程碑**: M1 (极简对话) 已完成基础框架
 > **下一步**: M2 (多会话 + JCEF 切换)
-> **与 API_Design.md v5.1 对齐**
 
 ---
 
@@ -785,5 +784,6 @@ src/test/kotlin/.../ccassistant/
 
 ---
 
-*文档更新时间: 2026-04-16*
-*与 API_Design.md v5.1 对齐*
+*文档版本: v5.2*
+*最后更新: 2026-04-16*
+*同步关联: API_Design.md v5.2, CC_Assistant_Technical_Architecture.md v5.2*
