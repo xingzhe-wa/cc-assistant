@@ -189,12 +189,17 @@ val length = user!!.name!!.length!!
 - 如果 CLI 不支持的功能，插件也不支持
 - 需要新功能 → 先看 CLI 是否支持 → 不支持则提 Issue
 
-### HC-009: UI 技术栈约束
-- **对话消息区 (M2+)**: **必须使用 JCEF**（强制要求），原因：对话区涉及 Markdown 渲染、代码高亮、Diff 可视化、流式打字机效果，交互复杂度高，Swing 无法优雅实现
-- **其余所有区域**: 使用 Swing 原生组件（Header、工具栏、输入框、历史面板、设置界面等）
-- **JCEF 禁止全屏**: JCEF 仅嵌入消息渲染区，不作为整个 ToolWindow 的渲染引擎
+### HC-009: UI 技术栈约束 (前端框架集成)
+- **聊天界面 (M2+)**: **必须使用 JCEF + 现代前端框架**（强制要求）
+  - **技术栈**: React 18+ / Vue 3 / Svelte (可选其一)
+  - **构建工具**: Vite (开发时 HMR，生产优化打包)
+  - **样式方案**: Tailwind CSS + shadcn/ui (匹配 session.html 设计风格)
+  - **原因**: 聊天界面涉及复杂状态管理（多会话、消息流、工具状态、权限弹窗）、Markdown 渲染、代码高亮、Diff 可视化、流式打字机效果，现代前端框架可优雅实现
+- **其余所有区域**: 使用 Swing 原生组件（设置界面、系统弹窗等）
 - **JCEF 生命周期**: 必须在 ToolWindow 关闭时调用 `browser.dispose()` 释放 Chromium 资源
 - **JCEF 降级方案**: 仅在 `JBCefApp.isSupported()` 返回 false 时，才降级为 Swing 纯文本（降级时产品能力降级，但不应导致功能完全不可用）
+- **双向通信**: 使用 JBCefJSQuery 实现 Java ↔ JavaScript 双向通信，禁止使用 eval/untrusted JS
+- **前端构建**: 必须通过 Vite 构建后集成到插件，禁止直接加载源码（性能和安全考虑）
 
 ### HC-010: MVP 范围控制
 - 新功能必须按 MVP 优先级顺序实现
@@ -277,6 +282,235 @@ try {
     // ...
 } catch (e: Exception) {
     // 空的 catch 块
+}
+```
+
+---
+
+## 前端开发指南 (Frontend Development Guide)
+
+> **架构决策**: M2 起使用现代前端框架 + JCEF 架构，实现美观且功能完整的聊天界面。
+
+### 前端技术栈
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  前端技术栈 (2026-04-16 确认)                                │
+├─────────────────────────────────────────────────────────────┤
+│  框架层: React 18+ / Vue 3 / Svelte (选一)                  │
+│  ├── 推荐: React 18 + TypeScript (生态成熟)                │
+│  ├── 备选: Vue 3 + TypeScript (渐进式，学习曲线平缓)       │
+│  └── 备选: Svelte + TypeScript (编译时优化，包体积小)       │
+│                                                             │
+│  构建工具: Vite 5+                                           │
+│  ├── 开发服务器: 热模块替换 (HMR)                           │
+│  ├── 生产构建: Tree-shaking + 代码分割                      │
+│  └── 插件集成: Vite Plugin 处理 JCEF 资源加载               │
+│                                                             │
+│  样式方案: Tailwind CSS + shadcn/ui                         │
+│  ├── Tailwind: 原子化 CSS，快速构建 UI                      │
+│  ├── shadcn/ui: 高质量 React 组件库                         │
+│  └── 主题: 支持亮色/暗色主题切换                            │
+│                                                             │
+│  Markdown 渲染: marked.js + highlight.js + diff2html        │
+│  ├── marked.js: Markdown → HTML                            │
+│  ├── highlight.js: 代码语法高亮                             │
+│  └── diff2html: Diff 可视化展示                             │
+│                                                             │
+│  状态管理: Zustand / Redux Toolkit / Pinia                  │
+│  ├── 轻量级: Zustand (推荐，简单直接)                       │
+│  ├── 中型: Redux Toolkit (生态完善)                        │
+│  └── Vue: Pinia (Vue 官方推荐)                              │
+│                                                             │
+│  双向通信: JBCefJSQuery                                      │
+│  ├── Java → JS: browser.executeJavaScript()               │
+│  ├── JS → Java: JBCefJSQuery.inject()                      │
+│  └── 数据格式: JSON (序列化/反序列化)                       │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 项目结构
+
+```
+frontend/                          # 前端项目根目录 (新建)
+├── src/
+│   ├── main/
+│   │   ├── ts(x)/                 # TypeScript 源码
+│   │   │   ├── App.tsx            # 根组件
+│   │   │   ├── components/        # UI 组件
+│   │   │   │   ├── ChatPanel.tsx  # 聊天面板
+│   │   │   │   ├── MessageList.tsx
+│   │   │   │   ├── InputArea.tsx
+│   │   │   │   └── ...
+│   │   │   ├── hooks/             # React Hooks
+│   │   │   ├── stores/            # 状态管理
+│   │   │   ├── lib/               # 工具库
+│   │   │   │   ├── jcef.ts        # JCEF 桥接
+│   │   │   │   └── markdown.ts    # Markdown 渲染
+│   │   │   └── styles/            # 样式文件
+│   │   └── index.html             # HTML 入口
+│   └── api/
+│       └── jcef-types.ts          # JCEF 类型定义
+├── public/                         # 静态资源
+├── vite.config.ts                  # Vite 配置
+├── tailwind.config.js              # Tailwind 配置
+├── tsconfig.json                   # TypeScript 配置
+├── package.json                    # 依赖管理
+└── README.md
+
+src/main/resources/web/             # 构建输出目录 (Gradle 自动同步)
+├── index.html                      # 从 frontend/dist/ 复制
+├── assets/                         # 从 frontend/dist/assets/ 复制
+└── ...
+```
+
+### 开发工作流
+
+```bash
+# 1. 安装依赖 (首次)
+cd frontend
+npm install
+
+# 2. 启动开发服务器 (HMR)
+npm run dev
+# 访问 http://localhost:5173 查看效果
+
+# 3. 构建生产版本
+npm run build
+# 输出到 frontend/dist/
+
+# 4. 同步到插件资源目录 (Gradle 自动执行)
+./gradlew copyFrontendResources
+
+# 5. 运行插件测试
+./gradlew runIde
+```
+
+### JCEF 集成要点
+
+#### Java → JS 通信
+
+```kotlin
+// JcefMessageRenderer.kt
+class JcefMessageRenderer {
+    private val browser: JBCefBrowser = JBCefBrowser()
+    
+    // 发送消息到 JS
+    fun sendMessage(message: CliMessage) {
+        val json = Gson().toJson(message)
+        browser.cefClient.executeJavaScript(
+            "window.dispatchEvent(new CustomEvent('claude-message', {detail: $json}))",
+            browser.cefBrowser.url,
+            0
+        )
+    }
+}
+```
+
+#### JS → Java 通信
+
+```typescript
+// src/main/ts/lib/jcef.ts
+export class JcefBridge {
+    private copyQuery: any;
+    
+    constructor() {
+        // 创建 JBCefJSQuery 绑定
+        if (typeof window !== 'undefined' && (window as any).CefSharp) {
+            this.copyQuery = (window as any).CefSharp.BindObjectAsync('copyHandler');
+        }
+    }
+    
+    // 复制文本到剪贴板
+    async copyToClipboard(text: string): Promise<void> {
+        if (this.copyQuery) {
+            await this.copyQuery.copyToClipboard(text);
+        }
+    }
+    
+    // 发送用户消息
+    sendMessage(content: string): void {
+        if (typeof window !== 'undefined') {
+            (window as any).sendMessageHandler?.postMessage(content);
+        }
+    }
+}
+```
+
+#### Kotlin 侧绑定
+
+```kotlin
+// JcefMessageRenderer.kt
+class JcefMessageRenderer {
+    private val copyQuery: JBCefJSQuery
+    
+    init {
+        // 创建 JS → Java 绑定
+        copyQuery = JBCefJSQuery.create(browser as JBCefBrowser)
+        copyQuery.addHandler { json ->
+            val data = Gson().fromJson(json, CopyData::class.java)
+            CopyPasteManager.getInstance().setContents(StringSelection(data.text))
+            null
+        }
+        
+        // 注入 JS 对象
+        browser.jbCefClient.addJSQuery(
+            copyQuery,
+            "copyHandler.copyToClipboard"
+        )
+    }
+}
+```
+
+### 前端开发约束
+
+1. **性能约束**
+   - 首屏渲染 < 1.5s
+   - 消息追加 < 100ms (流式输出)
+   - 内存占用 < 150MB (JCEF 进程)
+
+2. **兼容性约束**
+   - Chromium 内核版本: ≥ 90 (IDEA 2022.3+ 内置)
+   - 不使用最新 JS 特性 (避免降级失败)
+   - Polyfill: core-js (按需加载)
+
+3. **安全约束**
+   - 禁止 eval() 和 Function() 构造器
+   - 禁止 innerHTML (使用 insertAdjacentHTML)
+   - 用户输入必须转义 (防止 XSS)
+   - CSP (Content Security Policy) 限制
+
+4. **可访问性约束**
+   - 键盘导航支持 (Tab/Enter/Esc)
+   - ARIA 标签完整
+   - 对比度 ≥ 4.5:1
+
+### 调试方法
+
+#### Chrome DevTools
+
+```kotlin
+// 启用远程调试 (开发环境)
+val args = listOf(
+    "--remote-debugging-port=9222"
+)
+
+// 在 Chrome 中访问
+// chrome://inspect → Configure localhost:9222
+```
+
+#### 日志输出
+
+```typescript
+// 前端日志桥接到 Java
+export function logToJava(level: string, message: string) {
+    if (typeof window !== 'undefined') {
+        (window as any).logHandler?.postMessage(JSON.stringify({
+            level,
+            message,
+            timestamp: Date.now()
+        }));
+    }
 }
 ```
 
@@ -400,23 +634,25 @@ Java/Kotlin → 自定义的 daemon.js → Agent SDK → Claude API
               ❌ 不要自己封装 SDK
 ```
 
-### JCEF 混合架构 (M2 起)
+### JCEF + 前端框架混合架构 (M2 起)
 
-> **已确认决策**: 对话消息渲染区**强制使用 JCEF**，其余所有 UI 保持 Swing。
-> 原因：对话区交互复杂度高（Markdown 渲染、代码高亮、Diff 可视化、流式打字机效果），Swing 无法优雅实现。
+> **已确认决策 (2026-04-16)**: 聊天界面**强制使用 JCEF + 现代前端框架**（React/Vue/Svelte），其余所有 UI 保持 Swing。
+> 原因：聊天界面交互复杂度高（多会话管理、消息流、工具状态、权限弹窗、Markdown 渲染、代码高亮、Diff 可视化、流式打字机效果），现代前端框架可优雅实现。
 
 **架构分层**:
 ```
 ┌─ ToolWindow (Swing 容器) ──────────────────────────┐
 │ 标题栏 + 会话 Tab (Swing)                           │
 ├────────────────────────────────────────────────────┤
-│ 消息渲染区 (JCEF Browser)          ← M2 强制引入  │
+│ 聊天界面 (JCEF Browser + React/Vue/Svelte) ← M2    │
 │ ├── Java → JS: executeJavaScript()                 │
 │ ├── JS → Java: JBCefJSQuery                        │
+│ ├── React/Vue/Svelte 组件树                         │
+│ ├── Tailwind CSS + shadcn/ui                       │
 │ ├── marked.js + highlight.js + diff2html           │
-│ └── insertAdjacentHTML 流式追加                     │
+│ └── Zustand/Redux/Pinia 状态管理                   │
 ├────────────────────────────────────────────────────┤
-│ 输入框 + 工具栏 (Swing)                             │
+│ 输入框 + 工具栏 (Swing 或 JCEF)                     │
 └────────────────────────────────────────────────────┘
 ```
 
@@ -424,7 +660,14 @@ Java/Kotlin → 自定义的 daemon.js → Agent SDK → Claude API
 - JCEF 实例必须在 `dispose()` 中调用 `browser.dispose()` 释放资源
 - JS 回调不在 EDT 线程，UI 更新必须 `ApplicationManager.invokeLater()`
 - 检测 `JBCefApp.isSupported()`，不支持时降级 Swing JTextPane
-- 前端资源 (HTML/CSS/JS) 放在 `resources/web/` 目录
+- 前端资源通过 Vite 构建后放入 `resources/web/` 目录
+- 禁止直接加载前端源码（性能和安全考虑）
+- 双向通信必须使用 JBCefJSQuery，禁止 eval/untrusted JS
+
+**前端框架选择** (三选一):
+- **推荐**: React 18 + TypeScript (生态成熟，社区活跃)
+- **备选**: Vue 3 + TypeScript (渐进式，学习曲线平缓)
+- **备选**: Svelte + TypeScript (编译时优化，包体积小)
 
 ### 服务层模式
 

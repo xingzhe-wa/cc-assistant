@@ -149,28 +149,73 @@ File → Settings → Tools → CC Assistant
 
 ---
 
-### M2: 多会话 + JCEF 切换 🔲
+### M2: 多会话 + JCEF + 前端框架切换 🔲
 
 **目标**:
 1. 会话持久化，能新建/切换/删除
-2. 消息渲染区从 Swing 切换到 JCEF
+2. 消息渲染区从 Swing 切换到 JCEF + React/Vue/Svelte
+3. 前端独立构建流程 (Vite)
 
-> 前端优先开发详见 [frontend-first-plan.md](./frontend-first-plan.md)（v1.2）
-> 新增任务 FE-003a/b、FE-006b/c、FE-013a~g、FE-019a~c、FE-045~047 均在该文档
+> 前端优先开发详见 [frontend-first-plan.md](./frontend-first-plan.md)（v2.0，2026-04-16 更新）
+> 所有前端任务已更新为 React/Vue/Svelte + Vite 工作流
 
 #### M2 任务拆解
 
-**M2-A: JCEF 消息渲染区 (优先)**
+**M2-A: 前端框架 + JCEF 集成 (优先)**
 
 | ID | 任务 | 技术 | 预估 |
 |----|------|------|------|
-| M2-A1 | 创建 JCEF Browser 管理器 | JCEF + JBPanel | 1天 |
-| M2-A2 | 实现前端消息渲染页面 (HTML/CSS/JS) | marked.js + highlight.js | 2天 |
-| M2-A3 | 实现 Java → JS 通信 (JBCefJSQuery) | JBCefJSQuery | 1天 |
-| M2-A4 | 实现 JS → Java 通信 (复制/操作回调) | JBCefJSQuery | 0.5天 |
-| M2-A5 | 流式输出适配 (增量 DOM 追加) | JS insertAdjacentHTML | 0.5天 |
-| M2-A6 | 代码块 Diff 渲染 | diff2html | 1天 |
-| M2-A7 | ChatPanel 集成 JCEF (替换 JTextPane) | Swing + JCEF | 1天 |
+| M2-A1 | 前端项目初始化 (React/Vue/Svelte 三选一) | Vite + TypeScript | 0.5天 |
+| M2-A2 | Tailwind CSS + shadcn/ui 环境配置 | Tailwind + PostCSS | 0.5天 |
+| M2-A3 | JCEF Browser 管理器创建 | JCEF + JBPanel | 0.5天 |
+| M2-A4 | 前端消息渲染组件实现 | React/Vue/Svelte | 1天 |
+| M2-A5 | Java → JS 双向通信 (JBCefJSQuery) | JBCefJSQuery | 1天 |
+| M2-A6 | Markdown 渲染 (marked.js + highlight.js) | marked + highlight.js | 0.5天 |
+| M2-A7 | Diff 可视化 (diff2html) | diff2html | 0.5天 |
+| M2-A8 | 状态管理 (Zustand/Redux/Pinia) | 状态管理库 | 0.5天 |
+| M2-A9 | 流式输出适配 (增量渲染) | React/Vue/Svelte | 0.5天 |
+| M2-A10 | ChatPanel 集成 JCEF (替换 JTextPane) | Swing + JCEF | 1天 |
+| M2-A11 | Vite 构建配置 + Gradle 集成 | Vite + Gradle | 1天 |
+
+**M2-A1 任务详情**:
+```
+前端项目初始化:
+├── 选择框架: React 18+ / Vue 3 / Svelte
+├── 创建项目: npm create vite@latest frontend -- --template react-ts
+├── 安装依赖:
+│   ├── 核心框架: react/vue/svelte
+│   ├── TypeScript: @types/react (React)
+│   ├── 路由: react-router / vue-router
+│   ├── 状态管理: zustand / redux-toolkit / pinia
+│   ├── 样式: tailwindcss + postcss + autoprefixer
+│   ├── UI 组件: @radix-ui/* (React) / element-plus (Vue)
+│   ├── Markdown: marked + highlight.js + diff2html
+│   └── 工具: axios (可选)
+└── 配置文件:
+    ├── vite.config.ts
+    ├── tailwind.config.js
+    ├── tsconfig.json
+    └── package.json
+```
+
+**M2-A11 任务详情**:
+```
+Vite 构建配置 + Gradle 集成:
+├── Vite 配置:
+│   ├── 开发服务器: localhost:5173
+│   ├── 生产构建: frontend/dist/
+│   ├── 代码分割: React/Vue/Markdown 分离打包
+│   └── HMR 配置: 热模块替换
+├── Gradle 任务:
+│   ├── copyFrontendResources: 复制 dist → resources/web/
+│   ├── buildPlugin 依赖: 前端构建先执行
+│   └── runIde 依赖: 前端构建先执行
+└── 开发工作流:
+    ├── 前端开发: cd frontend && npm run dev
+    ├── 前端构建: npm run build
+    ├── 插件构建: ./gradlew buildPlugin
+    └── 插件运行: ./gradlew runIde
+```
 
 **M2-B: 多会话管理**
 

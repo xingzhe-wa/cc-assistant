@@ -11,10 +11,35 @@
       "Bash(./gradlew test:*)",
       "Bash(./gradlew dependencies:*)",
       "Bash(./gradlew buildPlugin)",
-      "Bash(./gradlew runIde)"
+      "Bash(./gradlew runIde)",
+      "Read(//d/WorkFile/**)",
+      "Read(//d//**)",
+      "Bash(dir \"C:\\\\Program Files\\\\JetBrains\")",
+      "Bash(reg query:*)",
+      "Bash(xargs -I{} sh -c 'jar tf \"{}\" 2>/dev/null | grep -l \"JBCefApp\" && echo \"{}\"')",
+      "Bash(\"D:\\\\SoftList\\\\Java\\\\IntelliJ IDEA 2025.2.6.1/jbr/bin/java\" --list-modules)",
+      "Bash(\"D:\\\\SoftList\\\\Java\\\\IntelliJ IDEA 2025.2.6.1/jbr/bin/java\" -d jcef)",
+      "Bash(\"D:\\\\SoftList\\\\Java\\\\IntelliJ IDEA 2025.2.6.1/jbr/bin/java\" --add-modules jcef -e 'import org.cef.browser.CefBrowser; import com.jetbrains.cef.CefApp; System.out.println\\(\"CefApp: \" + CefApp.class\\); System.out.println\\(\"CefBrowser: \" + CefBrowser.class\\);')",
+      "Bash(jar tf:*)",
+      "Bash(\"D:\\\\SoftList\\\\Java\\\\IntelliJ IDEA 2025.2.6.1/jbr/bin/java\" --add-modules jcef --add-exports jcef/com.jetbrains.cef=ALL-UNNAMED --add-exports jcef/org.cef.browser=ALL-UNNAMED --add-exports jcef/org.cef=ALL-UNNAMED -cp \".\" -e 'System.out.println\\(\"OK\"\\);')",
+      "Bash(cd /tmp)",
+      "Bash(\"D:\\\\SoftList\\\\Java\\\\IntelliJ IDEA 2025.2.6.1/jbr/bin/java\" --add-modules jcef --add-exports jcef/com.jetbrains.cef=ALL-UNNAMED --add-exports jcef/org.cef=ALL-UNNAMED --add-exports jcef/org.cef.browser=ALL-UNNAMED -cp \".;D:\\\\SoftList\\\\Java\\\\IntelliJ IDEA 2025.2.6.1/lib/app.jar;D:\\\\SoftList\\\\Java\\\\IntelliJ IDEA 2025.2.6.1/lib/app-client.jar;D:\\\\SoftList\\\\Java\\\\IntelliJ IDEA 2025.2.6.1/lib/util.jar;D:\\\\SoftList\\\\Java\\\\IntelliJ IDEA 2025.2.6.1/lib/annotations.jar;D:\\\\SoftList\\\\Java\\\\IntelliJ IDEA 2025.2.6.1/lib/modules/intellij.platform.monolith.jar\" TestJcef)",
+      "Bash(\"D:\\\\SoftList\\\\Java\\\\IntelliJ IDEA 2025.2.6.1/jbr/bin/java\" --module-path \"D:\\\\SoftList\\\\Java\\\\IntelliJ IDEA 2025.2.6.1/jbr/lib\" --add-modules jcef -cp \".;D:\\\\SoftList\\\\Java\\\\IntelliJ IDEA 2025.2.6.1/lib/app.jar\" TestJcef)",
+      "Bash(unzip -l \"D:\\\\SoftList\\\\Java\\\\IntelliJ IDEA 2025.2.6.1/lib/modules/intellij.platform.jewel.ui.jar\")",
+      "Bash(unzip -l \"D:\\\\SoftList\\\\Java\\\\IntelliJ IDEA 2025.2.6.1/lib/modules/intellij.platform.compose.jar\")",
+      "Bash(unzip -l \"D:\\\\SoftList\\\\Java\\\\IntelliJ IDEA 2025.2.6.1/lib/modules/intellij.platform.jewel.markdown.core.jar\")",
+      "Bash(unzip -l \"D:/SoftList/Java/IntelliJ IDEA 2025.2.6.1/lib/modules/intellij.platform.jewel.ideLafBridge.jar\")",
+      "Bash(find . -name \"*.md\" -type f -exec grep -l \"JCEF.*loadResource\\\\|JBCefApp.*load\" {} \\\\;)",
+      "Bash(curl -sL \"https://cdn.jsdelivr.net/npm/marked/marked.min.js\" -o src/main/resources/web/vendor/marked/marked.min.js)",
+      "Bash(curl -sL \"https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/core.min.js\" -o src/main/resources/web/vendor/highlight/highlight.min.js)",
+      "Bash(curl -sL \"https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark-dimmed.min.css\" -o src/main/resources/web/vendor/highlight/github-dark-dimmed.min.css)",
+      "Bash(curl -sL \"https://fonts.googleapis.com/css2?family=Material+Icons+Round\" -o /tmp/mi.css)",
+      "Read(//tmp/**)",
+      "Bash(curl -sL \"https://fonts.googleapis.com/css2?family=Material+Icons+Round\")",
+      "Bash(curl -sL \"https://fonts.gstatic.com/s/materialiconsround/v109/LDItaoyNOAY6Uewc665JcIzCKsKc_M9flwmM.otf\" -o src/main/resources/web/vendor/material-icons/MaterialIconsRound-Regular.otf)"
     ]
   },
   "enabledPlugins": {
-    "superpowers@superpowers-marketplace": true
+    "superpowers@superpowers-marketplace": false
   }
 }

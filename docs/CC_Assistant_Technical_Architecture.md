@@ -1147,51 +1147,64 @@ CC Assistant 采用 **Tool Window** 形式集成到 IDEA 右侧边栏。
 │  1. 原生优先                                                │
 │     └── 最大化使用 IntelliJ Platform API                   │
 │                                                             │
-│  2. Daemon 模式                                             │
-│     └── Agent SDK 常驻进程，零冷启动延迟                    │
+│  2. CLI-First 模式 (2026-04-16 更新)                       │
+│     └── Claude Code CLI 直连，禁止自行封装 SDK              │
 │                                                             │
-│  3. 按需加载                                                │
+│  3. 前端框架集成 (2026-04-16 新增)                         │
+│     └── JCEF + React/Vue/Svelte 实现聊天界面                │
+│                                                             │
+│  4. 按需加载                                                │
 │     └── 服务延迟初始化，资源按需创建                       │
 │                                                             │
-│  4. 最小依赖                                                │
+│  5. 最小依赖                                                │
 │     └── 仅 Gson (可选)，其余使用 Platform API              │
 │                                                             │
-│  5. 内存友好                                                │
+│  6. 内存友好                                                │
 │     └── 弱引用缓存，及时释放资源                           │
 │                                                             │
-│  6. Provider 抽象                                           │
+│  7. Provider 抽象                                           │
 │     └── 统一抽象层，支持扩展                               │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 5.2 四层架构
+### 5.2 五层架构 (2026-04-16 更新)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      表现层 (UI)                            │
+│                   表现层 (UI) - 混合架构                    │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │  ToolWindowFactory                                   │   │
-│  │  ├── ChatPanel          会话面板                    │   │
+│  │  Swing UI (设置、弹窗、系统组件)                      │   │
 │  │  ├── SettingsDialog     设置对话框                  │   │
 │  │  ├── DiffViewer         Diff对比查看器              │   │
-│  │  └── Components         UI组件                      │   │
+│  │  └── System Components  原生 Swing 组件             │   │
+│  └─────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  JCEF + 前端框架 (聊天界面) - M2 引入               │   │
+│  │  ├── React/Vue/Svelte   UI 框架                    │   │
+│  │  ├── Tailwind CSS       样式系统                   │   │ │
+│  │  ├── Zustand/Redux      状态管理                   │   │
+│  │  ├── marked.js          Markdown 渲染              │   │
+│  │  ├── highlight.js       代码高亮                   │   │
+│  │  └── diff2html          Diff 可视化                │   │
 │  └─────────────────────────────────────────────────────┘   │
 ├─────────────────────────────────────────────────────────────┤
 │                      服务层 (Service)                       │
 │  ┌─────────────────────────────────────────────────────┐   │
 │  │  Application Service (单例)                          │   │
-│  │  ├── DaemonBridgeService  Daemon进程管理            │   │
+│  │  ├── CliBridgeService     CLI 进程管理              │   │
 │  │  ├── ProviderService      Provider管理              │   │
 │  │  ├── ConfigService        配置管理                  │   │
 │  │  ├── UsageService         用量统计                  │   │
-│  │  └── I18nService          国际化                    │   │
+│  │  ├── I18nService          国际化                    │   │
+│  │  └── ThemeService         主题管理 (新增)           │   │
 │  │                                                      │   │
 │  │  Project Service (项目级)                            │   │
 │  │  ├── SessionService       会话管理                  │   │
 │  │  ├── ContextService       上下文管理                │   │
 │  │  ├── AgentService         Agent管理                 │   │
 │  │  ├── SkillService         Skills管理                │   │
-│  │  └── MCPService           MCP管理                   │   │
+│  │  ├── MCPService           MCP管理                   │   │
+│  │  └── QuoteService         消息引用 (新增)           │   │
 │  └─────────────────────────────────────────────────────┘   │
 ├─────────────────────────────────────────────────────────────┤
 │                      桥接层 (Bridge)                        │
@@ -1293,24 +1306,26 @@ CC Assistant 采用 **Tool Window** 形式集成到 IDEA 右侧边栏。
 
 ---
 
-## 6. Claude Agent SDK集成方案
+## 6. JCEF + 前端框架集成方案 (2026-04-16 更新)
 
-### 6.1 集成架构
+> **架构决策**: M2 起使用现代前端框架 + JCEF 架构实现聊天界面，CLI 直连模式保持不变。
 
-基于 [claude-sdk-integration-guide](https://github.com/zhukunpenglinyutong/jetbrains-cc-gui) 的 Daemon + NDJSON 进程桥接方案：
+### 6.1 混合架构总览
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                  CC Assistant                               │
+│              CC Assistant 混合架构 (M2+)                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │              Java 端                                 │   │
+│  │              Java/Kotlin 层                         │   │
 │  │  ┌─────────────────────────────────────────────┐    │   │
-│  │  │  DaemonBridgeService                         │    │   │
+│  │  │  CliBridgeService                           │    │   │
 │  │  │  ├── ProcessManager                          │    │   │
-│  │  │  │   ├── 启动/停止 daemon.js                 │    │   │
+│  │  │  │   ├── 启动/停止 claude CLI                 │    │   │
 │  │  │  │   ├── 进程健康监控                        │    │   │
 │  │  │  │   └── 自动重启                            │    │   │
-│  │  │  ├── NDJSONParser                            │    │   │
+│  │  │  ├── NdjsonParser                            │    │   │
 │  │  │  │   ├── 流式解析                            │    │   │
 │  │  │  │   ├── 标签识别                            │    │   │
 │  │  │  │   └── 消息组装                            │    │   │
@@ -1320,35 +1335,451 @@ CC Assistant 采用 **Tool Window** 形式集成到 IDEA 右侧边栏。
 │  │  │      ├── onToolUse()                         │    │   │
 │  │  │      └── onComplete()                        │    │   │
 │  │  └─────────────────────────────────────────────┘    │   │
+│  │                      ↕ JBCefJSQuery                │   │
+│  │  ┌─────────────────────────────────────────────┐    │   │
+│  │  │  JcefMessageRenderer (JCEF Browser)         │    │   │
+│  │  │  ├── JBCefBrowser 创建                      │    │   │
+│  │  │  ├── Java → JS: executeJavaScript()         │    │   │
+│  │  │  ├── JS → Java: JBCefJSQuery                │    │   │
+│  │  │  └── 资源加载: loadResource()               │    │   │
+│  │  └─────────────────────────────────────────────┘    │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                          ↕ CustomEvent                     │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │              前端框架层 (JCEF 内部)                 │   │
+│  │  ┌─────────────────────────────────────────────┐    │   │
+│  │  │  React/Vue/Svelte 应用                      │    │   │
+│  │  │  ├── 组件树                                 │    │   │
+│  │  │  │   ├── ChatPanel                          │    │   │
+│  │  │  │   ├── MessageList                        │    │   │
+│  │  │  │   ├── InputArea                          │    │   │
+│  │  │  │   └── ...                                │    │   │
+│  │  │  ├── 状态管理                               │    │   │
+│  │  │  │   └── Zustand/Redux/Pinia                │    │   │
+│  │  │  ├── 样式系统                               │    │   │
+│  │  │  │   ├── Tailwind CSS                       │    │   │
+│  │  │  │   └── shadcn/ui                          │    │   │
+│  │  │  └── 工具库                                 │    │   │
+│  │  │      ├── marked.js (Markdown 渲染)          │    │   │
+│  │  │      ├── highlight.js (代码高亮)            │    │   │
+│  │  │      └── diff2html (Diff 可视化)            │    │   │
+│  │  └─────────────────────────────────────────────┘    │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                          ↕ stdin/stdout (NDJSON)            │
 │  ┌─────────────────────────────────────────────────────┐   │
-│  │              Node.js 端                              │   │
-│  │  ┌─────────────────────────────────────────────┐    │   │
-│  │  │  daemon.js                                   │    │   │
-│  │  │  ├── SDKLoader                               │    │   │
-│  │  │  │   └── 动态加载 @anthropic-ai/claude-agent-sdk │ │
-│  │  │  ├── PersistentQueryService                  │    │   │
-│  │  │  │   ├── Runtime 池管理                      │    │   │
-│  │  │  │   └── 会话持久化                          │    │   │
-│  │  │  ├── MessageSender                           │    │   │
-│  │  │  │   ├── query() 调用                        │    │   │
-│  │  │  │   └── 标签输出                            │    │   │
-│  │  │  └── ApiConfig                               │    │   │
-│  │  │      ├── API Key 管理                        │    │   │
-│  │  │      └── 代理配置                            │    │   │
-│  │  └─────────────────────────────────────────────┘    │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                          ↕ Agent SDK API                    │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │              Claude Agent SDK                        │   │
-│  │  ├── Claude Models (Opus/Sonnet/Haiku)              │   │
-│  │  ├── Tool System                                    │   │
-│  │  ├── MCP Support                                    │   │
-│  │  └── Permission System                              │   │
+│  │              Claude Code CLI                        │   │
+│  │  ├── CLI 进程 (claude -p "..." --output-format)    │   │
+│  │  ├── NDJSON 流式输出                               │   │
+│  │  └── Session 管理 (--resume)                       │   │
 │  └─────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+### 6.2 技术栈选择
+
+#### 6.2.1 前端框架 (三选一)
+
+| 框架 | 优势 | 劣势 | 推荐度 |
+|-----|------|------|--------|
+| **React 18 + TypeScript** | 生态成熟、社区活跃、Hooks 简洁 | 包体积较大、需要优化 | ⭐⭐⭐⭐⭐ |
+| **Vue 3 + TypeScript** | 渐进式、学习曲线平缓、性能好 | 生态相对较小 | ⭐⭐⭐⭐ |
+| **Svelte + TypeScript** | 编译时优化、包体积小、性能极佳 | 社区较小、资料少 | ⭐⭐⭐ |
+
+**推荐**: React 18 + TypeScript (项目首选)
+
+#### 6.2.2 构建工具链
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Vite 5+ 构建流程                                           │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  1. 开发模式 (npm run dev)                                  │
+│     ├── Vite Dev Server (http://localhost:5173)            │
+│     ├── 热模块替换 (HMR)                                    │
+│     ├── TypeScript 实时编译                                 │
+│     └── Chrome DevTools 集成                                │
+│                                                             │
+│  2. 生产构建 (npm run build)                                │
+│     ├── Rollup 打包                                         │
+│     ├── Tree-shaking (去除死代码)                           │
+│     ├── 代码分割 (Code Splitting)                           │
+│     ├── 压缩优化 (Terser)                                   │
+│     └── 输出到 frontend/dist/                               │
+│                                                             │
+│  3. 资源同步 (Gradle 自动执行)                              │
+│     ├── frontend/dist/ → src/main/resources/web/           │
+│     ├── HTML/CSS/JS 文件复制                                │
+│     └── 版本号管理 (缓存破坏)                               │
+│                                                             │
+│  4. 插件构建 (./gradlew buildPlugin)                       │
+│     ├── JCEF 资源打包到插件 JAR                             │
+│     ├── 插件发布到 JetBrains Marketplace                    │
+│     └── IDE 安装后可直接使用                                │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 6.2.3 样式系统
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Tailwind CSS + shadcn/ui                                   │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Tailwind CSS 原子化样式:                                    │
+│  ├── className="flex items-center gap-2 px-4 py-2"        │
+│  ├── 响应式设计: sm: md: lg: xl:                            │
+│  ├── 主题变量: bg-primary text-secondary                   │
+│  └── 暗色模式: dark: 前缀                                   │
+│                                                             │
+│  shadcn/ui 组件库:                                          │
+│  ├── 基于 Radix UI (无障碍访问)                             │
+│  ├── 复制粘贴组件源码 (完全可控)                             │
+│  ├── 支持 Tailwind 主题定制                                 │
+│  └── 常用组件: Button, Input, Dialog, Dropdown             │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 6.3 Java ↔ JavaScript 双向通信
+
+#### 6.3.1 Java → JavaScript 通信
+
+```kotlin
+/**
+ * JCEF 消息渲染器
+ */
+@Service(Service.Level.PROJECT)
+class JcefMessageRenderer : Disposable {
+    
+    private val browser: JBCefBrowser = JBCefBrowser()
+    private val gson = Gson()
+    
+    init {
+        // 加载前端应用
+        val htmlUrl = JBCefApp.loadResource("web/index.html")
+        browser.loadURL(htmlUrl)
+    }
+    
+    /**
+     * 发送消息到前端
+     */
+    fun sendMessage(message: CliMessage) {
+        ApplicationManager.getApplication().invokeLater {
+            val json = gson.toJson(message)
+            val jsCode = """
+                window.dispatchEvent(new CustomEvent('claude-message', {
+                    detail: $json
+                }))
+            """.trimIndent()
+            
+            browser.cefClient.executeJavaScript(
+                jsCode,
+                browser.cefBrowser.url,
+                0
+            )
+        }
+    }
+    
+    /**
+     * 批量发送消息 (流式输出)
+     */
+    fun sendMessages(messages: List<CliMessage>) {
+        messages.forEach { sendMessage(it) }
+    }
+    
+    override fun dispose() {
+        browser.dispose()
+    }
+}
+```
+
+#### 6.3.2 JavaScript → Java 通信
+
+```typescript
+/**
+ * JCEF 桥接服务 (前端)
+ */
+export class JcefBridge {
+  private copyHandler: any = null;
+  private messageHandler: any = null;
+  
+  constructor() {
+    this.initializeBridges();
+  }
+  
+  /**
+   * 初始化 JCEF 桥接
+   */
+  private initializeBridges() {
+    if (typeof window === 'undefined') return;
+    
+    const win = window as any;
+    
+    // 绑定复制处理器
+    if (win.CefSharp) {
+      this.copyHandler = win.CefSharp.BindObjectAsync('copyHandler');
+    }
+    
+    // 绑定消息处理器 (如果存在)
+    this.messageHandler = win.sendMessageHandler;
+  }
+  
+  /**
+   * 复制文本到剪贴板
+   */
+  async copyToClipboard(text: string): Promise<void> {
+    if (this.copyHandler) {
+      await this.copyHandler.copyToClipboard(text);
+    } else {
+      // 降级方案: 使用 Clipboard API
+      await navigator.clipboard.writeText(text);
+    }
+  }
+  
+  /**
+   * 发送用户消息
+   */
+  sendMessage(content: string, attachments?: Attachment[]): void {
+    if (this.messageHandler) {
+      this.messageHandler.postMessage(JSON.stringify({
+        content,
+        attachments,
+        timestamp: Date.now()
+      }));
+    }
+  }
+  
+  /**
+   * 请求回溯 (Rewind)
+   */
+  async rewind(sessionId: string, messageId: string): Promise<void> {
+    const win = window as any;
+    if (win.rewindHandler) {
+      await win.rewindHandler.rewind(sessionId, messageId);
+    }
+  }
+  
+  /**
+   * 请求权限确认 (Plan 模式)
+   */
+  async requestPermission(toolName: string, toolInput: any): Promise<boolean> {
+    const win = window as any;
+    if (win.permissionHandler) {
+      return await win.permissionHandler.request(toolName, toolInput);
+    }
+    return false;
+  }
+}
+
+export const jcefBridge = new JcefBridge();
+```
+
+#### 6.3.3 Kotlin 侧绑定 (JBCefJSQuery)
+
+```kotlin
+/**
+ * JCEF 桥接绑定
+ */
+class JcefBridgeBindings {
+    
+    private val copyQuery: JBCefJSQuery
+    private val messageQuery: JBCefJSQuery
+    private val rewindQuery: JBCefJSQuery
+    private val permissionQuery: JBCefJSQuery
+    
+    init {
+        // 创建 JBCefJSQuery 实例
+        copyQuery = JBCefJSQuery.create(browser)
+        messageQuery = JBCefJSQuery.create(browser)
+        rewindQuery = JBCefJSQuery.create(browser)
+        permissionQuery = JBCefJSQuery.create(browser)
+        
+        // 绑定复制处理器
+        copyQuery.addHandler { json ->
+            val data = gson.fromJson(json, CopyData::class.java)
+            CopyPasteManager.getInstance().setContents(StringSelection(data.text))
+            null
+        }
+        
+        // 绑定消息处理器
+        messageQuery.addHandler { json ->
+            val data = gson.fromJson(json, MessageData::class.java)
+            CliBridgeService.getInstance().sendUserMessage(data.content)
+            null
+        }
+        
+        // 绑定回溯处理器
+        rewindQuery.addHandler { json ->
+            val data = gson.fromJson(json, RewindData::class.java)
+            SessionService.rewind(data.sessionId, data.messageId)
+            null
+        }
+        
+        // 绑定权限处理器
+        permissionQuery.addHandler { json ->
+            val data = gson.fromJson(json, PermissionData::class.java)
+            // 显示权限确认弹窗
+            PermissionDialog.show(data.toolName, data.toolInput) { approved ->
+                // 返回批准结果
+            }
+            null
+        }
+    }
+    
+    /**
+     * 注入 JS 桥接到页面
+     */
+    fun injectBridges() {
+        browser.cefClient.executeJavaScript(
+            """
+            window.CefSharp = {
+                BindObjectAsync: (name) => Promise.resolve({
+                    copyToClipboard: (text) => window.javaBridge.copy('$copyQuery', text),
+                    postMessage: (msg) => window.javaBridge.send('$messageQuery', msg)
+                })
+            };
+            """.trimIndent(),
+            browser.cefBrowser.url,
+            0
+        )
+    }
+}
+```
+
+### 6.4 前端项目结构
+
+```
+frontend/                          # 前端项目根目录
+├── src/
+│   ├── main/
+│   │   ├── tsx/                  # TypeScript React 组件
+│   │   │   ├── App.tsx           # 根组件
+│   │   │   ├── main.tsx          # 入口文件
+│   │   │   ├── components/       # UI 组件
+│   │   │   │   ├── chat/
+│   │   │   │   │   ├── ChatPanel.tsx
+│   │   │   │   │   ├── MessageList.tsx
+│   │   │   │   │   ├── MessageBubble.tsx
+│   │   │   │   │   ├── InputArea.tsx
+│   │   │   │   │   └── SessionTabs.tsx
+│   │   │   │   ├── markdown/
+│   │   │   │   │   ├── MarkdownRenderer.tsx
+│   │   │   │   │   ├── CodeBlock.tsx
+│   │   │   │   │   └── DiffViewer.tsx
+│   │   │   │   └── ui/
+│   │   │   │       ├── Button.tsx
+│   │   │   │       ├── Input.tsx
+│   │   │   │       └── Dialog.tsx
+│   │   │   ├── hooks/            # React Hooks
+│   │   │   │   ├── useChat.ts
+│   │   │   │   ├── useMessages.ts
+│   │   │   │   └── useJcefBridge.ts
+│   │   │   ├── stores/           # 状态管理
+│   │   │   │   ├── chatStore.ts
+│   │   │   │   ├── sessionStore.ts
+│   │   │   │   └── uiStore.ts
+│   │   │   ├── lib/              # 工具库
+│   │   │   │   ├── jcef.ts       # JCEF 桥接
+│   │   │   │   ├── markdown.ts   # Markdown 渲染
+│   │   │   │   └── api.ts        # API 类型定义
+│   │   │   └── styles/           # 样式文件
+│   │   │       └── globals.css
+│   │   └── index.html
+│   └── api/
+│       └── jcef-types.ts          # JCEF 类型定义
+├── public/
+│   └── icons/
+├── vite.config.ts
+├── tailwind.config.js
+├── tsconfig.json
+├── tsconfig.node.json
+├── package.json
+├── package-lock.json
+└── README.md
+```
+
+### 6.5 Vite 配置示例
+
+```typescript
+/**
+ * vite.config.ts
+ */
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
+
+export default defineConfig({
+  plugins: [react()],
+  
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
+          'markdown': ['marked', 'highlight.js', 'diff2html'],
+          'ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu']
+        }
+      }
+    }
+  },
+  
+  server: {
+    port: 5173,
+    strictPort: true,
+    hmr: {
+      port: 5173
+    }
+  },
+  
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, './src/main/tsx')
+    }
+  }
+});
+```
+
+### 6.6 Gradle 集成
+
+```kotlin
+/**
+ * build.gradle.kts - 前端资源同步任务
+ */
+tasks.register<Copy>("copyFrontendResources") {
+    group = "frontend"
+    description = "Copy frontend build output to resources"
+    
+    dependsOn(":frontend:build")
+    
+    from(file("${projectDir}/frontend/dist"))
+    into(file("${projectDir}/src/main/resources/web"))
+    
+    doLast {
+        println("Frontend resources copied successfully!")
+    }
+}
+
+tasks.named("buildPlugin") {
+    dependsOn("copyFrontendResources")
+}
+
+tasks.named("runIde") {
+    dependsOn("copyFrontendResources")
+}
+```
+
+---
+
+## 7. Claude Agent SDK集成方案 (已废弃)
+
+> **注意**: 本节描述的 Daemon + NDJSON 方案已被废弃，改用 CLI 直连模式。
+> 保留此节仅用于架构历史参考。
+
+### 7.1 集成架构 (历史参考)
 
 ### 6.2 Daemon 进程管理
 
