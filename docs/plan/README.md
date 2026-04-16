@@ -1,6 +1,6 @@
 # CC Assistant 开发规划文档
 
-> **版本**: v6.3 (ThinkingBlock + i18n补全 + 前端覆盖率评审版)
+> **版本**: v6.4 (DiffSummary 组件 + diffFiles 数据流接入版)
 > **日期**: 2026-04-17
 > **当前里程碑**: M1 (极简对话) 已完成基础框架
 > **下一步**: M2 (多会话 + JCEF 切换)
@@ -851,6 +851,6 @@ src/test/kotlin/.../ccassistant/
 
 ---
 
-*文档版本: v6.3*
+*文档版本: v6.4*
 *最后更新: 2026-04-17*
-*同步关联: API_Design.md v6.3, CC_Assistant_Technical_Architecture.md v6.3*
+*同步关联: API_Design.md v6.4, CC_Assistant_Technical_Architecture.md v6.4*

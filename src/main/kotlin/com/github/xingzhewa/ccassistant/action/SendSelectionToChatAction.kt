@@ -24,9 +24,13 @@ class SendSelectionToChatAction : AnAction() {
 
         val panel = ReactChatPanel.getInstance(project) ?: return
 
-        val lineNumber = editor.caretModel.logicalPosition.line + 1
-        val source = "${file.path}:${lineNumber}"
-        panel.insertCodeReference(selectedText, source)
+        // 计算选中区域的起始/结束行号（1-based）
+        val startPos = editor.selectionModel.selectionStartPosition ?: return
+        val endPos = editor.selectionModel.selectionEndPosition ?: return
+        val startLine = startPos.line + 1
+        val endLine = endPos.line + 1
+
+        panel.insertCodeReference(file.path, startLine, endLine)
     }
 
     override fun update(e: AnActionEvent) {

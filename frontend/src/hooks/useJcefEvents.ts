@@ -168,10 +168,10 @@ export const useJcefEvents = () => {
 
     // 监听代码片段注入（来自编辑器右键菜单）
     const handleCodeRef = (e: CustomEvent) => {
-      const { code, source } = e.detail;
+      const { ref } = e.detail;
       const { inputValue, setInputValue } = useChatStore.getState();
       const prefix = inputValue ? inputValue + '\n' : '';
-      setInputValue(`${prefix}// From: ${source}\n${code}`);
+      setInputValue(`${prefix}${ref}`);
     };
 
     // 注册事件监听

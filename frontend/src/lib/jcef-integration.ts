@@ -13,7 +13,7 @@ interface ICCChat {
   setSessionList: (sessions: string) => void;
   setCliStatus: (version: string, hasUpdate: boolean) => void;
   insertFileReference: (path: string) => void;
-  insertCodeReference: (code: string, source: string) => void;
+  insertCodeReference: (ref: string) => void;
 }
 
 // CCApp 接口
@@ -102,10 +102,11 @@ window.CCChat = {
     }));
   },
 
-  // 注入代码片段到输入框（来自 IDE 编辑器右键菜单 Action）
-  insertCodeReference: (code: string, source: string) => {
+  // 注入代码引用到输入框（来自 IDE 编辑器右键菜单 Action）
+  // ref 格式: @path#Lstart-Lend 或 @path#LN（单行）
+  insertCodeReference: (ref: string) => {
     window.dispatchEvent(new CustomEvent('cc-code-ref', {
-      detail: { code, source }
+      detail: { ref }
     }));
   }
 };

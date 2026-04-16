@@ -2,13 +2,14 @@ import React, { useRef, useState, useCallback } from 'react';
 import { MessageList, type MessageListHandle } from './MessageList';
 import { ScrollButtons } from './ScrollButtons';
 import { MessageTimeline } from './MessageTimeline';
-import type { MockMessage } from '@/types/mock';
+import type { MockMessage, MockDiffFile } from '@/types/mock';
 import styles from './MessageArea.module.css';
 
 interface MessageAreaProps {
   messages: MockMessage[];
   streaming?: boolean;
   streamingContent?: string;
+  diffFiles?: MockDiffFile[];
   onCopy?: (id: string, content: string) => void;
   onQuote?: (id: string, content: string) => void;
   onRegenerate?: (id: string) => void;
@@ -85,6 +86,7 @@ export const MessageArea: React.FC<MessageAreaProps> = (props) => {
       <MessageList
         ref={listRef}
         {...props}
+        diffFiles={props.diffFiles}
         onScroll={handleScroll}
       />
       <MessageTimeline

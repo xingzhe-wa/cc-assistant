@@ -2,7 +2,7 @@ import { useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 
 import { UserMessage } from './UserMessage';
 import { AIMessage } from './AIMessage';
 import { EmptyState } from './EmptyState';
-import type { MockMessage } from '@/types/mock';
+import type { MockMessage, MockDiffFile } from '@/types/mock';
 import styles from './MessageList.module.css';
 
 export interface MessageListHandle {
@@ -16,6 +16,7 @@ interface MessageListProps {
   messages: MockMessage[];
   streaming?: boolean;
   streamingContent?: string;
+  diffFiles?: MockDiffFile[];
   onCopy?: (id: string, content: string) => void;
   onQuote?: (id: string, content: string) => void;
   onRegenerate?: (id: string) => void;
@@ -30,6 +31,7 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(({
   messages,
   streaming = false,
   streamingContent = '',
+  diffFiles,
   onCopy,
   onQuote,
   onRegenerate,
@@ -127,6 +129,7 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(({
             content={message.content}
             timestamp={message.time}
             thinking={message.thinking}
+            diffFiles={message.diffFiles || diffFiles}
             onCopy={onCopy}
             onQuote={onQuote}
             onRegenerate={onRegenerate}
@@ -139,6 +142,7 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(({
           id="streaming"
           content={streamingContent}
           streaming
+          diffFiles={diffFiles}
         />
       )}
     </div>

@@ -166,6 +166,7 @@ export const SessionPage: React.FC<SessionPageProps> = ({ className = '' }) => {
           messages={activeSession?.msgs || []}
           streaming={streaming}
           streamingContent={streamingContent}
+          diffFiles={diffFiles}
           onCopy={handleCopy}
           onQuote={handleQuote}
           onQuickAction={handleQuickAction}

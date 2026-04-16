@@ -1,8 +1,10 @@
 import React from 'react';
 import { MarkdownContent } from './MarkdownContent';
 import { ThinkingBlock } from './ThinkingBlock';
+import { DiffSummary } from './DiffSummary';
 import { Icon } from '../common';
 import { useI18n } from '@/hooks/useI18n';
+import type { MockDiffFile } from '@/types/mock';
 import styles from './AIMessage.module.css';
 
 interface AIMessageProps {
@@ -11,6 +13,7 @@ interface AIMessageProps {
   timestamp?: string;
   thinking?: string;
   streaming?: boolean;
+  diffFiles?: MockDiffFile[];
   onCopy?: (id: string, content: string) => void;
   onQuote?: (id: string, content: string) => void;
   onRegenerate?: (id: string) => void;
@@ -23,6 +26,7 @@ export const AIMessage: React.FC<AIMessageProps> = ({
   timestamp,
   thinking,
   streaming = false,
+  diffFiles,
   onCopy,
   onQuote,
   onRegenerate,
@@ -43,6 +47,9 @@ export const AIMessage: React.FC<AIMessageProps> = ({
         <div className={`${styles.content} ${streaming ? styles.streaming : ''}`}>
           <MarkdownContent content={content} />
         </div>
+        {diffFiles && diffFiles.length > 0 && (
+          <DiffSummary diffFiles={diffFiles} />
+        )}
         <div className={styles.footer}>
           <button
             className={styles.actionBtn}

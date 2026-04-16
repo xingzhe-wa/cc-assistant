@@ -1,11 +1,11 @@
 # CC Assistant 产品技术架构文档
 
-> **版本**: v6.3 (ThinkingBlock + i18n补全 + 前端覆盖率评审版)
+> **版本**: v6.4 (DiffSummary 组件 + diffFiles 数据流接入版)
 > **更新日期**: 2026-04-17
 > **插件名称**: CC Assistant
 > **开发模板**: [intellij-platform-plugin-template](https://github.com/JetBrains/intellij-platform-plugin-template)
 > **核心原则**: 轻量、原生、可扩展
-> **接口对齐**: 与 API_Design.md v6.2 保持一致
+> **接口对齐**: 与 API_Design.md v6.4 保持一致
 
 ---
 
@@ -3868,6 +3868,6 @@ settings.about=About
 
 ---
 
-> **文档版本**: v6.3 (ThinkingBlock + i18n补全 + 前端覆盖率评审版)
+> **文档版本**: v6.4 (DiffSummary 组件 + diffFiles 数据流接入版)
 > **最后更新**: 2026-04-17
-> **同步关联**: API_Design.md v6.3, plan/README.md v6.3
+> **同步关联**: API_Design.md v6.4, plan/README.md v6.4

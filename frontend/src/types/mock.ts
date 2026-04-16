@@ -26,6 +26,7 @@ export interface MockMessage {
   time?: string;
   thinking?: string;
   toolCalls?: MockToolCall[];
+  diffFiles?: MockDiffFile[];
 }
 
 export interface MockToolCall {

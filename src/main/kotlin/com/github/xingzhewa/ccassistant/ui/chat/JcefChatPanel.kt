@@ -502,7 +502,21 @@ class JcefChatPanel : Disposable {
     }
 
     /**
+     * 注入代码引用到输入框（带行号范围，供编辑器右键菜单 Action 调用）
+     * 生成格式: @path#Lstart-Lend 或 @path#LN（单行）
+     */
+    fun insertCodeReference(source: String, lineStart: Int, lineEnd: Int) {
+        val ref = if (lineStart == lineEnd) {
+            "@${source}#L${lineStart}"
+        } else {
+            "@${source}#L${lineStart}-${lineEnd}"
+        }
+        executeScript("CCChat.insertCodeReference(${gson.toJson(ref)})")
+    }
+
+    /**
      * 注入代码片段到输入框（供右键菜单 Action 调用）
+     * @deprecated 使用 insertCodeReference(source, lineStart, lineEnd) 替代，传递行号而非内容
      */
     fun insertCodeReference(code: String, source: String) {
         executeScript("CCChat.insertCodeReference(${gson.toJson(code)}, ${gson.toJson(source)})")

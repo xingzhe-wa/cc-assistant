@@ -75,7 +75,15 @@ class ReactChatPanel(
     }
 
     /**
+     * 注入代码引用到输入框（带行号范围）
+     */
+    fun insertCodeReference(source: String, lineStart: Int, lineEnd: Int) {
+        jcefPanel?.insertCodeReference(source, lineStart, lineEnd)
+    }
+
+    /**
      * 注入代码片段到输入框
+     * @deprecated 使用 insertCodeReference(source, lineStart, lineEnd) 替代
      */
     fun insertCodeReference(code: String, source: String) {
         jcefPanel?.insertCodeReference(code, source)

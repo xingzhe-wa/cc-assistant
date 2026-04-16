@@ -1,9 +1,9 @@
 # CC Assistant 接口设计方案
 
-> **版本**: v6.3 (ThinkingBlock + i18n补全 + 前端覆盖率评审版)
+> **版本**: v6.4 (DiffSummary 组件 + diffFiles 数据流接入版)
 > **更新日期**: 2026-04-17
 > **设计原则**: 以功能和交互动作为驱动，端到端接口设计，与实际代码对齐
-> **与架构对齐**: v6.3 与 CC_Assistant_Technical_Architecture.md v6.3 保持一致
+> **与架构对齐**: v6.4 与 CC_Assistant_Technical_Architecture.md v6.4 保持一致
 
 ---
 
@@ -3087,9 +3087,10 @@ interface MockSkill {
 | 38 | v6.3: ThinkingBlock 折叠/展开组件 | P1 | AI思考过程可视化 |
 | 39 | v6.3: i18n toast.renamed/quoteAdded补全 + SessionPage 硬编码修复 | P1 | 国际化 |
 | 40 | v6.3: SessionPage 5处hardcoded toast字符串 → t() 调用 | P1 | 国际化 |
+| 41 | v6.4: DiffSummary 折叠组件 + MockMessage.diffFiles 字段接入 | P1 | DiffReview 核心功能 |
 
 ---
 
-*文档版本: v6.3*
+*文档版本: v6.4*
 *最后更新: 2026-04-17*
-*同步关联: CC_Assistant_Technical_Architecture.md v6.3, plan/README.md v6.3*
+*同步关联: CC_Assistant_Technical_Architecture.md v6.4, plan/README.md v6.4*
