@@ -1,0 +1,6 @@
+.container {
+  border-top: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+  padding: 7px 14px 9px;
+  flex-shrink: 0;
+}

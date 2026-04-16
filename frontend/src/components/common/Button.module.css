@@ -1,0 +1,123 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  transition: all 0.1s ease;
+  white-space: nowrap;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 尺寸 */
+.sm {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+
+.md {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.lg {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 13px;
+}
+
+/* 图标按钮 */
+.iconOnly.sm {
+  width: 24px;
+  padding: 0;
+}
+
+.iconOnly.md {
+  width: 30px;
+  padding: 0;
+}
+
+.iconOnly.lg {
+  width: 36px;
+  padding: 0;
+}
+
+/* 变体 */
+.primary {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: var(--bg-primary);
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--accent-secondary);
+  border-color: var(--accent-secondary);
+}
+
+.secondary {
+  background: var(--bg-element);
+  border-color: var(--border-default);
+  color: var(--fg-secondary);
+}
+
+.secondary:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--fg-primary);
+}
+
+.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--fg-muted);
+}
+
+.ghost:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--fg-secondary);
+  border-color: var(--border-default);
+}
+
+.danger {
+  background: var(--error-bg);
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+.danger:hover:not(:disabled) {
+  background: var(--color-error);
+  color: white;
+}
+
+/* 加载状态 */
+.loading {
+  pointer-events: none;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.label {
+  display: inline-block;
+}

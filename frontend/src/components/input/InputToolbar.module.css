@@ -1,0 +1,56 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.trigger {
+  height: 24px;
+  padding: 0 7px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  background: var(--bg-primary);
+  color: var(--fg-secondary);
+  cursor: pointer;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.1s;
+  white-space: nowrap;
+}
+
+.trigger:hover {
+  border-color: var(--border-default);
+  background: var(--bg-element);
+  color: var(--fg-primary);
+}
+
+.trigger .material-icons-round {
+  font-size: 13px;
+}
+
+.trigger .material-icons-round.xs {
+  font-size: 10px;
+  color: var(--fg-muted);
+}
+
+.divider {
+  width: 1px;
+  height: 12px;
+  background: var(--border-light);
+  margin: 0 4px;
+}

@@ -1,0 +1,73 @@
+.topbar {
+  height: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: stretch;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-light);
+  z-index: 20;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 0 4px;
+  border-left: 1px solid var(--border-light);
+}
+
+.streamToggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 8px;
+  cursor: pointer;
+  user-select: none;
+  height: 32px;
+}
+
+.streamToggle:hover {
+  background: var(--bg-hover);
+}
+
+.streamLabel {
+  font-size: 11px;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+  transition: color 0.1s;
+}
+
+.streamToggle:hover .streamLabel {
+  color: var(--fg-secondary);
+}
+
+.streamTrack {
+  width: 26px;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--fg-disabled);
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.streamTrack::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s;
+}
+
+.streamTrack.on {
+  background: var(--accent-primary);
+}
+
+.streamTrack.on::after {
+  transform: translateX(12px);
+}

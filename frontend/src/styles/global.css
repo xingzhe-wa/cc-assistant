@@ -1,0 +1,223 @@
+/* CC Assistant 全局样式 */
+
+:root {
+  /* 基础颜色 */
+  --bg-primary: #111214;
+  --bg-secondary: #17181d;
+  --bg-element: #1e2028;
+  --bg-hover: #272933;
+
+  /* 强调色 */
+  --accent-primary: #c9873a;
+  --accent-secondary: #daa04e;
+
+  /* 状态色 */
+  --color-success: #50b85e;
+  --color-error: #d95555;
+  --color-info: #4db8cc;
+  --color-warning: #d9a055;
+
+  /* 状态色 (带透明度) */
+  --success-bg: rgba(80, 184, 94, 0.1);
+  --error-bg: rgba(217, 85, 85, 0.1);
+  --info-bg: rgba(77, 184, 204, 0.1);
+  --accent-bg: rgba(201, 135, 58, 0.08);
+
+  /* 文本色 */
+  --fg-primary: #d0d1d8;
+  --fg-secondary: #87899a;
+  --fg-muted: #494b5a;
+  --fg-disabled: #31333d;
+
+  /* 边框色 */
+  --border-default: #23252e;
+  --border-light: #1b1d24;
+
+  /* 圆角 */
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 7px;
+  --radius-xl: 10px;
+
+  /* 字体 */
+  --font-sans: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--fg-primary);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--fg-disabled);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-muted);
+}
+
+/* 选中文本样式 */
+::selection {
+  background: rgba(201, 135, 58, 0.3);
+}
+
+/* Material Icons */
+.material-icons-round {
+  font-family: 'Material Icons Round';
+  font-size: 17px;
+  line-height: 1;
+  user-select: none;
+  vertical-align: middle;
+}
+
+.material-icons-round.sm {
+  font-size: 14px;
+}
+
+.material-icons-round.lg {
+  font-size: 24px;
+}
+
+/* 动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 260px;
+  }
+}
+
+@keyframes cursorBlink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+@keyframes dotPulse {
+  0%, 60%, 100% {
+    opacity: 0.2;
+    transform: scale(0.8);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 流式输出光标 */
+.streaming-cursor::after {
+  content: '▊';
+  color: var(--accent-primary);
+  animation: cursorBlink 0.6s step-end infinite;
+  font-size: 12px;
+  margin-left: 1px;
+}
+
+/* 加载动画 */
+.loading-dots {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px 0;
+}
+
+.loading-dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  animation: dotPulse 1.2s ease-in-out infinite;
+}
+
+.loading-dots i:nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+.loading-dots i:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+/* Toast 动画 */
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toastOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* Focus 样式 */
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* 禁用选择 */
+.no-select {
+  user-select: none;
+}
+
+/* 文本截断 */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

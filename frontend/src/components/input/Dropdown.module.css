@@ -1,0 +1,74 @@
+.container {
+  position: relative;
+}
+
+.trigger {
+  cursor: pointer;
+}
+
+.menu {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  min-width: 150px;
+  background: var(--bg-element);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+  padding: 3px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: all 0.15s;
+  z-index: 30;
+}
+
+.menu.left {
+  left: 0;
+}
+
+.menu.right {
+  right: 0;
+}
+
+.menu.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 8px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 11.5px;
+  color: var(--fg-secondary);
+  transition: all 0.08s;
+}
+
+.item:hover {
+  background: var(--bg-hover);
+  color: var(--fg-primary);
+}
+
+.item.active {
+  color: var(--accent-primary);
+  background: rgba(201, 135, 58, 0.06);
+}
+
+.item .material-icons-round {
+  font-size: 15px;
+  opacity: 0.6;
+}
+
+.item.active .material-icons-round {
+  opacity: 1;
+}
+
+.checkIcon {
+  margin-left: auto;
+  font-size: 14px;
+  color: var(--accent-primary);
+}
