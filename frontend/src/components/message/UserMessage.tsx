@@ -18,7 +18,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({
   const { t } = useI18n();
 
   return (
-    <div className={styles.container}>
+    <div id={`msg-${id}`} className={styles.container}>
       <div className={styles.bubble}>
         <pre className={styles.content}>{content}</pre>
         <button

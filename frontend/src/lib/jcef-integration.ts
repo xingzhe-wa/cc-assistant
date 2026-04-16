@@ -30,6 +30,7 @@ interface ICCProviders {
   setAgents: (agents: unknown[]) => void;
   setSkills: (skills: unknown[]) => void;
   setFileList: (files: Array<{ name: string; path: string; type: string }>) => void;
+  setSkillsAndAgents: (skills: unknown[], agents: unknown[]) => void;
 }
 
 // 扩展 Window 接口
@@ -181,6 +182,14 @@ window.CCProviders = {
     console.log('[CCProviders] setFileList', files.length, 'files');
     window.dispatchEvent(new CustomEvent('cc-file-list', {
       detail: { files }
+    }));
+  },
+
+  // 设置 Skills 和 Agents（含作用域）
+  setSkillsAndAgents: (skills: unknown[], agents: unknown[]) => {
+    console.log('[CCProviders] setSkillsAndAgents', skills.length, 'skills,', agents.length, 'agents');
+    window.dispatchEvent(new CustomEvent('cc-skills-agents', {
+      detail: { skills, agents }
     }));
   }
 };

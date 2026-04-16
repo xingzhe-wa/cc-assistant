@@ -67,7 +67,7 @@ export const InputToolbar: React.FC<InputToolbarProps> = ({
 
   const agentOptions = agents.map(a => ({
     id: a.id,
-    name: a.name,
+    name: a.scope === 'global' ? `[G] ${a.name}` : a.scope === 'project' ? `[P] ${a.name}` : a.name,
     icon: 'smart_toy'
   }));
 

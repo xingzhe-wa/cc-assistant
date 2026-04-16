@@ -62,6 +62,10 @@ export const SessionPage: React.FC<SessionPageProps> = ({ className = '' }) => {
     enhancePanelOpen,
     setEnhancePanelOpen,
     applyPromptEnhance,
+    agentStatus,
+    statusMessage,
+    subAgentName,
+    diffFiles,
   } = useChatStore();
 
   const activeSession = sessions.find(s => s.id === activeSessionId);
@@ -185,6 +189,10 @@ export const SessionPage: React.FC<SessionPageProps> = ({ className = '' }) => {
           onThinkToggle={toggleThink}
           contextUsed={contextUsed}
           onEnhance={enhancePrompt}
+          agentStatus={agentStatus}
+          statusMessage={statusMessage}
+          subAgentName={subAgentName}
+          diffFiles={diffFiles}
           attachments={attachments}
           onAddAttachment={addAttachment}
           onAddAttachments={addAttachments}

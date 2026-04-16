@@ -1,8 +1,9 @@
 import React, { useRef, useCallback } from 'react';
 import { InputToolbar } from './InputToolbar';
 import { InputBox } from './InputBox';
+import { AIStatusBar } from './AIStatusBar';
 import { Icon } from '../common';
-import type { MockProvider, MockModel, MockAgent, Mode, SendOptions, Attachment } from '@/types/mock';
+import type { MockProvider, MockModel, MockAgent, Mode, SendOptions, Attachment, AgentStatus, MockDiffFile } from '@/types/mock';
 import styles from './InputArea.module.css';
 
 interface InputAreaProps {
@@ -33,6 +34,11 @@ interface InputAreaProps {
   contextUsed: number;
   // Enhance
   onEnhance: () => void;
+  // AI Status
+  agentStatus: AgentStatus;
+  statusMessage: string;
+  subAgentName: string | null;
+  diffFiles: MockDiffFile[];
   // Attachments
   attachments: Attachment[];
   onAddAttachment: (file: File) => void;
@@ -61,6 +67,10 @@ export const InputArea: React.FC<InputAreaProps> = ({
   onThinkToggle,
   contextUsed,
   onEnhance,
+  agentStatus,
+  statusMessage,
+  subAgentName,
+  diffFiles,
   attachments,
   onAddAttachment,
   onAddAttachments,
@@ -95,6 +105,14 @@ export const InputArea: React.FC<InputAreaProps> = ({
 
   return (
     <div className={styles.container}>
+      {/* AI 状态栏 — 最顶部 */}
+      <AIStatusBar
+        status={agentStatus}
+        statusMessage={statusMessage}
+        subAgentName={subAgentName}
+        diffFiles={diffFiles}
+      />
+
       {/* 附件按钮栏 — 输入框上方 */}
       <div className={styles.attachBar}>
         <button

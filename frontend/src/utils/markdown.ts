@@ -49,8 +49,21 @@ const renderer = {
 markedInstance.use({ renderer });
 
 export const renderMarkdown = (content: string): string => {
-  return markedInstance.parse(content) as string;
+  try {
+    return markedInstance.parse(content) as string;
+  } catch (e) {
+    console.error('[CC Assistant] Markdown render error:', e);
+    return `<pre style="white-space: pre-wrap; word-break: break-word; color: var(--fg-secondary);">${escapeHtml(content)}</pre>`;
+  }
 };
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
 
 export const highlightCode = (code: string, language: string): string => {
   if (language && hljs.getLanguage(language)) {

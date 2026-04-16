@@ -8,6 +8,7 @@ interface Agent {
   name: string;
   description: string;
   systemPrompt: string;
+  scope?: 'global' | 'project';
 }
 
 interface AgentEditModalProps {
@@ -27,7 +28,8 @@ export const AgentEditModal: React.FC<AgentEditModalProps> = ({
   const [formData, setFormData] = useState<Agent>({
     name: '',
     description: '',
-    systemPrompt: ''
+    systemPrompt: '',
+    scope: 'project'
   });
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -38,7 +40,8 @@ export const AgentEditModal: React.FC<AgentEditModalProps> = ({
       setFormData({
         name: '',
         description: '',
-        systemPrompt: ''
+        systemPrompt: '',
+        scope: 'project'
       });
     }
     setValidationError(null);
@@ -101,6 +104,19 @@ export const AgentEditModal: React.FC<AgentEditModalProps> = ({
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label}>作用域</label>
+          <select
+            className={styles.select}
+            value={formData.scope || 'project'}
+            onChange={(e) => setFormData({ ...formData, scope: e.target.value as 'global' | 'project' })}
+          >
+            <option value="project">项目 (.claude/agents/)</option>
+            <option value="global">全局 (~/.claude/agents/)</option>
+          </select>
+          <p className={styles.hint}>项目作用域仅当前项目可用；全局作用域所有项目共享</p>
         </div>
 
         <div className={styles.field}>

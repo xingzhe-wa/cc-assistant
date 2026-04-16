@@ -30,7 +30,7 @@ export const AIMessage: React.FC<AIMessageProps> = ({
   const { t } = useI18n();
 
   return (
-    <div className={styles.container}>
+    <div id={`msg-${id}`} className={styles.container}>
       <div className={styles.avatar}>
         <span className="material-icons-round">smart_toy</span>
       </div>

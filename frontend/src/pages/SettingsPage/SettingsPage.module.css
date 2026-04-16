@@ -103,7 +103,7 @@
 }
 
 .navItem.active {
-  background: rgba(201, 135, 58, 0.1);
+  background: var(--accent-border);
   color: var(--ac);
 }
 
@@ -401,4 +401,29 @@
   font-size: 11px;
   color: var(--fg3);
   margin-top: 1px;
+}
+
+.scopeBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.scopeBadge.global {
+  background: var(--accent-bg);
+  color: var(--ac);
+  border: 1px solid var(--accent-border);
+}
+
+.scopeBadge.project {
+  background: var(--info-bg);
+  color: var(--color-info, var(--cy));
+  border: 1px solid rgba(77, 184, 204, 0.15);
 }

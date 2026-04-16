@@ -55,7 +55,7 @@
 
 .item.active {
   color: var(--accent-primary);
-  background: rgba(201, 135, 58, 0.06);
+  background: var(--accent-bg);
 }
 
 .item .material-icons-round {

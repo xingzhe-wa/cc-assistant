@@ -21,7 +21,7 @@ class MyToolWindowFactory : ToolWindowFactory {
         chatPanel.associatedProject = project
         logger.info("ReactChatPanel created, size: ${chatPanel.size}, component count: ${chatPanel.componentCount}")
 
-        val content = ContentFactory.getInstance().createContent(chatPanel, "Chat", false)
+        val content = ContentFactory.getInstance().createContent(chatPanel, "", false)
         toolWindow.contentManager.addContent(content)
 
         logger.info("Content added to ToolWindow, available: ${toolWindow.isAvailable}")

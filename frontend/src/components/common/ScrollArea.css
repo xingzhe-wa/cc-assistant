@@ -42,20 +42,18 @@
 
 /* WebKit 浏览器滚动条样式 */
 .cc-scroll-area::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 4px;
+  height: 4px;
 }
 
 .cc-scroll-area::-webkit-scrollbar-track {
   background: transparent;
-  border-radius: var(--radius-md, 5px);
+  border-radius: 2px;
 }
 
 .cc-scroll-area::-webkit-scrollbar-thumb {
   background: var(--fg-muted, #494b5a);
-  border-radius: var(--radius-md, 5px);
-  border: 2px solid transparent;
-  background-clip: padding-box;
+  border-radius: 2px;
 }
 
 .cc-scroll-area::-webkit-scrollbar-thumb:hover {

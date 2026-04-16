@@ -1,9 +1,9 @@
 # CC Assistant 接口设计方案
 
-> **版本**: v6.0 (附件 + 右键引用 + 强化提示词 扩展版)
-> **更新日期**: 2026-04-16
+> **版本**: v6.2 (UI Token化 + MessageTimeline 精确定位版)
+> **更新日期**: 2026-04-17
 > **设计原则**: 以功能和交互动作为驱动，端到端接口设计，与实际代码对齐
-> **与架构对齐**: v5.1 与 CC_Assistant_Technical_Architecture.md v5.0 保持一致
+> **与架构对齐**: v6.2 与 CC_Assistant_Technical_Architecture.md v6.2 保持一致
 
 ---
 
@@ -2849,6 +2849,110 @@ CCChat.setEnhancedPrompt(enhancedText: string)
 
 ---
 
+### M2-017: AIStatusBar 状态栏接口 (v6.1 新增)
+
+| 属性 | 值 |
+|------|-----|
+| **功能描述** | 输入区顶部的 AI 状态栏，始终可见，显示任务状态/子代理/diff 统计 |
+| **优先级** | P0 |
+| **依赖** | M2-011 (JCEF Bridge) |
+
+#### 前端数据模型
+```typescript
+type AgentStatus = 'idle' | 'thinking' | 'working' | 'waiting';
+
+interface AIStatusBarProps {
+  status: AgentStatus;       // 当前 AI 状态
+  statusMessage: string;     // 状态描述文字
+  subAgentName: string | null; // 子代理名称
+  diffFiles: MockDiffFile[]; // diff 文件列表
+}
+
+interface MockDiffFile {
+  name: string;
+  add: number;
+  del: number;
+}
+```
+
+#### 状态转换流
+```
+用户发送消息 → agentStatus: 'thinking', statusMessage: 'Analyzing...'
+首个 streaming chunk → agentStatus: 'working', statusMessage: 'Generating...'
+流式完成 → agentStatus: 'idle', statusMessage: ''
+```
+
+#### UI 行为
+- **idle**: 灰色圆点 + "Ready" 文字；中间/右侧显示占位符 "—"
+- **thinking**: 琥珀色脉冲圆点 + "Thinking..."
+- **working**: 绿色圆点 + "Working..."
+- **waiting**: 青色圆点 + "Waiting for input..."
+- 中间区域：有子代理时显示 `smart_toy` icon + 名称 chip
+- 右侧区域：有 diff 文件时显示 `+X -Y in N files` badge
+
+---
+
+### M2-018: ErrorBoundary 渲染安全网 (v6.1 新增)
+
+| 属性 | 值 |
+|------|-----|
+| **功能描述** | React ErrorBoundary 包裹 App，防止渲染错误导致黑屏 |
+| **优先级** | P0 |
+| **依赖** | React 19 |
+
+#### 实现方案
+```typescript
+// ErrorBoundary: React Class 组件
+// - getDerivedStateFromError: 捕获错误，切换到 fallback 状态
+// - componentDidCatch: 记录错误日志到 JCEF Java 层
+// - Fallback UI: 居中面板，错误 icon + 消息 + Reload 按钮
+// - renderMarkdown: 包裹 try-catch，异常时返回 <pre> 转义文本
+```
+
+#### 防护层级
+1. **renderMarkdown try-catch**: 捕获 `marked.parse()` 异常，降级为转义文本
+2. **ErrorBoundary**: 捕获 React 组件树渲染异常，显示 fallback UI 而非黑屏
+
+---
+
+### M4-008: Skills/Agents Scope 字段接口 (v6.1 新增)
+
+| 属性 | 值 |
+|------|-----|
+| **功能描述** | Agent/Skill 编辑弹窗添加作用域选择器，卡片显示 scope badge |
+| **优先级** | P1 |
+| **依赖** | M4-001 (Settings UI), SkillAgentService |
+
+#### 前端数据模型扩展
+```typescript
+interface MockAgent {
+  id: string;
+  name: string;
+  description?: string;
+  scope?: 'global' | 'project';  // v6.1 新增
+}
+
+interface MockSkill {
+  id: string;
+  name: string;
+  description?: string;
+  scope?: 'global' | 'project';  // v6.1 新增
+  trigger?: string;
+}
+```
+
+#### UI 组件变更
+- **SettingsPage**: Agent/Skill 卡片标题旁显示 scope badge (`G` 金色 / `P` 蓝色)
+- **AgentEditModal**: 新增 scope `<select>` (Project / Global)
+- **SkillEditModal**: 同上
+- **InputToolbar**: agent dropdown 选项显示 `[G]`/`[P]` 前缀
+
+#### 作用域切换行为
+- 切换 scope = 复制文件到目标目录（全局→项目 或 项目→全局）
+- 后端 SkillAgentService 扫描两个目录，ID 格式: `global:xxx` / `project:xxx`
+
+---
+
 ## 接口汇总表
 
 ### 按 UI 组件分类
@@ -2972,11 +3076,17 @@ CCChat.setEnhancedPrompt(enhancedText: string)
 | 27 | v6.0: 添加 M5-001b SendFileToChat Action | P1 | Project View 右键引用 |
 | 28 | v6.0: 添加 M5-001c SendSelectionToChat Action | P1 | 编辑器右键代码引用 |
 | 29 | v6.0: 扩展 M2-011b enhancePrompt 为结构化 options | P1 | 模板化提示词增强 |
+| 30 | v6.1: 添加 AIStatusBar 数据流 (状态栏始终可见) | P0 | 交互体验 |
+| 31 | v6.1: 添加 ErrorBoundary 渲染安全网 | P0 | 稳定性 |
+| 32 | v6.1: 添加 Skills/Agents scope 字段与 UI | P1 | 作用域管理 |
+| 33 | v6.1: 移除 ToolWindow content tab title "Chat" | P2 | UI 简化 |
+| 34 | v6.2: CSS token 化（accent/selection/focus-ring/shadow） | P1 | 视觉一致性 |
+| 35 | v6.2: MessageTimeline 实际 offsetTop 定位 + keyboard a11y | P2 | 导航精度 |
+| 36 | v6.2: 合并 messageIn/cursorBlink/toastIn 重复动画 | P2 | 代码整洁 |
+| 37 | v6.2: ScrollArea scrollbar 宽度 10px → 4px | P3 | 视觉统一 |
 
 ---
 
-*文档版本: v6.0*
-
-*文档版本: v5.1*  
-*最后更新: 2026-04-15*  
-*与 CC_Assistant_Technical_Architecture.md v5.0 保持一致*
+*文档版本: v6.2*
+*最后更新: 2026-04-17*
+*同步关联: CC_Assistant_Technical_Architecture.md v6.2, plan/README.md v6.2*

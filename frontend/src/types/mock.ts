@@ -62,13 +62,20 @@ export interface MockAgent {
   id: string;
   name: string;
   description?: string;
+  scope?: ItemScope;
 }
 
 export interface MockSkill {
   id: string;
   name: string;
   description?: string;
+  scope?: ItemScope;
+  trigger?: string;
 }
+
+// ========== AI Status ==========
+
+export type AgentStatus = 'idle' | 'thinking' | 'working' | 'waiting';
 
 // ========== Diff ==========
 
@@ -83,6 +90,7 @@ export interface MockDiffFile {
 export type Locale = 'zh-CN' | 'en-US' | 'ja-JP' | 'ko-KR';
 export type Theme = 'idea' | 'dark' | 'light' | 'highContrast';
 export type Mode = 'auto' | 'plan' | 'agent';
+export type ItemScope = 'global' | 'project';
 
 export interface MockConfig {
   lang: Locale;

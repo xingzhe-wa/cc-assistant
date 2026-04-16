@@ -4,3 +4,4 @@ export { Modal } from './Modal';
 export { Toast, ToastContainer } from './Toast';
 export { ScrollArea } from './ScrollArea';
 export { ConfirmDialog } from './ConfirmDialog';
+export { ErrorBoundary } from './ErrorBoundary';

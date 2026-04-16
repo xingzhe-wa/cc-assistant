@@ -1,0 +1,71 @@
+.timeline {
+  position: absolute;
+  right: 4px;
+  top: 0;
+  bottom: 0;
+  width: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.track {
+  position: relative;
+  width: 1px;
+  flex: 1;
+  background: var(--border-light);
+}
+
+.node {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--fg-muted);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: all var(--transition-fast);
+  z-index: 1;
+}
+
+.node:hover {
+  background: var(--accent-primary);
+  transform: translateX(-50%) scale(1.5);
+}
+
+.node.active {
+  background: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  transform: translateX(-50%) scale(1.3);
+}
+
+/* Tooltip */
+.tooltip {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--bg-element);
+  border: 1px solid var(--border-default);
+  color: var(--fg-secondary);
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.node:hover .tooltip {
+  opacity: 1;
+}

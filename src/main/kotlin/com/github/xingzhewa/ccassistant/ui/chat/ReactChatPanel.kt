@@ -3,6 +3,7 @@ package com.github.xingzhewa.ccassistant.ui.chat
 import com.github.xingzhewa.ccassistant.bridge.CliBridgeService
 import com.github.xingzhewa.ccassistant.bridge.CliMessage
 import com.github.xingzhewa.ccassistant.bridge.CliMessageCallback
+import com.github.xingzhewa.ccassistant.services.SkillAgentService
 import com.google.gson.Gson
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.invokeLater
@@ -97,6 +98,10 @@ class ReactChatPanel(
 
         val panel = jcefPanel!!.createPanel()
         add(panel, BorderLayout.CENTER)
+
+        // 初始化后扫描 Skills/Agents 并推送到前端
+        invokeLater { scanAndPushSkillsAgents() }
+
         logger.info("ReactChatPanel initialized with JcefChatPanel")
     }
 
@@ -314,5 +319,42 @@ class ReactChatPanel(
         associatedProject?.let { unregister(it.name) }
         jcefPanel?.dispose()
         jcefPanel = null
+    }
+
+    /**
+     * 扫描 Skills/Agents 并推送到前端
+     */
+    private fun scanAndPushSkillsAgents() {
+        val project = associatedProject ?: return
+        try {
+            val service = SkillAgentService(project)
+            val skills = service.scanSkills()
+            val agents = service.scanAgents()
+
+            if (skills.isNotEmpty() || agents.isNotEmpty()) {
+                jcefPanel?.setSkillsAndAgents(
+                    skills = skills.map {
+                        JcefChatPanel.SkillBridgeData(
+                            id = it.id,
+                            name = it.name,
+                            description = it.description,
+                            trigger = it.trigger,
+                            scope = it.scope.name.lowercase()
+                        )
+                    },
+                    agents = agents.map {
+                        JcefChatPanel.AgentBridgeData(
+                            id = it.id,
+                            name = it.name,
+                            description = it.description,
+                            scope = it.scope.name.lowercase()
+                        )
+                    }
+                )
+                logger.info("Pushed ${skills.size} skills and ${agents.size} agents to frontend")
+            }
+        } catch (e: Exception) {
+            logger.warn("Failed to scan skills/agents", e)
+        }
     }
 }

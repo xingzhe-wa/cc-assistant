@@ -1,0 +1,119 @@
+.statusBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 28px;
+  padding: 0 var(--space-md);
+  background: var(--bg-element);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  gap: var(--space-md);
+  overflow: hidden;
+}
+
+/* Left section: status dot + message */
+.left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusDot.idle {
+  background: var(--fg-muted);
+}
+
+.statusDot.thinking {
+  background: var(--color-warning);
+  animation: dotPulse 1.2s ease-in-out infinite;
+}
+
+.statusDot.working {
+  background: var(--color-success);
+}
+
+.statusDot.waiting {
+  background: var(--color-info);
+}
+
+.statusText {
+  font-size: 11px;
+  color: var(--fg-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Center section: sub-agent chip */
+.center {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.subAgentChip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: var(--info-bg);
+  border-radius: 10px;
+  font-size: 10px;
+  color: var(--color-info);
+}
+
+.subAgentChip span {
+  white-space: nowrap;
+}
+
+/* Right section: diff badge */
+.right {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.diffBadge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: var(--accent-bg);
+  border-radius: 10px;
+  font-size: 10px;
+  cursor: default;
+  white-space: nowrap;
+}
+
+.diffBadge .additions {
+  color: var(--color-success);
+}
+
+.diffBadge .deletions {
+  color: var(--color-error);
+}
+
+.diffBadge .fileCount {
+  color: var(--fg-muted);
+  margin-left: 2px;
+}
+
+/* Placeholder for empty sections */
+.placeholder {
+  font-size: 11px;
+  color: var(--fg-muted);
+  opacity: 0.4;
+}
+
+@keyframes dotPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}

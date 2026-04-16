@@ -42,6 +42,7 @@ interface ConfigState {
     name: string;
     description: string;
     systemPrompt: string;
+    scope?: 'global' | 'project';
   }>;
 
   // Skills
@@ -50,6 +51,7 @@ interface ConfigState {
     name: string;
     description: string;
     triggerRule: string;
+    scope?: 'global' | 'project';
   }>;
 
   // Actions
@@ -75,6 +77,10 @@ interface ConfigState {
   addSkill: (skill: Omit<ConfigState['skills'][0], 'id'>) => void;
   updateSkill: (id: string, skill: Partial<ConfigState['skills'][0]>) => void;
   deleteSkill: (id: string) => void;
+
+  // Backend data injection
+  setAgentsFromBackend: (agents: Array<Record<string, unknown>>) => void;
+  setSkillsFromBackend: (skills: Array<Record<string, unknown>>) => void;
 }
 
 export const useConfigStore = create<ConfigState>((set) => ({
@@ -199,5 +205,42 @@ export const useConfigStore = create<ConfigState>((set) => ({
       skills: state.skills.filter((s) => s.id !== id)
     }));
     jcefBridge.send('skillDelete', id);
+  },
+
+  // Backend data injection — merge scanned skills/agents into store
+  setAgentsFromBackend: (backendAgents) => {
+    set((state) => {
+      const mapped = backendAgents.map((a: Record<string, unknown>): ConfigState['agents'][0] => ({
+        id: String(a.id || ''),
+        name: String(a.name || ''),
+        description: String(a.description || ''),
+        systemPrompt: String(a.description || ''),
+        scope: (a.scope === 'global' || a.scope === 'project') ? a.scope : undefined,
+      }));
+      const existingIds = new Set(mapped.map(a => a.id));
+      const merged: ConfigState['agents'] = [
+        ...state.agents.filter(a => !existingIds.has(a.id)),
+        ...mapped,
+      ];
+      return { agents: merged };
+    });
+  },
+
+  setSkillsFromBackend: (backendSkills) => {
+    set((state) => {
+      const mapped = backendSkills.map((s: Record<string, unknown>): ConfigState['skills'][0] => ({
+        id: String(s.id || ''),
+        name: String(s.name || ''),
+        description: String(s.description || ''),
+        triggerRule: String(s.trigger || ''),
+        scope: (s.scope === 'global' || s.scope === 'project') ? s.scope : undefined,
+      }));
+      const existingIds = new Set(mapped.map(s => s.id));
+      const merged: ConfigState['skills'] = [
+        ...state.skills.filter(s => !existingIds.has(s.id)),
+        ...mapped,
+      ];
+      return { skills: merged };
+    });
   }
 }));

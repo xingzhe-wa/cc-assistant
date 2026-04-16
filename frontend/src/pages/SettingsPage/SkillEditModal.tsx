@@ -8,6 +8,7 @@ interface Skill {
   name: string;
   description: string;
   triggerRule: string;
+  scope?: 'global' | 'project';
 }
 
 interface SkillEditModalProps {
@@ -27,7 +28,8 @@ export const SkillEditModal: React.FC<SkillEditModalProps> = ({
   const [formData, setFormData] = useState<Skill>({
     name: '',
     description: '',
-    triggerRule: ''
+    triggerRule: '',
+    scope: 'project'
   });
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -38,7 +40,8 @@ export const SkillEditModal: React.FC<SkillEditModalProps> = ({
       setFormData({
         name: '',
         description: '',
-        triggerRule: ''
+        triggerRule: '',
+        scope: 'project'
       });
     }
     setValidationError(null);
@@ -101,6 +104,19 @@ export const SkillEditModal: React.FC<SkillEditModalProps> = ({
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.label}>作用域</label>
+          <select
+            className={styles.select}
+            value={formData.scope || 'project'}
+            onChange={(e) => setFormData({ ...formData, scope: e.target.value as 'global' | 'project' })}
+          >
+            <option value="project">项目 (.claude/skills/)</option>
+            <option value="global">全局 (~/.claude/skills/)</option>
+          </select>
+          <p className={styles.hint}>项目作用域仅当前项目可用；全局作用域所有项目共享</p>
         </div>
 
         <div className={styles.field}>

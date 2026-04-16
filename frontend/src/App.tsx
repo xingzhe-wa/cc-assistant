@@ -60,6 +60,10 @@ const App: React.FC = () => {
     addAttachment,
     addAttachments,
     removeAttachment,
+    agentStatus,
+    statusMessage,
+    subAgentName,
+    diffFiles,
   } = useChatStore();
 
   const activeSession = sessions.find(s => s.id === activeSessionId);
@@ -195,6 +199,10 @@ const App: React.FC = () => {
             onThinkToggle={toggleThink}
             contextUsed={contextUsed}
             onEnhance={enhancePrompt}
+            agentStatus={agentStatus}
+            statusMessage={statusMessage}
+            subAgentName={subAgentName}
+            diffFiles={diffFiles}
             attachments={attachments}
             onAddAttachment={addAttachment}
             onAddAttachments={addAttachments}

@@ -591,4 +591,28 @@ class JcefChatPanel : Disposable {
         val id: String,
         val name: String
     )
+
+    data class SkillBridgeData(
+        val id: String,
+        val name: String,
+        val description: String?,
+        val trigger: String?,
+        val scope: String
+    )
+
+    data class AgentBridgeData(
+        val id: String,
+        val name: String,
+        val description: String?,
+        val scope: String
+    )
+
+    /**
+     * 注入 Skills 和 Agents 数据（含作用域）
+     */
+    fun setSkillsAndAgents(skills: List<SkillBridgeData>, agents: List<AgentBridgeData>) {
+        val skillsJson = gson.toJson(skills)
+        val agentsJson = gson.toJson(agents)
+        executeScript("CCProviders.setSkillsAndAgents($skillsJson, $agentsJson)")
+    }
 }

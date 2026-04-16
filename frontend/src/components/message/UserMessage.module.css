@@ -2,25 +2,14 @@
   display: flex;
   justify-content: flex-end;
   padding: 5px 18px;
-  animation: messageIn 0.2s ease;
-}
-
-@keyframes messageIn {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  animation: fadeIn 0.2s ease;
 }
 
 .bubble {
   max-width: 70%;
   padding: 8px 12px;
   background: var(--accent-bg);
-  border: 1px solid rgba(201, 135, 58, 0.1);
+  border: 1px solid var(--accent-border);
   border-radius: var(--radius-xl) var(--radius-xl) var(--radius-sm) var(--radius-xl);
   font-size: 13px;
   line-height: 1.6;

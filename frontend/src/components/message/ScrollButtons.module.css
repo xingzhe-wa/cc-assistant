@@ -1,0 +1,42 @@
+.wrapper {
+  position: absolute;
+  bottom: 12px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.wrapper.visible {
+  pointer-events: auto;
+}
+
+.btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-element);
+  color: var(--fg-secondary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.wrapper.visible .btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.btn:hover {
+  background: var(--bg-hover);
+  color: var(--fg-primary);
+  border-color: var(--fg-muted);
+}

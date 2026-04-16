@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { MockSession, MockMessage, Toast as ToastType, ToastType as ToastVariant, Attachment } from '@/types/mock';
+import type { MockSession, MockMessage, Toast as ToastType, ToastType as ToastVariant, Attachment, AgentStatus } from '@/types/mock';
 import type { PageType } from '@/pages/types';
 import { mockSessions, createMockSession, mockDiffFiles, getMockModelsByProvider } from '@/mock';
 import { jcefBridge } from '@/utils/jcef';
@@ -17,6 +17,11 @@ interface ChatState {
 
   // Diff
   diffFiles: typeof mockDiffFiles;
+
+  // AI Status
+  agentStatus: AgentStatus;
+  statusMessage: string;
+  subAgentName: string | null;
 
   // Toast
   toasts: ToastType[];
@@ -101,6 +106,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   streaming: false,
   streamingContent: '',
   diffFiles: mockDiffFiles,
+  agentStatus: 'idle' as AgentStatus,
+  statusMessage: '',
+  subAgentName: null,
   toasts: [],
   inputValue: '',
   attachments: [],
@@ -226,6 +234,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     addMessage(activeSessionId, userMessage);
     set({ inputValue: '' });
     setStreaming(true, '');
+    set({ agentStatus: 'thinking', statusMessage: 'Analyzing...' });
 
     // Notify Java backend
     jcefBridge.sendMessage(inputValue, {
@@ -250,12 +259,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const streamInterval = setInterval(() => {
       const chunk = randomResponse.slice(index, index + 5);
       if (chunk) {
+        if (index === 0) {
+          set({ agentStatus: 'working', statusMessage: 'Generating...' });
+        }
         appendStreamingContent(chunk);
         index += 5;
       }
       if (index >= randomResponse.length) {
         clearInterval(streamInterval);
         setStreaming(false);
+        set({ agentStatus: 'idle', statusMessage: '' });
 
         const aiMessage: MockMessage = {
           id: `ai-${Date.now()}`,

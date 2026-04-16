@@ -336,7 +336,14 @@ const AgentSettings: React.FC<AgentSettingsProps> = ({ onEdit, onDeleteConfirm }
               <span className="material-icons-round">smart_toy</span>
             </div>
             <div style={{ flex: 1, marginLeft: '10px' }}>
-              <div className={styles.listCardName}>{agent.name}</div>
+              <div className={styles.listCardName}>
+                {agent.name}
+                {agent.scope && (
+                  <span className={`${styles.scopeBadge} ${styles[agent.scope]}`}>
+                    {agent.scope === 'global' ? 'G' : 'P'}
+                  </span>
+                )}
+              </div>
               <div className={styles.listCardDesc}>{agent.description}</div>
             </div>
           </div>
@@ -401,7 +408,14 @@ const SkillSettings: React.FC<SkillSettingsProps> = ({ onEdit, onDeleteConfirm }
               <span className="material-icons-round">bolt</span>
             </div>
             <div style={{ flex: 1, marginLeft: '10px' }}>
-              <div className={styles.listCardName}>{skill.name}</div>
+              <div className={styles.listCardName}>
+                {skill.name}
+                {skill.scope && (
+                  <span className={`${styles.scopeBadge} ${styles[skill.scope]}`}>
+                    {skill.scope === 'global' ? 'G' : 'P'}
+                  </span>
+                )}
+              </div>
               <div className={styles.listCardDesc}>{skill.description}</div>
             </div>
           </div>

@@ -1,9 +1,16 @@
-import React, { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { UserMessage } from './UserMessage';
 import { AIMessage } from './AIMessage';
 import { EmptyState } from './EmptyState';
 import type { MockMessage } from '@/types/mock';
 import styles from './MessageList.module.css';
+
+export interface MessageListHandle {
+  scrollToMessage: (messageId: string) => void;
+  scrollToTop: () => void;
+  scrollToBottom: () => void;
+  isNearBottom: () => boolean;
+}
 
 interface MessageListProps {
   messages: MockMessage[];
@@ -14,9 +21,12 @@ interface MessageListProps {
   onRegenerate?: (id: string) => void;
   onRewind?: (id: string) => void;
   onQuickAction?: (text: string) => void;
+  onScroll?: (scrollTop: number, scrollHeight: number, clientHeight: number) => void;
 }
 
-export const MessageList: React.FC<MessageListProps> = ({
+const BOTTOM_THRESHOLD = 80;
+
+export const MessageList = forwardRef<MessageListHandle, MessageListProps>(({
   messages,
   streaming = false,
   streamingContent = '',
@@ -24,15 +34,69 @@ export const MessageList: React.FC<MessageListProps> = ({
   onQuote,
   onRegenerate,
   onRewind,
-  onQuickAction
-}) => {
+  onQuickAction,
+  onScroll,
+}, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const isAutoScrolling = useRef(false);
 
-  useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+  const checkNearBottom = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return true;
+    return el.scrollHeight - el.scrollTop - el.clientHeight < BOTTOM_THRESHOLD;
+  }, []);
+
+  const scrollToMessage = useCallback((messageId: string) => {
+    const el = document.getElementById(`msg-${messageId}`);
+    if (el) {
+      isAutoScrolling.current = true;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      requestAnimationFrame(() => { isAutoScrolling.current = false; });
     }
-  }, [messages, streaming, streamingContent]);
+  }, []);
+
+  const scrollToTop = useCallback(() => {
+    const el = containerRef.current;
+    if (el) {
+      isAutoScrolling.current = true;
+      el.scrollTo({ top: 0, behavior: 'smooth' });
+      requestAnimationFrame(() => { isAutoScrolling.current = false; });
+    }
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
+    const el = containerRef.current;
+    if (el) {
+      isAutoScrolling.current = true;
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      requestAnimationFrame(() => { isAutoScrolling.current = false; });
+    }
+  }, []);
+
+  useImperativeHandle(ref, () => ({
+    scrollToMessage,
+    scrollToTop,
+    scrollToBottom,
+    isNearBottom: checkNearBottom,
+  }), [scrollToMessage, scrollToTop, scrollToBottom, checkNearBottom]);
+
+  // Smart auto-scroll: only when already near bottom
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    if (checkNearBottom()) {
+      isAutoScrolling.current = true;
+      el.scrollTop = el.scrollHeight;
+      requestAnimationFrame(() => { isAutoScrolling.current = false; });
+    }
+  }, [messages, streaming, streamingContent, checkNearBottom]);
+
+  const handleScroll = useCallback(() => {
+    if (isAutoScrolling.current) return;
+    const el = containerRef.current;
+    if (!el) return;
+    onScroll?.(el.scrollTop, el.scrollHeight, el.clientHeight);
+  }, [onScroll]);
 
   if (messages.length === 0 && !streaming) {
     return (
@@ -43,7 +107,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   }
 
   return (
-    <div ref={containerRef} className={styles.container}>
+    <div ref={containerRef} className={styles.container} onScroll={handleScroll}>
       {messages.map((message) => {
         if (message.role === 'user') {
           return (
@@ -79,4 +143,4 @@ export const MessageList: React.FC<MessageListProps> = ({
       )}
     </div>
   );
-};
+});

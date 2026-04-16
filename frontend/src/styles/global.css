@@ -10,15 +10,20 @@
 }
 
 :root {
-  /* 基础颜色 */
-  --bg-primary: #111214;
-  --bg-secondary: #17181d;
-  --bg-element: #1e2028;
-  --bg-hover: #272933;
+  /* 基础颜色 — 拉大层级差异，提升视觉区分度 */
+  --bg-primary: #0d0e11;
+  --bg-secondary: #151720;
+  --bg-element: #1e2130;
+  --bg-hover: #292d3e;
 
   /* 强调色 */
   --accent-primary: #c9873a;
   --accent-secondary: #daa04e;
+
+  /* 强调色透明变体 — 替代硬编码 rgba */
+  --accent-bg: rgba(201, 135, 58, 0.08);
+  --accent-border: rgba(201, 135, 58, 0.15);
+  --accent-glow: rgba(201, 135, 58, 0.2);
 
   /* 状态色 */
   --color-success: #50b85e;
@@ -30,7 +35,7 @@
   --success-bg: rgba(80, 184, 94, 0.1);
   --error-bg: rgba(217, 85, 85, 0.1);
   --info-bg: rgba(77, 184, 204, 0.1);
-  --accent-bg: rgba(201, 135, 58, 0.08);
+  --warning-bg: rgba(217, 160, 85, 0.1);
 
   /* 文本色 */
   --fg-primary: #e8e9ed;
@@ -39,14 +44,33 @@
   --fg-disabled: #4a4d5a;
 
   /* 边框色 */
-  --border-default: #23252e;
-  --border-light: #1b1d24;
+  --border-default: #252838;
+  --border-light: #1c1e2a;
 
-  /* 圆角 */
-  --radius-sm: 3px;
-  --radius-md: 5px;
-  --radius-lg: 7px;
-  --radius-xl: 10px;
+  /* 间距 token */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+
+  /* 阴影 token */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.45);
+
+  /* Focus ring token */
+  --focus-ring: 0 0 0 3px rgba(201, 135, 58, 0.15);
+
+  /* 过渡 token */
+  --transition-fast: 0.12s ease;
+  --transition-normal: 0.2s ease;
+
+  /* 圆角 — 适度放大 */
+  --radius-sm: 4px;
+  --radius-md: 7px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
 
   /* 字体 */
   --font-sans: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -54,10 +78,10 @@
 
   /* ========== 原型兼容变量 ========== */
   /* 与 session.html 和 setting.html 保持一致的变量名 */
-  --bg: #111214;
-  --sf: #17181d;
-  --el: #1e2028;
-  --hv: #272933;
+  --bg: #0d0e11;
+  --sf: #151720;
+  --el: #1e2130;
+  --hv: #292d3e;
   --ac: #c9873a;
   --ac2: #daa04e;
   --gn: #50b85e;
@@ -70,11 +94,11 @@
   --fg2: #87899a;
   --fg3: #494b5a;
   --fg4: #31333d;
-  --bd: #23252e;
-  --bd2: #1b1d24;
-  --r: 5px;
-  --r2: 7px;
-  --r3: 10px;
+  --bd: #252838;
+  --bd2: #1c1e2a;
+  --r: 7px;
+  --r2: 10px;
+  --r3: 14px;
 }
 
 * {
@@ -120,7 +144,7 @@ body {
 
 /* 选中文本样式 */
 ::selection {
-  background: rgba(201, 135, 58, 0.3);
+  background: var(--accent-glow);
 }
 
 /* Material Icons */
