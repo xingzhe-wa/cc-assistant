@@ -36,6 +36,7 @@ class JcefChatPanel : Disposable {
     private var jsQuery: JBCefJSQuery? = null
 
     private var isInitialized = false
+    private var isLoaded = false
     private val disposed = java.util.concurrent.atomic.AtomicBoolean(false)
 
     // MOCK_MODE: true = 不注入 javaBridge，让 JS 使用 Mock 模式
@@ -66,6 +67,7 @@ class JcefChatPanel : Disposable {
     var onRenameSession: ((String, String) -> Unit)? = null
     var onDeleteSession: ((String) -> Unit)? = null
     var onOpenDiff: ((String) -> Unit)? = null
+    var onSearchFiles: ((String) -> Unit)? = null
 
     data class MessageOptions(
         val stream: Boolean = true,
@@ -84,6 +86,7 @@ class JcefChatPanel : Disposable {
 
     /**
      * 创建面板
+     * 采用分阶段加载：骨架屏 → 完整应用，提升感知性能
      */
     fun createPanel(): JComponent {
         val panel = JPanel(BorderLayout())
@@ -101,11 +104,12 @@ class JcefChatPanel : Disposable {
             messageContainer!!.add(browser!!.getComponent(), BorderLayout.CENTER)
             panel.add(messageContainer!!, BorderLayout.CENTER)
 
-            // 延迟加载 HTML 内容，确保浏览器完全初始化
+            // 阶段 1: 立即显示加载骨架（~1KB，零延迟）
+            loadSkeleton()
+
+            // 阶段 2: 延迟加载完整应用（避免阻塞 IDE 启动）
             invokeLater {
-                // 读取并加载 HTML 内容
                 loadHtmlContent()
-                // 初始化 JS Bridge
                 initializeJSBridge()
                 isInitialized = true
                 logger.info("JcefChatPanel created and initialized")
@@ -120,11 +124,35 @@ class JcefChatPanel : Disposable {
     }
 
     /**
+     * 阶段 1: 加载轻量骨架 HTML，显示 loading 动画
+     * 约 500 字节，即开即显，给用户即时反馈
+     */
+    private fun loadSkeleton() {
+        val skeleton = """
+            <!DOCTYPE html>
+            <html><head><style>
+              body { margin:0; background:#111214; display:flex; align-items:center; justify-content:center; height:100vh; font-family:system-ui,sans-serif; }
+              .loader { display:flex; flex-direction:column; align-items:center; gap:12px; opacity:0.7; }
+              .spinner { width:28px; height:28px; border:3px solid #272933; border-top-color:#c9873a; border-radius:50%; animation:spin 0.8s linear infinite; }
+              @keyframes spin { to { transform:rotate(360deg); } }
+              .text { color:#6a6d7a; font-size:12px; }
+            </style></head><body>
+              <div class="loader">
+                <div class="spinner"></div>
+                <div class="text">CC Assistant</div>
+              </div>
+            </body></html>
+        """.trimIndent()
+        browser?.loadHTML(skeleton)
+    }
+
+    /**
      * 加载 HTML 内容到 JCEF
      * 使用 loadHTML() 避免 JAR 内相对路径加载问题
      * 字体文件会被转换为 Base64 并内联到 CSS 中
      */
     private fun loadHtmlContent() {
+        if (isLoaded) return
         try {
             // 读取 chat.html 内容
             val htmlContent = this::class.java.classLoader
@@ -184,6 +212,7 @@ class JcefChatPanel : Disposable {
 
             // 使用 loadHTML 加载内联内容
             browser?.loadHTML(inlineHtml)
+            isLoaded = true
             logger.info("HTML content loaded successfully, size: ${inlineHtml.length} chars")
 
         } catch (e: Throwable) {
@@ -299,6 +328,10 @@ class JcefChatPanel : Disposable {
                 // Diff
                 onOpenDiff: function(file) {
                     $queryRef.inject("openDiff:" + file);
+                },
+                // File search
+                onSearchFiles: function(query) {
+                    $queryRef.inject("searchFiles:" + query);
                 }
             };
             window.javaBridgePresent = true;
@@ -371,6 +404,7 @@ class JcefChatPanel : Disposable {
             }
             "deleteSession" -> invokeLater { onDeleteSession?.invoke(data) }
             "openDiff" -> invokeLater { onOpenDiff?.invoke(data) }
+            "searchFiles" -> invokeLater { onSearchFiles?.invoke(data) }
             else -> logger.warn("Unknown action: $action")
         }
 
@@ -461,14 +495,33 @@ class JcefChatPanel : Disposable {
     }
 
     /**
+     * 注入文件路径到输入框（供右键菜单 Action 调用）
+     */
+    fun insertFileReference(path: String) {
+        executeScript("CCChat.insertFileReference(${gson.toJson(path)})")
+    }
+
+    /**
+     * 注入代码片段到输入框（供右键菜单 Action 调用）
+     */
+    fun insertCodeReference(code: String, source: String) {
+        executeScript("CCChat.insertCodeReference(${gson.toJson(code)}, ${gson.toJson(source)})")
+    }
+
+    /**
+     * 返回文件搜索结果到前端（供 @file 引用弹窗使用）
+     */
+    fun setFileList(files: List<Map<String, String>>) {
+        val json = gson.toJson(files)
+        executeScript("CCProviders.setFileList($json)")
+    }
+
+    /**
      * 刷新页面
      */
     fun reload() {
         try {
-            browser?.getCefBrowser()?.let { cef ->
-                val method = cef.javaClass.getMethod("reload")
-                method.invoke(cef)
-            }
+            browser?.getCefBrowser()?.reload()
         } catch (e: Throwable) {
             logger.error("Failed to reload browser", e)
         }
@@ -480,10 +533,7 @@ class JcefChatPanel : Disposable {
     fun executeScript(script: String) {
         if (!isInitialized) return
         try {
-            browser?.getCefBrowser()?.let { cef ->
-                val method = cef.javaClass.getMethod("executeJavaScript", String::class.java, String::class.java, Int::class.javaPrimitiveType)
-                method.invoke(cef, script, "", 0)
-            }
+            browser?.getCefBrowser()?.executeJavaScript(script, "", 0)
         } catch (e: Throwable) {
             logger.error("Failed to execute script: ${e.message}", e)
         }

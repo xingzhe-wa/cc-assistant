@@ -72,7 +72,21 @@ export const zhCN = {
     enhance: '强化提示词',
     context: '上下文占用',
     attachImage: '添加图片',
-    attachFile: '添加文件'
+    attachFile: '添加文件',
+    removeAttachment: '移除附件'
+  },
+
+  // 提示词增强
+  enhance: {
+    templates: '预设模板',
+    role: '角色',
+    format: '输出格式',
+    language: '输出语言',
+    constraints: '约束条件',
+    constraintsPlaceholder: '输入额外约束条件...',
+    preview: '预览',
+    cancel: '取消',
+    apply: '应用'
   },
 
   // 设置

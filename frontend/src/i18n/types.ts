@@ -68,6 +68,22 @@ export interface LocaleMessages {
     stop: string;
     enhance: string;
     context: string;
+    attachImage: string;
+    attachFile: string;
+    removeAttachment: string;
+  };
+
+  // 提示词增强
+  enhance: {
+    templates: string;
+    role: string;
+    format: string;
+    language: string;
+    constraints: string;
+    constraintsPlaceholder: string;
+    preview: string;
+    cancel: string;
+    apply: string;
   };
 
   // 设置

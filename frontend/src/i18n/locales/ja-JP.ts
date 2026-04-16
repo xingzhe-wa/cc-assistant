@@ -65,7 +65,21 @@ export const jaJP = {
     enhance: 'プロンプト強化',
     context: 'コンテキスト使用',
     attachImage: '画像を追加',
-    attachFile: 'ファイルを追加'
+    attachFile: 'ファイルを追加',
+    removeAttachment: '削除'
+  },
+
+  // プロンプト強化
+  enhance: {
+    templates: 'テンプレート',
+    role: 'ロール',
+    format: '出力形式',
+    language: '言語',
+    constraints: '制約条件',
+    constraintsPlaceholder: '制約条件を入力...',
+    preview: 'プレビュー',
+    cancel: 'キャンセル',
+    apply: '適用'
   },
 
   // 設定

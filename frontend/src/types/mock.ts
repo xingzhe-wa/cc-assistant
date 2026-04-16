@@ -101,12 +101,22 @@ export interface MockConfig {
 
 // ========== 发送选项 ==========
 
+export interface Attachment {
+  id: string;
+  name: string;
+  type: 'image' | 'file';
+  path?: string;
+  dataUrl?: string;
+  size?: number;
+}
+
 export interface SendOptions {
   stream?: boolean;
   think?: boolean;
   mode?: Mode;
   model?: string;
   provider?: string;
+  attachments?: Attachment[];
 }
 
 // ========== Toast ==========

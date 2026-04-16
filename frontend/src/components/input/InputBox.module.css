@@ -1,17 +1,32 @@
 .container {
   display: flex;
-  align-items: flex-end;
-  gap: 6px;
-  background: var(--bg-primary);
+  flex-direction: column;
+  gap: 0;
+  background: var(--bg-element);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-xl);
-  padding: 7px 9px;
+  padding: 10px 12px;
   transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.container:hover {
+  border-color: var(--fg-muted);
 }
 
 .container:focus-within {
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 2px rgba(201, 135, 58, 0.1);
+  box-shadow: 0 0 0 3px rgba(201, 135, 58, 0.15);
+}
+
+.attachmentZone {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 6px;
+  min-height: 28px;
+  align-items: center;
 }
 
 .inputWrapper {
@@ -21,18 +36,37 @@
   gap: 6px;
 }
 
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.enhanceBtn {
+  width: 28px;
+  height: 28px;
+  opacity: 0.5;
+  transition: opacity 0.15s ease;
+}
+
+.enhanceBtn:hover {
+  opacity: 1;
+}
+
 .textarea {
   flex: 1;
   background: transparent;
   border: none;
   outline: none;
   color: var(--fg-primary);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
   font-family: var(--font-sans);
   resize: none;
-  min-height: 20px;
-  max-height: 90px;
+  min-height: 75px;
+  max-height: 200px;
 }
 
 .textarea::placeholder {
@@ -44,9 +78,14 @@
 }
 
 .sendBtn {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.sendBtn:hover {
+  transform: scale(1.08);
 }
 
 .sendBtn.primary {

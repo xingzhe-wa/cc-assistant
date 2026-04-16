@@ -12,6 +12,8 @@ interface ICCChat {
   showEmpty: () => void;
   setSessionList: (sessions: string) => void;
   setCliStatus: (version: string, hasUpdate: boolean) => void;
+  insertFileReference: (path: string) => void;
+  insertCodeReference: (code: string, source: string) => void;
 }
 
 // CCApp 接口
@@ -27,6 +29,7 @@ interface ICCProviders {
   setData: (providers: unknown[], models: unknown, agents: unknown[], context: unknown[]) => void;
   setAgents: (agents: unknown[]) => void;
   setSkills: (skills: unknown[]) => void;
+  setFileList: (files: Array<{ name: string; path: string; type: string }>) => void;
 }
 
 // 扩展 Window 接口
@@ -88,6 +91,20 @@ window.CCChat = {
   setCliStatus: (version: string, hasUpdate: boolean) => {
     window.dispatchEvent(new CustomEvent('cc-cli-status', {
       detail: { version, hasUpdate }
+    }));
+  },
+
+  // 注入文件路径到输入框（来自 IDE 右键菜单 Action）
+  insertFileReference: (path: string) => {
+    window.dispatchEvent(new CustomEvent('cc-file-ref', {
+      detail: { path }
+    }));
+  },
+
+  // 注入代码片段到输入框（来自 IDE 编辑器右键菜单 Action）
+  insertCodeReference: (code: string, source: string) => {
+    window.dispatchEvent(new CustomEvent('cc-code-ref', {
+      detail: { code, source }
     }));
   }
 };
@@ -156,6 +173,14 @@ window.CCProviders = {
     console.log('[CCProviders] setSkills', skills);
     window.dispatchEvent(new CustomEvent('cc-skills', {
       detail: { skills }
+    }));
+  },
+
+  // 设置文件搜索结果（供 @file 引用弹窗使用）
+  setFileList: (files: Array<{ name: string; path: string; type: string }>) => {
+    console.log('[CCProviders] setFileList', files.length, 'files');
+    window.dispatchEvent(new CustomEvent('cc-file-list', {
+      detail: { files }
     }));
   }
 };

@@ -1,7 +1,7 @@
 # CC Assistant 接口设计方案
 
-> **版本**: v5.3 (M2 JCEF Bridge 扩展版)  
-> **更新日期**: 2026-04-16  
+> **版本**: v6.0 (附件 + 右键引用 + 强化提示词 扩展版)
+> **更新日期**: 2026-04-16
 > **设计原则**: 以功能和交互动作为驱动，端到端接口设计，与实际代码对齐
 > **与架构对齐**: v5.1 与 CC_Assistant_Technical_Architecture.md v5.0 保持一致
 
@@ -1207,6 +1207,9 @@ jcefBridge.send('skillDelete', id)         // 删除 Skill
 | `cc-cli-status` | CCChat | `{version, hasUpdate}` |
 | `cc-agents` | CCProviders | `{agents}` |
 | `cc-skills` | CCProviders | `{skills}` |
+| `cc-file-ref` | CCChat | `{path}` — 文件路径注入（来自 Project View 右键） |
+| `cc-code-ref` | CCChat | `{code, source}` — 代码片段注入（来自编辑器右键） |
+| `cc-file-list` | CCProviders | `{files}` — 文件搜索结果（@file 引用弹窗） |
 
 ---
 
@@ -2610,6 +2613,242 @@ class PermissionDialog(
 
 ---
 
+### M5-001b: SendFileToChat Action (右键文件引用)
+
+| 属性 | 值 |
+|------|-----|
+| **功能描述** | Project View 文件右键 → 将文件路径注入聊天输入框 |
+| **优先级** | P1 |
+| **依赖** | M2-010 (JCEF), plugin.xml 注册 |
+
+#### Kotlin 实现
+```kotlin
+// 位置: action/SendFileToChatAction.kt
+class SendFileToChatAction : AnAction() {
+    override fun actionPerformed(e: AnActionEvent) {
+        val project = e.project ?: return
+        val files = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY) ?: return
+        val panel = ReactChatPanel.getInstance(project) ?: return
+        files.forEach { panel.insertFileReference(it.path) }
+    }
+    override fun update(e: AnActionEvent) {
+        val project = e.project
+        val files = e.getData(CommonDataKeys.VIRTUAL_FILE_ARRAY)
+        e.presentation.isEnabledAndVisible =
+            project != null && !files.isNullOrEmpty() && ReactChatPanel.getInstance(project) != null
+    }
+}
+```
+
+#### plugin.xml 注册
+```xml
+<action id="CCAssistant.SendFileToChat"
+        class="com.github.xingzhewa.ccassistant.action.SendFileToChatAction"
+        text="Send to CC Assistant">
+    <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+</action>
+```
+
+#### JCEF Bridge (Java → JS)
+```typescript
+// JcefChatPanel.insertFileReference(path) → CCChat.insertFileReference(path)
+// JS 事件: cc-file-ref { path: string }
+// 前端处理: setInputValue(inputValue + '\n@' + path)
+```
+
+---
+
+### M5-001c: SendSelectionToChat Action (右键代码引用)
+
+| 属性 | 值 |
+|------|-----|
+| **功能描述** | 编辑器选中文本右键 → 将代码片段注入聊天输入框 |
+| **优先级** | P1 |
+| **依赖** | M2-010 (JCEF), plugin.xml 注册 |
+
+#### Kotlin 实现
+```kotlin
+// 位置: action/SendSelectionToChatAction.kt
+class SendSelectionToChatAction : AnAction() {
+    override fun actionPerformed(e: AnActionEvent) {
+        val project = e.project ?: return
+        val editor = e.getData(CommonDataKeys.EDITOR) ?: return
+        val selectedText = editor.selectionModel.selectedText ?: return
+        val file = e.getData(CommonDataKeys.VIRTUAL_FILE) ?: return
+        val panel = ReactChatPanel.getInstance(project) ?: return
+        val lineNumber = editor.caretModel.logicalPosition.line + 1
+        panel.insertCodeReference(selectedText, "${file.path}:${lineNumber}")
+    }
+    override fun update(e: AnActionEvent) {
+        val project = e.project
+        val editor = e.getData(CommonDataKeys.EDITOR)
+        val hasSelection = editor?.selectionModel?.hasSelection() == true
+        e.presentation.isEnabledAndVisible =
+            project != null && hasSelection && ReactChatPanel.getInstance(project) != null
+    }
+}
+```
+
+#### plugin.xml 注册
+```xml
+<action id="CCAssistant.SendSelectionToChat"
+        class="com.github.xingzhewa.ccassistant.action.SendSelectionToChatAction"
+        text="Send to CC Assistant">
+    <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+</action>
+```
+
+#### JCEF Bridge (Java → JS)
+```typescript
+// JcefChatPanel.insertCodeReference(code, source) → CCChat.insertCodeReference(code, source)
+// JS 事件: cc-code-ref { code: string, source: string }
+// 前端处理: setInputValue(inputValue + '\n// From: source\ncode')
+```
+
+---
+
+### M2-015: 文件附件接口
+
+| 属性 | 值 |
+|------|-----|
+| **功能描述** | 用户通过文件选择器或拖拽附加文件到消息 |
+| **优先级** | P1 |
+| **依赖** | M2-010 (JCEF InputArea) |
+
+#### 前端数据模型
+```typescript
+// 位置: types/mock.ts
+interface Attachment {
+  id: string;
+  name: string;
+  type: 'image' | 'file';
+  path?: string;       // JCEF 环境下由 Java 设置
+  dataUrl?: string;    // 图片 base64 (开发模式)
+  size?: number;       // 文件大小 (bytes)
+}
+
+interface SendOptions {
+  stream?: boolean;
+  think?: boolean;
+  mode?: string;
+  model?: string;
+  provider?: string;
+  attachments?: Attachment[];  // 新增
+}
+```
+
+#### 前端组件
+```typescript
+// 位置: components/input/AttachmentPreview.tsx
+// 附件预览条：图片缩略图 / 文件图标 + 名称 + 删除按钮
+// 触发方式: InputBox 隐藏 <input type="file"> (forwardRef + useImperativeHandle)
+```
+
+#### JCEF Bridge (JS → Java)
+```typescript
+// 发送消息时附带附件信息
+jcefBridge.sendMessage(text, options)  // options.attachments 包含附件列表
+```
+
+#### Kotlin 侧扩展
+```kotlin
+// CliBridgeService.kt 扩展
+data class Attachment(val name: String, val type: String, val path: String?, val content: String?)
+
+fun executePrompt(
+    prompt: String,
+    workingDir: String? = null,
+    sessionId: String? = null,
+    model: String? = null,
+    attachments: List<Attachment> = emptyList()  // 新增
+): Boolean
+```
+
+---
+
+### M2-016: 图片粘贴接口
+
+| 属性 | 值 |
+|------|-----|
+| **功能描述** | 在输入框粘贴剪贴板图片，自动添加为附件 |
+| **优先级** | P1 |
+| **依赖** | M2-015 |
+
+#### 前端实现
+```typescript
+// 位置: components/input/InputBox.tsx
+const handlePaste = (e: React.ClipboardEvent) => {
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of Array.from(items)) {
+    if (item.type.startsWith('image/')) {
+      e.preventDefault();
+      const file = item.getAsFile();
+      if (file && onImagePaste) onImagePaste(file);
+      return;
+    }
+  }
+};
+```
+
+#### 数据流
+```
+用户 Ctrl+V → InputBox.onPaste → 检测 image/* → FileReader.readAsDataURL
+→ chatStore.addAttachment(file) → 生成 Attachment { type: 'image', dataUrl }
+→ AttachmentPreview 显示缩略图
+→ sendMessage 时 Attachment 随 SendOptions 发送给 Java
+```
+
+---
+
+### M2-011b 扩展: 强化提示词接口
+
+| 属性 | 值 |
+|------|-----|
+| **功能描述** | 结构化提示词增强，支持模板/角色/格式/约束条件 |
+| **优先级** | P1 |
+| **依赖** | M2-011 (JCEF Bridge) |
+
+#### 前端数据模型
+```typescript
+interface PromptTemplate {
+  id: string;
+  name: string;
+  icon: string;
+  role: string;           // e.g. 'Senior Developer'
+  format: string[];       // e.g. ['markdown', 'code']
+  constraints: string;
+  examples?: Array<{ input: string; output: string }>;
+  language: string;       // 输出语言 'zh-CN' | 'en-US' | 'ja-JP'
+  systemPrefix: string;   // 拼接在用户输入前的系统提示
+}
+```
+
+#### 前端组件
+```typescript
+// 位置: components/input/PromptEnhancePanel.tsx
+// Modal: 左侧预设模板列表 + 右侧编辑器 + 底部预览
+// 6 个预设模板: 代码优化 / Bug 分析 / 代码审查 / 文档生成 / 测试用例 / 重构建议
+```
+
+#### JCEF Bridge (JS → Java, 预留)
+```typescript
+// 当前: 前端本地生成增强后的 prompt
+// 未来扩展: AI 驱动的提示词增强
+jcefBridge.enhancePrompt(text, options: {
+  templateId?: string;
+  role?: string;
+  format?: string[];
+  constraints?: string;
+  language?: string;
+})
+
+// Java → JS 返回增强结果
+CCChat.setEnhancedPrompt(enhancedText: string)
+```
+
+---
+
 ## 接口汇总表
 
 ### 按 UI 组件分类
@@ -2647,11 +2886,11 @@ class PermissionDialog(
 |--------|---------|----------|
 | M0 | 2 | M0-001, M0-002 |
 | M1 | 4 | M1-001, M1-002, M1-003, M1-004 |
-| M2 | 16 | M2-001~014, M2-C5, M2-C6 |
+| M2 | 19 | M2-001~014, M2-C5, M2-C6, M2-015, M2-016, M2-011b扩展 |
 | M3 | 1 | M3-001 |
 | M4 | 7 | M4-001~007 |
-| M5 | 3 | M5-001~003 |
-| **总计** | **33** | - |
+| M5 | 6 | M5-001~003, M5-001b, M5-001c, M2-015~016, M2-011b扩展 |
+| **总计** | **37** | - |
 
 ---
 
@@ -2728,10 +2967,15 @@ class PermissionDialog(
 | 22 | v5.2: 添加 M2-C5 历史会话加载 (引用) | P1 | 多会话核心交互 |
 | 23 | v5.2: 添加 M2-C6 消息引用 (Quote) | P1 | 跨会话引用场景 |
 | 24 | v5.3: 添加 M2-011b JCEF 双向通信总线 | P0 | 前后端联调完整接口 |
+| 25 | v6.0: 添加 M2-015 文件附件接口 | P1 | 附件栏 + 文件选择器 |
+| 26 | v6.0: 添加 M2-016 图片粘贴接口 | P1 | 剪贴板图片检测 |
+| 27 | v6.0: 添加 M5-001b SendFileToChat Action | P1 | Project View 右键引用 |
+| 28 | v6.0: 添加 M5-001c SendSelectionToChat Action | P1 | 编辑器右键代码引用 |
+| 29 | v6.0: 扩展 M2-011b enhancePrompt 为结构化 options | P1 | 模板化提示词增强 |
 
 ---
 
-*文档版本: v5.3*
+*文档版本: v6.0*
 
 *文档版本: v5.1*  
 *最后更新: 2026-04-15*  

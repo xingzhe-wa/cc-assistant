@@ -3,13 +3,14 @@ import { AppLayout } from './components/layout';
 import { MessageArea } from './components/message';
 import { InputArea } from './components/input';
 import { ToastContainer } from './components/common';
-import { SettingsPage, HistoryPage } from './pages';
 import { useChatStore } from './stores';
 import { mockProviders, getMockModelsByProvider, mockAgents } from './mock';
 import { useJcefEvents } from './hooks/useJcefEvents';
 import { useI18n } from './hooks/useI18n';
 import { useTheme } from './hooks/useTheme';
 import type { MockSession } from './types/mock';
+import { SettingsPage } from './pages/SettingsPage/SettingsPage';
+import { HistoryPage } from './pages/HistoryPage/HistoryPage';
 import './styles/global.css';
 
 const App: React.FC = () => {
@@ -54,7 +55,11 @@ const App: React.FC = () => {
     setCurrentPage,
     addToast,
     removeToast,
-    enhancePrompt
+    enhancePrompt,
+    attachments,
+    addAttachment,
+    addAttachments,
+    removeAttachment,
   } = useChatStore();
 
   const activeSession = sessions.find(s => s.id === activeSessionId);
@@ -190,6 +195,10 @@ const App: React.FC = () => {
             onThinkToggle={toggleThink}
             contextUsed={contextUsed}
             onEnhance={enhancePrompt}
+            attachments={attachments}
+            onAddAttachment={addAttachment}
+            onAddAttachments={addAttachments}
+            onRemoveAttachment={removeAttachment}
           />
         </AppLayout>
       )}

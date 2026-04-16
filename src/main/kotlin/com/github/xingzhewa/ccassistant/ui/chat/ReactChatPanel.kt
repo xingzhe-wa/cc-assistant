@@ -33,9 +33,51 @@ class ReactChatPanel(
     private var currentSessionId: String? = null
     private var currentMessageId: String? = null
 
+    companion object {
+        private val panels = java.util.concurrent.ConcurrentHashMap<String, ReactChatPanel>()
+
+        /** 注册面板实例，供 Action 查找 */
+        fun register(projectName: String, panel: ReactChatPanel) {
+            panels[projectName] = panel
+        }
+
+        /** 注销面板实例 */
+        fun unregister(projectName: String) {
+            panels.remove(projectName)
+        }
+
+        /** 获取指定项目的面板实例 */
+        fun getInstance(project: com.intellij.openapi.project.Project): ReactChatPanel? {
+            return panels[project.name]
+        }
+    }
+
     init {
         initJcefPanel()
         initCliBridge()
+    }
+
+    /**
+     * 设置关联项目（由 MyToolWindowFactory 调用）
+     */
+    var associatedProject: com.intellij.openapi.project.Project? = null
+        set(value) {
+            field = value
+            value?.let { register(it.name, this) }
+        }
+
+    /**
+     * 注入文件路径到输入框
+     */
+    fun insertFileReference(path: String) {
+        jcefPanel?.insertFileReference(path)
+    }
+
+    /**
+     * 注入代码片段到输入框
+     */
+    fun insertCodeReference(code: String, source: String) {
+        jcefPanel?.insertCodeReference(code, source)
     }
 
     private fun initJcefPanel() {
@@ -125,6 +167,11 @@ class ReactChatPanel(
             logger.info("Rename session: $id -> $title")
             // TODO: 实现会话重命名
         }
+
+        // 文件搜索回调（供 @file 引用弹窗使用）
+        onSearchFiles = { query ->
+            handleSearchFiles(query)
+        }
     }
 
     private fun initCliBridge() {
@@ -151,6 +198,57 @@ class ReactChatPanel(
             prompt = text,
             workingDir = workingDir
         )
+    }
+
+    /**
+     * 处理文件搜索请求（@file 引用弹窗）
+     * 使用 IntelliJ 的 FilenameIndex 搜索项目文件
+     */
+    private fun handleSearchFiles(query: String) {
+        val project = associatedProject ?: return
+        if (query.isBlank()) return
+
+        com.intellij.openapi.application.ApplicationManager.getApplication().executeOnPooledThread {
+            try {
+                val results = mutableListOf<Map<String, String>>()
+                val searchQuery = query.lowercase()
+
+                // 使用 FilenameIndex 搜索文件名
+                com.intellij.openapi.application.ApplicationManager.getApplication().runReadAction {
+                    com.intellij.openapi.project.DumbService.getInstance(project).runReadActionInSmartMode(java.lang.Runnable {
+                        val allFiles = com.intellij.ide.util.PsiNavigationSupport.getInstance()
+                        // 简化实现：使用 VirtualFile 遍历项目根目录
+                        val baseDir = project.baseDir
+                        val maxResults = 20
+
+                        fun searchDir(dir: com.intellij.openapi.vfs.VirtualFile, depth: Int = 0) {
+                            if (results.size >= maxResults || depth > 8) return
+                            for (child in dir.children) {
+                                if (results.size >= maxResults) break
+                                if (child.name.lowercase().contains(searchQuery)) {
+                                    val relPath = child.path.removePrefix(baseDir.path + "/")
+                                    results.add(mapOf(
+                                        "name" to child.name,
+                                        "path" to relPath,
+                                        "type" to if (child.isDirectory) "directory" else "file"
+                                    ))
+                                }
+                                if (child.isDirectory && !child.name.startsWith(".") && child.name != "node_modules" && child.name != "build") {
+                                    searchDir(child, depth + 1)
+                                }
+                            }
+                        }
+                        searchDir(baseDir)
+                    })
+                }
+
+                invokeLater {
+                    jcefPanel?.setFileList(results)
+                }
+            } catch (e: Throwable) {
+                logger.error("Failed to search files", e)
+            }
+        }
     }
 
     private fun handleCliMessage(message: CliMessage) {
@@ -213,6 +311,7 @@ class ReactChatPanel(
      * 清理资源
      */
     fun dispose() {
+        associatedProject?.let { unregister(it.name) }
         jcefPanel?.dispose()
         jcefPanel = null
     }

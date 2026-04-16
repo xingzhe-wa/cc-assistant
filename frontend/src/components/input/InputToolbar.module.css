@@ -2,7 +2,6 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 5px;
 }
 
 .left {
@@ -11,10 +10,30 @@
   gap: 4px;
 }
 
+.attachBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--fg-muted);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.attachBtn:hover {
+  background: var(--bg-hover);
+  color: var(--fg-primary);
+}
+
 .right {
   display: flex;
   align-items: center;
   gap: 3px;
+  color: var(--fg-muted);
 }
 
 .trigger {

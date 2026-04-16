@@ -140,6 +140,22 @@ export const useJcefEvents = () => {
       console.log('[JCEF] Skills:', e.detail);
     };
 
+    // 监听文件路径注入（来自 Project View 右键菜单）
+    const handleFileRef = (e: CustomEvent) => {
+      const { path } = e.detail;
+      const { inputValue, setInputValue } = useChatStore.getState();
+      const prefix = inputValue ? inputValue + '\n' : '';
+      setInputValue(`${prefix}@${path}`);
+    };
+
+    // 监听代码片段注入（来自编辑器右键菜单）
+    const handleCodeRef = (e: CustomEvent) => {
+      const { code, source } = e.detail;
+      const { inputValue, setInputValue } = useChatStore.getState();
+      const prefix = inputValue ? inputValue + '\n' : '';
+      setInputValue(`${prefix}// From: ${source}\n${code}`);
+    };
+
     // 注册事件监听
     window.addEventListener('cc-message', handleMessage as EventListener);
     window.addEventListener('cc-stream', handleStream as EventListener);
@@ -151,6 +167,8 @@ export const useJcefEvents = () => {
     window.addEventListener('cc-i18n', handleI18nUpdate as EventListener);
     window.addEventListener('cc-agents', handleAgents as EventListener);
     window.addEventListener('cc-skills', handleSkills as EventListener);
+    window.addEventListener('cc-file-ref', handleFileRef as EventListener);
+    window.addEventListener('cc-code-ref', handleCodeRef as EventListener);
 
     // 清理
     return () => {
@@ -164,6 +182,8 @@ export const useJcefEvents = () => {
       window.removeEventListener('cc-i18n', handleI18nUpdate as EventListener);
       window.removeEventListener('cc-agents', handleAgents as EventListener);
       window.removeEventListener('cc-skills', handleSkills as EventListener);
+      window.removeEventListener('cc-file-ref', handleFileRef as EventListener);
+      window.removeEventListener('cc-code-ref', handleCodeRef as EventListener);
     };
   }, [addMessage, setStreaming, appendStreamingContent]);
 };

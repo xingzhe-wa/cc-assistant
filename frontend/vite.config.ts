@@ -4,7 +4,7 @@ import path from 'path'
 import fs from 'fs'
 import type { Plugin } from 'vite'
 
-// 插件：构建后复制 index.html 为 chat.html
+// 插件：构建后复制 index.html 为 chat.html，并输出产物体积报告
 function copyChatHtml(): Plugin {
   return {
     name: 'copy-chat-html',
@@ -22,6 +22,23 @@ function copyChatHtml(): Plugin {
         content = content.replace(/<link[^>]*fonts\.googleapis\.com[^>]*>\s*/g, '')
         fs.writeFileSync(chatHtml, content)
         console.log('✓ Created chat.html from index.html')
+      }
+
+      // 构建产物体积报告
+      const assetsDir = path.join(distDir, 'assets')
+      if (fs.existsSync(assetsDir)) {
+        const files = fs.readdirSync(assetsDir)
+        console.log('\n📦 Build size report:')
+        let totalSize = 0
+        for (const file of files) {
+          const filePath = path.join(assetsDir, file)
+          const stat = fs.statSync(filePath)
+          totalSize += stat.size
+          const kb = (stat.size / 1024).toFixed(1)
+          const tag = stat.size > 200 * 1024 ? ' ⚠️ LARGE' : ''
+          console.log(`   ${file}: ${kb} KB${tag}`)
+        }
+        console.log(`   Total: ${(totalSize / 1024).toFixed(1)} KB\n`)
       }
     }
   }
@@ -89,9 +106,10 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
+    minify: true,
     rollupOptions: {
       output: {
-        // 确保资源文件名稳定
+        // 确保资源文件名稳定（JCEF loadHTML 要求单文件内联，不做代码分割）
         assetFileNames: 'assets/[name][extname]',
         chunkFileNames: 'assets/[name].js',
         entryFileNames: 'assets/[name].js',

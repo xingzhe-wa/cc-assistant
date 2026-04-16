@@ -18,6 +18,7 @@ class MyToolWindowFactory : ToolWindowFactory {
         logger.info("=== Creating ToolWindow content for project: ${project.name} ===")
 
         val chatPanel = ReactChatPanel(workingDir = project.basePath)
+        chatPanel.associatedProject = project
         logger.info("ReactChatPanel created, size: ${chatPanel.size}, component count: ${chatPanel.componentCount}")
 
         val content = ContentFactory.getInstance().createContent(chatPanel, "Chat", false)

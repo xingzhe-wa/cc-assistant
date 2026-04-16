@@ -65,7 +65,21 @@ export const koKR = {
     enhance: '프롬프트 강화',
     context: '컨텍스트 사용',
     attachImage: '이미지 첨부',
-    attachFile: '파일 첨부'
+    attachFile: '파일 첨부',
+    removeAttachment: '삭제'
+  },
+
+  // 프롬프트 강화
+  enhance: {
+    templates: '템플릿',
+    role: '역할',
+    format: '출력 형식',
+    language: '언어',
+    constraints: '제약 조건',
+    constraintsPlaceholder: '제약 조건 입력...',
+    preview: '미리보기',
+    cancel: '취소',
+    apply: '적용'
   },
 
   // 设置

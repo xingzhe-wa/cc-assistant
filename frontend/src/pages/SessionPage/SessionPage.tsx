@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
 import { AppLayout } from '@/components/layout';
 import { MessageArea } from '@/components/message';
-import { InputArea } from '@/components/input';
+import { InputArea, PromptEnhancePanel } from '@/components/input';
 import { useChatStore } from '@/stores';
 import type { MockSession } from '@/types/mock';
 
@@ -54,7 +54,14 @@ export const SessionPage: React.FC<SessionPageProps> = ({ className = '' }) => {
     setCurrentAgent,
     setCurrentPage,
     addToast,
-    enhancePrompt
+    enhancePrompt,
+    attachments,
+    addAttachment,
+    addAttachments,
+    removeAttachment,
+    enhancePanelOpen,
+    setEnhancePanelOpen,
+    applyPromptEnhance,
   } = useChatStore();
 
   const activeSession = sessions.find(s => s.id === activeSessionId);
@@ -163,23 +170,35 @@ export const SessionPage: React.FC<SessionPageProps> = ({ className = '' }) => {
           onSend={handleSend}
           onStop={stopGeneration}
           streaming={streaming}
-          providers={[]} // TODO: 从 store 获取
+          providers={[]}
           currentProvider={currentProvider}
           onProviderChange={setCurrentProvider}
-          models={[]} // TODO: 从 store 获取
+          models={[]}
           currentModel={currentModel}
           onModelChange={setCurrentModel}
           currentMode={currentMode}
           onModeChange={setCurrentMode}
-          agents={[]} // TODO: 从 store 获取
+          agents={[]}
           currentAgent={currentAgent}
           onAgentChange={setCurrentAgent}
           thinkEnabled={thinkEnabled}
           onThinkToggle={toggleThink}
           contextUsed={contextUsed}
           onEnhance={enhancePrompt}
+          attachments={attachments}
+          onAddAttachment={addAttachment}
+          onAddAttachments={addAttachments}
+          onRemoveAttachment={removeAttachment}
         />
       </AppLayout>
+
+      {enhancePanelOpen && (
+        <PromptEnhancePanel
+          originalText={inputValue}
+          onApply={applyPromptEnhance}
+          onClose={() => setEnhancePanelOpen(false)}
+        />
+      )}
     </div>
   );
 };

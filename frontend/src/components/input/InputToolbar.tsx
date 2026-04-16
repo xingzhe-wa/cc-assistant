@@ -27,8 +27,6 @@ interface InputToolbarProps {
   onThinkToggle: () => void;
   // Context
   contextUsed: number;
-  // Enhance
-  onEnhance: () => void;
 }
 
 export const InputToolbar: React.FC<InputToolbarProps> = ({
@@ -46,7 +44,6 @@ export const InputToolbar: React.FC<InputToolbarProps> = ({
   thinkEnabled,
   onThinkToggle,
   contextUsed,
-  onEnhance
 }) => {
   const { t } = useI18n();
 
@@ -79,20 +76,6 @@ export const InputToolbar: React.FC<InputToolbarProps> = ({
   return (
     <div className={styles.toolbar}>
       <div className={styles.left}>
-        <Button
-          variant="ghost"
-          iconOnly
-          icon="image"
-          size="sm"
-          title={t('input.attachImage')}
-        />
-        <Button
-          variant="ghost"
-          iconOnly
-          icon="attach_file"
-          size="sm"
-          title={t('input.attachFile')}
-        />
         <ContextBar used={contextUsed} />
       </div>
       <div className={styles.right}>
@@ -158,15 +141,6 @@ export const InputToolbar: React.FC<InputToolbarProps> = ({
           value={currentAgent}
           onChange={onAgentChange}
         />
-
-        <Button
-          variant="ghost"
-          icon="auto_fix_high"
-          size="sm"
-          onClick={onEnhance}
-        >
-          {t('input.enhance')}
-        </Button>
       </div>
     </div>
   );

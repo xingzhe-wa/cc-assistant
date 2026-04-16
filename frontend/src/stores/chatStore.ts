@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { MockSession, MockMessage, Toast as ToastType, ToastType as ToastVariant } from '@/types/mock';
+import type { MockSession, MockMessage, Toast as ToastType, ToastType as ToastVariant, Attachment } from '@/types/mock';
 import type { PageType } from '@/pages/types';
 import { mockSessions, createMockSession, mockDiffFiles, getMockModelsByProvider } from '@/mock';
 import { jcefBridge } from '@/utils/jcef';
@@ -24,11 +24,15 @@ interface ChatState {
   // Input
   inputValue: string;
 
+  // Attachments
+  attachments: Attachment[];
+
   // UI State
   currentPage: PageType;
   historyOpen: boolean;
   favoriteOpen: boolean;
   settingsOpen: boolean;
+  enhancePanelOpen: boolean;
 
   // Settings
   streamEnabled: boolean;
@@ -79,6 +83,14 @@ interface ChatState {
 
   // Enhance
   enhancePrompt: () => void;
+  setEnhancePanelOpen: (open: boolean) => void;
+  applyPromptEnhance: (enhancedText: string) => void;
+
+  // Attachment Actions
+  addAttachment: (file: File) => void;
+  addAttachments: (files: File[]) => void;
+  removeAttachment: (id: string) => void;
+  clearAttachments: () => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -91,10 +103,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
   diffFiles: mockDiffFiles,
   toasts: [],
   inputValue: '',
+  attachments: [],
   currentPage: 'chat',
   historyOpen: false,
   favoriteOpen: false,
   settingsOpen: false,
+  enhancePanelOpen: false,
   streamEnabled: true,
   thinkEnabled: false,
   currentProvider: 'p0',
@@ -321,16 +335,65 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }));
   },
 
+  // Attachment Actions
+  addAttachment: (file: File) => {
+    const id = `att-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const isImage = file.type.startsWith('image/');
+
+    if (isImage) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const attachment: Attachment = {
+          id,
+          name: file.name,
+          type: 'image',
+          dataUrl: reader.result as string,
+          size: file.size,
+        };
+        set((state) => ({ attachments: [...state.attachments, attachment] }));
+      };
+      reader.readAsDataURL(file);
+    } else {
+      const attachment: Attachment = {
+        id,
+        name: file.name,
+        type: 'file',
+        size: file.size,
+      };
+      set((state) => ({ attachments: [...state.attachments, attachment] }));
+    }
+  },
+
+  addAttachments: (files: File[]) => {
+    files.forEach((file) => get().addAttachment(file));
+  },
+
+  removeAttachment: (id: string) => {
+    set((state) => ({
+      attachments: state.attachments.filter((a) => a.id !== id),
+    }));
+  },
+
+  clearAttachments: () => {
+    set({ attachments: [] });
+  },
+
   // Enhance
   enhancePrompt: () => {
-    const { inputValue, setInputValue, addToast } = get();
+    const { inputValue, addToast } = get();
     if (!inputValue.trim()) {
       addToast('请先输入内容', 'error');
       return;
     }
-    const enhanced = `请优化以下代码：\n${inputValue}`;
-    setInputValue(enhanced);
-    addToast('提示词已强化', 'success');
-    jcefBridge.enhancePrompt(inputValue);
+    set({ enhancePanelOpen: true });
+  },
+
+  setEnhancePanelOpen: (open: boolean) => {
+    set({ enhancePanelOpen: open });
+  },
+
+  applyPromptEnhance: (enhancedText: string) => {
+    set({ inputValue: enhancedText, enhancePanelOpen: false });
+    jcefBridge.enhancePrompt(enhancedText);
   }
 }));

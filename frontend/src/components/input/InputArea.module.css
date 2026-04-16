@@ -1,6 +1,43 @@
 .container {
   border-top: 1px solid var(--border-light);
   background: var(--bg-secondary);
-  padding: 7px 14px 9px;
+  padding: 8px 12px 10px;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 附件按钮栏 */
+.attachBar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.attachBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--fg-muted);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.attachBtn:hover {
+  background: var(--bg-hover);
+  color: var(--fg-primary);
+}
+
+/* 功能栏区域 — 低调样式 */
+.toolbarZone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  opacity: 0.85;
 }

@@ -12,4 +12,24 @@
         <toolWindow factoryClass="com.github.xingzhewa.ccassistant.toolWindow.MyToolWindowFactory" id="CC Assistant" anchor="right" icon="/icons/toolWindow.svg"/>
         <postStartupActivity implementation="com.github.xingzhewa.ccassistant.startup.MyProjectActivity" />
     </extensions>
+
+    <actions>
+        <!-- Project View 文件右键 → 发送路径到 CC Assistant -->
+        <action id="CCAssistant.SendFileToChat"
+                class="com.github.xingzhewa.ccassistant.action.SendFileToChatAction"
+                text="Send to CC Assistant"
+                description="Send file path to CC Assistant chat input"
+                icon="/icons/toolWindow.svg">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+        </action>
+
+        <!-- 编辑器选中文本右键 → 发送代码到 CC Assistant -->
+        <action id="CCAssistant.SendSelectionToChat"
+                class="com.github.xingzhewa.ccassistant.action.SendSelectionToChatAction"
+                text="Send to CC Assistant"
+                description="Send selected code to CC Assistant chat input"
+                icon="/icons/toolWindow.svg">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+        </action>
+    </actions>
 </idea-plugin>

@@ -65,7 +65,21 @@ export const enUS = {
     enhance: 'Enhance Prompt',
     context: 'Context Used',
     attachImage: 'Attach Image',
-    attachFile: 'Attach File'
+    attachFile: 'Attach File',
+    removeAttachment: 'Remove'
+  },
+
+  // Prompt Enhance
+  enhance: {
+    templates: 'Templates',
+    role: 'Role',
+    format: 'Output Format',
+    language: 'Language',
+    constraints: 'Constraints',
+    constraintsPlaceholder: 'Enter constraints...',
+    preview: 'Preview',
+    cancel: 'Cancel',
+    apply: 'Apply'
   },
 
   // 设置

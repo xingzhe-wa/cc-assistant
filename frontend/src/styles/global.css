@@ -4,6 +4,11 @@
 /* 只导入 400 weight，构建时 Vite 插件会将 woff2 内联为 Base64 */
 @import '@fontsource/material-symbols-rounded/400.css';
 
+/* 确保字体使用 swap 策略，避免 FOIT（不可见文本闪烁） */
+@font-face {
+  font-display: swap;
+}
+
 :root {
   /* 基础颜色 */
   --bg-primary: #111214;
