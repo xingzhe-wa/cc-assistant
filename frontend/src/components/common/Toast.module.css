@@ -69,3 +69,11 @@
 .info .material-icons-round {
   color: var(--color-info);
 }
+
+.warning {
+  border-color: var(--color-warning);
+}
+
+.warning .material-icons-round {
+  color: var(--color-warning);
+}

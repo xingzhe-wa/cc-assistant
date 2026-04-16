@@ -1,0 +1,97 @@
+/* ScrollArea 自定义滚动条样式 */
+
+.cc-scroll-area {
+  position: relative;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 滚动方向控制 */
+.cc-scroll-area--vertical {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.cc-scroll-area--horizontal {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.cc-scroll-area--both {
+  overflow: auto;
+}
+
+/* 滚动条显示模式 */
+.cc-scroll-area--scrollbar-false,
+.cc-scroll-area--scrollbar-false::-webkit-scrollbar,
+.cc-scroll-area--scrollbar-false::-webkit-scrollbar-thumb,
+.cc-scroll-area--scrollbar-false::-webkit-scrollbar-track {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.cc-scroll-area--scrollbar-auto {
+  scrollbar-width: thin;
+}
+
+.cc-scroll-area--scrollbar-always {
+  scrollbar-width: thin;
+  overflow: scroll !important;
+}
+
+/* WebKit 浏览器滚动条样式 */
+.cc-scroll-area::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.cc-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: var(--radius-md, 5px);
+}
+
+.cc-scroll-area::-webkit-scrollbar-thumb {
+  background: var(--fg-muted, #494b5a);
+  border-radius: var(--radius-md, 5px);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.cc-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-secondary, #87899a);
+  background-clip: padding-box;
+}
+
+.cc-scroll-area::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* 亮色主题滚动条 */
+.cc-scroll-area--theme-light::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.cc-scroll-area--theme-light::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* 暗色主题滚动条（默认） */
+.cc-scroll-area--theme-dark::-webkit-scrollbar-thumb {
+  background: var(--fg-muted, #494b5a);
+}
+
+.cc-scroll-area--theme-dark::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-secondary, #87899a);
+}
+
+/* Firefox 滚动条样式 */
+.cc-scroll-area--scrollbar-auto,
+.cc-scroll-area--scrollbar-always {
+  scrollbar-color: var(--fg-muted, #494b5a) transparent;
+  scrollbar-width: thin;
+}
+
+.cc-scroll-area--theme-light {
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+}

@@ -1,0 +1,177 @@
+/* CodeBlock 代码块样式 */
+
+.cc-code-block {
+  position: relative;
+  margin: 8px 0;
+  border-radius: var(--radius-md, 5px);
+  background: var(--bg-element, #1e2028);
+  border: 1px solid var(--border-default, #23252e);
+  overflow: hidden;
+}
+
+/* 代码头部 */
+.cc-code-block__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg-secondary, #17181d);
+  border-bottom: 1px solid var(--border-default, #23252e);
+  font-size: 12px;
+}
+
+.cc-code-block__language {
+  color: var(--fg-secondary, #87899a);
+  font-family: var(--font-mono, monospace);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.cc-code-block__copy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm, 3px);
+  cursor: pointer;
+  color: var(--fg-secondary, #87899a);
+  transition: all 0.2s ease;
+}
+
+.cc-code-block__copy:hover {
+  background: var(--bg-hover, #272933);
+  color: var(--fg-primary, #d0d1d8);
+}
+
+.cc-code-block__copy:active {
+  transform: scale(0.95);
+}
+
+/* 代码内容区域 */
+.cc-code-block__content {
+  margin: 0;
+  padding: 12px;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 400px;
+  background: transparent;
+}
+
+.cc-code-block__content code {
+  display: block;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--fg-primary, #d0d1d8);
+  white-space: pre;
+  tab-size: 4;
+}
+
+/* highlight.js 主题适配（One Dark 风格） */
+.cc-code-block__content .hljs {
+  background: transparent;
+  padding: 0;
+  color: var(--fg-primary, #d0d1d8);
+}
+
+/* 语法高亮颜色 */
+.cc-code-block__content .hljs-comment,
+.cc-code-block__content .hljs-quote {
+  color: #5c6370;
+  font-style: italic;
+}
+
+.cc-code-block__content .hljs-keyword,
+.cc-code-block__content .hljs-selector-tag,
+.cc-code-block__content .hljs-subst {
+  color: #c678dd;
+}
+
+.cc-code-block__content .hljs-number,
+.cc-code-block__content .hljs-literal,
+.cc-code-block__content .hljs-variable,
+.cc-code-block__content .hljs-template-variable,
+.cc-code-block__content .hljs-tag .hljs-attr {
+  color: #d19a66;
+}
+
+.cc-code-block__content .hljs-string,
+.cc-code-block__content .hljs-doctag {
+  color: #98c379;
+}
+
+.cc-code-block__content .hljs-title,
+.cc-code-block__content .hljs-section,
+.cc-code-block__content .hljs-selector-id {
+  color: #61afef;
+  font-weight: bold;
+}
+
+.cc-code-block__content .hljs-type,
+.cc-code-block__content .hljs-class .hljs-title {
+  color: #e5c07b;
+}
+
+.cc-code-block__content .hljs-tag,
+.cc-code-block__content .hljs-name,
+.cc-code-block__content .hljs-attribute {
+  color: #e06c75;
+  font-weight: normal;
+}
+
+.cc-code-block__content .hljs-regexp,
+.cc-code-block__content .hljs-link {
+  color: #56b6c2;
+}
+
+.cc-code-block__content .hljs-symbol,
+.cc-code-block__content .hljs-bullet {
+  color: #61afef;
+}
+
+.cc-code-block__content .hljs-built_in,
+.cc-code-block__content .hljs-builtin-name {
+  color: #e6c07b;
+}
+
+.cc-code-block__content .hljs-meta {
+  color: #5c6370;
+}
+
+.cc-code-block__content .hljs-deletion {
+  background: #f14c4c33;
+}
+
+.cc-code-block__content .hljs-addition {
+  background: #50b85e33;
+}
+
+.cc-code-block__content .hljs-emphasis {
+  font-style: italic;
+}
+
+.cc-code-block__content .hljs-strong {
+  font-weight: bold;
+}
+
+/* 滚动条样式 */
+.cc-code-block__content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.cc-code-block__content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cc-code-block__content::-webkit-scrollbar-thumb {
+  background: var(--fg-muted, #494b5a);
+  border-radius: var(--radius-sm, 3px);
+}
+
+.cc-code-block__content::-webkit-scrollbar-thumb:hover {
+  background: var(--fg-secondary, #87899a);
+}

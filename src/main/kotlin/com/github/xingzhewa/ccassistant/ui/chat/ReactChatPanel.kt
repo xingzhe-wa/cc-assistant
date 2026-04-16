@@ -31,6 +31,7 @@ class ReactChatPanel(
 
     // 当前会话状态
     private var currentSessionId: String? = null
+    private var currentMessageId: String? = null
 
     init {
         initJcefPanel()
@@ -46,14 +47,84 @@ class ReactChatPanel(
             return
         }
 
-        // 🔧 临时使用简单测试面板验证 JCEF
-        val testPanel = SimpleJcefTestPanel()
-        testPanel.onSendMessage = { text ->
-            logger.info("收到来自 JCEF 的消息: $text")
-            handleSendMessage(text, JcefChatPanel.MessageOptions())
+        // 创建真正的 JcefChatPanel
+        jcefPanel = JcefChatPanel().apply {
+            // 设置 JS → Java 回调
+            setupCallbacks()
         }
-        add(testPanel.createPanel(), BorderLayout.CENTER)
-        logger.info("ReactChatPanel initialized (using SimpleJcefTestPanel)")
+
+        val panel = jcefPanel!!.createPanel()
+        add(panel, BorderLayout.CENTER)
+        logger.info("ReactChatPanel initialized with JcefChatPanel")
+    }
+
+    private fun JcefChatPanel.setupCallbacks() {
+        // 消息操作回调
+        onCopyMessage = { id, content ->
+            logger.info("Copy message: $id")
+            java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(
+                java.awt.datatransfer.StringSelection(content),
+                null
+            )
+        }
+
+        onQuoteMessage = { id, content ->
+            logger.info("Quote message: $id")
+            // TODO: 实现引用功能
+        }
+
+        onRegenerate = { id ->
+            logger.info("Regenerate: $id")
+            // TODO: 实现重新生成
+        }
+
+        onRewind = { id ->
+            logger.info("Rewind: $id")
+            // TODO: 实现回退功能
+        }
+
+        onCopyCode = { code ->
+            java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(
+                java.awt.datatransfer.StringSelection(code),
+                null
+            )
+        }
+
+        onSendMessage = { text, options ->
+            logger.info("Send message: ${text.take(50)}...")
+            handleSendMessage(text, options)
+        }
+
+        // 主题/设置回调
+        onThemeChange = { themeId ->
+            logger.info("Theme change: $themeId")
+            // TODO: 实现主题切换
+        }
+
+        onProviderChange = { providerId ->
+            logger.info("Provider change: $providerId")
+            // TODO: 实现供应商切换
+        }
+
+        onCheckCli = {
+            checkCliStatus()
+        }
+
+        // 会话操作回调
+        onDeleteSession = { id ->
+            logger.info("Delete session: $id")
+            // TODO: 实现会话删除
+        }
+
+        onToggleFavorite = { id, fav ->
+            logger.info("Toggle favorite: $id = $fav")
+            // TODO: 实现收藏切换
+        }
+
+        onRenameSession = { id, title ->
+            logger.info("Rename session: $id -> $title")
+            // TODO: 实现会话重命名
+        }
     }
 
     private fun initCliBridge() {
@@ -70,7 +141,7 @@ class ReactChatPanel(
     private fun handleSendMessage(text: String, options: JcefChatPanel.MessageOptions) {
         if (text.isBlank()) return
 
-        // 追加用户消息
+        // 追加用户消息到 JCEF
         val timestamp = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
             .format(java.util.Date())
         jcefPanel?.appendUserMessage("user-${System.currentTimeMillis()}", text, timestamp)
@@ -89,7 +160,7 @@ class ReactChatPanel(
                 val id = jcefPanel?.appendStreamingContent(
                     "assistant",
                     message.text,
-                    null
+                    currentMessageId
                 )
                 // 存储当前消息 ID 用于完成
                 id?.let { currentMessageId = it }
@@ -127,14 +198,14 @@ class ReactChatPanel(
         }
     }
 
-    private var currentMessageId: String? = null
-
     private fun checkCliStatus() {
         if (cliService.isCliAvailable()) {
             val version = cliService.getCliVersion()
             logger.info("CLI available: $version")
+            // TODO: 通过 JCEF 显示 CLI 状态
         } else {
             logger.warn("CLI not available")
+            // TODO: 通过 JCEF 显示 CLI 不可用提示
         }
     }
 

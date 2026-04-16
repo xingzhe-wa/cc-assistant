@@ -27,7 +27,8 @@ export const Toast: React.FC<ToastProps> = ({
   const iconName = {
     success: 'check_circle',
     error: 'error',
-    info: 'info'
+    info: 'info',
+    warning: 'warning'
   }[type];
 
   return createPortal(

@@ -4,3 +4,5 @@ export { UserMessage } from './UserMessage';
 export { AIMessage } from './AIMessage';
 export { MarkdownContent } from './MarkdownContent';
 export { EmptyState } from './EmptyState';
+export { CodeBlock } from './CodeBlock';
+export { DiffViewer } from './DiffViewer';

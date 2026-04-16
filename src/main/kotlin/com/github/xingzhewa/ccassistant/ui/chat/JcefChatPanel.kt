@@ -94,27 +94,22 @@ class JcefChatPanel : Disposable {
         }
 
         try {
-            // 加载资源 URL - 使用类加载器获取资源路径
-            // 注意：ClassLoader#getResource 不支持前导斜杠，必须去掉
-            val resourcePath = "web/chat.html"
-            val resourceUrl = this::class.java.classLoader.getResource(resourcePath)
-            if (resourceUrl == null) {
-                logger.error("Resource not found: $resourcePath")
-                return createFallbackPanel()
-            }
-
-            val url = resourceUrl.toString()
-            logger.info("Loading resource from: $url")
-
-            browser = JBCefBrowser(url)
+            // 创建空白 JCEF Browser（稍后用 loadHTML 加载内容）
+            browser = JBCefBrowser()
 
             messageContainer = JPanel(BorderLayout())
             messageContainer!!.add(browser!!.getComponent(), BorderLayout.CENTER)
             panel.add(messageContainer!!, BorderLayout.CENTER)
 
-            initializeJSBridge()
-            isInitialized = true
-            logger.info("JcefChatPanel created")
+            // 延迟加载 HTML 内容，确保浏览器完全初始化
+            invokeLater {
+                // 读取并加载 HTML 内容
+                loadHtmlContent()
+                // 初始化 JS Bridge
+                initializeJSBridge()
+                isInitialized = true
+                logger.info("JcefChatPanel created and initialized")
+            }
 
         } catch (e: Throwable) {
             logger.error("Failed to create JCEF Browser", e)
@@ -122,6 +117,77 @@ class JcefChatPanel : Disposable {
         }
 
         return panel
+    }
+
+    /**
+     * 加载 HTML 内容到 JCEF
+     * 使用 loadHTML() 避免 JAR 内相对路径加载问题
+     */
+    private fun loadHtmlContent() {
+        try {
+            // 读取 chat.html 内容
+            val htmlContent = this::class.java.classLoader
+                .getResourceAsStream("web/chat.html")
+                ?.bufferedReader()
+                ?.readText()
+
+            if (htmlContent == null) {
+                logger.error("Failed to read web/chat.html")
+                return
+            }
+
+            // 读取并内联 CSS
+            val cssContent = this::class.java.classLoader
+                .getResourceAsStream("web/assets/index.css")
+                ?.bufferedReader()
+                ?.readText()
+                ?: ""
+
+            // 读取并内联 JS
+            val jsContent = this::class.java.classLoader
+                .getResourceAsStream("web/assets/index.js")
+                ?.bufferedReader()
+                ?.readText()
+                ?: ""
+
+            // 构建完整的 HTML（内联所有资源）
+            val inlineHtml = buildString {
+                append("<!DOCTYPE html>\n")
+                append("<html lang=\"en\">\n")
+                append("<head>\n")
+                append("  <meta charset=\"UTF-8\" />\n")
+                append("  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n")
+                append("  <title>CC Assistant</title>\n")
+
+                // 内联 CSS
+                if (cssContent.isNotEmpty()) {
+                    append("  <style>\n")
+                    append(cssContent)
+                    append("  </style>\n")
+                }
+
+                append("</head>\n")
+                append("<body>\n")
+                append("  <div id=\"root\"></div>\n")
+
+                // 内联 JS
+                if (jsContent.isNotEmpty()) {
+                    append("  <script type=\"module\">\n")
+                    append(jsContent)
+                    append("  </script>\n")
+                }
+
+                append("</body>\n")
+                append("</html>")
+            }
+
+            // 使用 loadHTML 加载内联内容
+            browser?.loadHTML(inlineHtml)
+            logger.info("HTML content loaded successfully, size: ${inlineHtml.length} chars")
+
+        } catch (e: Throwable) {
+            logger.error("Failed to load HTML content", e)
+        }
     }
 
     private fun initializeJSBridge() {
