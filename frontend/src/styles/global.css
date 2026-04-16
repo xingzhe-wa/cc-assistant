@@ -1,5 +1,9 @@
 /* CC Assistant 全局样式 */
 
+/* Material Symbols Rounded 字体 - 本地版本，兼容 JCEF */
+/* 只导入 400 weight，构建时 Vite 插件会将 woff2 内联为 Base64 */
+@import '@fontsource/material-symbols-rounded/400.css';
+
 :root {
   /* 基础颜色 */
   --bg-primary: #111214;

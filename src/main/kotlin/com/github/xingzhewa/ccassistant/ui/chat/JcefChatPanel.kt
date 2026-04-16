@@ -122,6 +122,7 @@ class JcefChatPanel : Disposable {
     /**
      * 加载 HTML 内容到 JCEF
      * 使用 loadHTML() 避免 JAR 内相对路径加载问题
+     * 字体文件会被转换为 Base64 并内联到 CSS 中
      */
     private fun loadHtmlContent() {
         try {
@@ -136,7 +137,7 @@ class JcefChatPanel : Disposable {
                 return
             }
 
-            // 读取并内联 CSS
+            // 读取并内联 CSS（构建时已将字体文件内联为 Base64）
             val cssContent = this::class.java.classLoader
                 .getResourceAsStream("web/assets/index.css")
                 ?.bufferedReader()

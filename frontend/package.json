@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/material-symbols-rounded": "^5.2.41",
     "highlight.js": "^11.11.1",
     "marked": "^18.0.0",
     "react": "^19.2.4",
