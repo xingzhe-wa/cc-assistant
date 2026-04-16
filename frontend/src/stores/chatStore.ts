@@ -1,12 +1,15 @@
 import { create } from 'zustand';
 import type { MockSession, MockMessage, Toast as ToastType, ToastType as ToastVariant } from '@/types/mock';
 import type { PageType } from '@/pages/types';
-import { mockSessions, createMockSession, mockDiffFiles } from '@/mock';
+import { mockSessions, createMockSession, mockDiffFiles, getMockModelsByProvider } from '@/mock';
+import { jcefBridge } from '@/utils/jcef';
 
 interface ChatState {
   // Sessions
   sessions: MockSession[];
   activeSessionId: string | null;
+  // 打开的Tab列表（Tab页签中显示的会话ID）
+  openTabs: string[];
 
   // Streaming
   streaming: boolean;
@@ -42,6 +45,7 @@ interface ChatState {
   closeSession: (id: string) => void;
   deleteSession: (id: string) => void;
   toggleSessionFavorite: (id: string) => void;
+  renameSession: (id: string, title: string) => void;
 
   // Message Actions
   addMessage: (sessionId: string, message: MockMessage) => void;
@@ -81,6 +85,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   // Initial State
   sessions: mockSessions,
   activeSessionId: mockSessions[0]?.id || null,
+  openTabs: mockSessions.map(s => s.id), // 所有会话默认显示为Tab
   streaming: false,
   streamingContent: '',
   diffFiles: mockDiffFiles,
@@ -105,20 +110,29 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const newSession = createMockSession('新对话');
     set((state) => ({
       sessions: [...state.sessions, newSession],
+      openTabs: [...state.openTabs, newSession.id],
       activeSessionId: newSession.id
     }));
+    jcefBridge.newSession();
   },
 
   closeSession: (id) => {
-    const { sessions, activeSessionId } = get();
-    if (sessions.length <= 1) return;
+    const { openTabs, activeSessionId } = get();
 
-    const newSessions = sessions.filter((s) => s.id !== id);
+    // 如果只剩最后一个Tab，通知Java关闭/收起插件
+    if (openTabs.length <= 1) {
+      jcefBridge.closePlugin();
+      return;
+    }
+
+    // 从Tab列表中移除，不删除会话记录
+    const newOpenTabs = openTabs.filter(tabId => tabId !== id);
+    const currentIndex = openTabs.findIndex(tabId => tabId === id);
     const newActiveId = activeSessionId === id
-      ? newSessions[0]?.id || null
+      ? (newOpenTabs[currentIndex] || newOpenTabs[currentIndex - 1] || null)
       : activeSessionId;
 
-    set({ sessions: newSessions, activeSessionId: newActiveId });
+    set({ openTabs: newOpenTabs, activeSessionId: newActiveId });
   },
 
   deleteSession: (id) => {
@@ -131,14 +145,28 @@ export const useChatStore = create<ChatState>((set, get) => ({
       : activeSessionId;
 
     set({ sessions: newSessions, activeSessionId: newActiveId });
+    jcefBridge.deleteSession(id);
   },
 
   toggleSessionFavorite: (id) => {
+    const session = get().sessions.find((s) => s.id === id);
     set((state) => ({
       sessions: state.sessions.map((s) =>
         s.id === id ? { ...s, fav: !s.fav } : s
       )
     }));
+    if (session) {
+      jcefBridge.toggleFavorite(id, !session.fav);
+    }
+  },
+
+  renameSession: (id, title) => {
+    set((state) => ({
+      sessions: state.sessions.map((s) =>
+        s.id === id ? { ...s, title } : s
+      )
+    }));
+    jcefBridge.renameSession(id, title);
   },
 
   // Message Actions
@@ -146,7 +174,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set((state) => ({
       sessions: state.sessions.map((s) =>
         s.id === sessionId
-          ? { ...s, msgs: [...s.msgs, message], qc: s.qc + (message.role === 'user' ? 1 : 0) }
+          ? {
+              ...s,
+              msgs: [...s.msgs, message],
+              qc: s.qc + (message.role === 'user' ? 1 : 0),
+              hasFirstMessage: true
+            }
           : s
       )
     }));
@@ -166,7 +199,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setInputValue: (value) => set({ inputValue: value }),
 
   sendMessage: () => {
-    const { inputValue, activeSessionId, addMessage, setStreaming, appendStreamingContent } = get();
+    const { inputValue, activeSessionId, addMessage, setStreaming, appendStreamingContent, currentProvider, currentModel, currentMode, thinkEnabled, streamEnabled } = get();
     if (!inputValue.trim() || !activeSessionId) return;
 
     const userMessage: MockMessage = {
@@ -179,6 +212,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
     addMessage(activeSessionId, userMessage);
     set({ inputValue: '' });
     setStreaming(true, '');
+
+    // Notify Java backend
+    jcefBridge.sendMessage(inputValue, {
+      stream: streamEnabled,
+      think: thinkEnabled,
+      mode: currentMode,
+      model: currentModel,
+      provider: currentProvider
+    });
 
     // Mock AI response
     const mockResponses = [
@@ -234,14 +276,35 @@ export const useChatStore = create<ChatState>((set, get) => ({
     historyOpen: false
   })),
 
-  toggleStream: () => set((state) => ({ streamEnabled: !state.streamEnabled })),
-  toggleThink: () => set((state) => ({ thinkEnabled: !state.thinkEnabled })),
+  toggleStream: () => {
+    const newValue = !get().streamEnabled;
+    set({ streamEnabled: newValue });
+  },
+  toggleThink: () => {
+    const newValue = !get().thinkEnabled;
+    set({ thinkEnabled: newValue });
+    jcefBridge.thinkChange(newValue);
+  },
 
   // Settings Actions
-  setCurrentProvider: (id) => set({ currentProvider: id }),
-  setCurrentModel: (id) => set({ currentModel: id }),
-  setCurrentMode: (mode) => set({ currentMode: mode }),
-  setCurrentAgent: (id) => set({ currentAgent: id }),
+  setCurrentProvider: (id) => {
+    const models = getMockModelsByProvider(id);
+    const defaultModel = models[0]?.id || '';
+    set({ currentProvider: id, currentModel: defaultModel });
+    jcefBridge.providerChange(id);
+  },
+  setCurrentModel: (id) => {
+    set({ currentModel: id });
+    jcefBridge.modelChange(id);
+  },
+  setCurrentMode: (mode) => {
+    set({ currentMode: mode });
+    jcefBridge.modeChange(mode);
+  },
+  setCurrentAgent: (id) => {
+    set({ currentAgent: id });
+    jcefBridge.agentChange(id);
+  },
 
   // Toast Actions
   addToast: (message, type = 'info') => {
@@ -265,7 +328,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
       addToast('请先输入内容', 'error');
       return;
     }
-    setInputValue(`请优化以下代码：\n${inputValue}`);
+    const enhanced = `请优化以下代码：\n${inputValue}`;
+    setInputValue(enhanced);
     addToast('提示词已强化', 'success');
+    jcefBridge.enhancePrompt(inputValue);
   }
 }));

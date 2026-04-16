@@ -10,6 +10,8 @@ interface ICCChat {
   finishStreaming: (messageId: string) => void;
   clearMessages: () => void;
   showEmpty: () => void;
+  setSessionList: (sessions: string) => void;
+  setCliStatus: (version: string, hasUpdate: boolean) => void;
 }
 
 // CCApp 接口
@@ -17,11 +19,14 @@ interface ICCApp {
   applyTheme: (theme: { variables: Record<string, string>; isDark: boolean }) => void;
   setTheme: (themeId: string) => void;
   applyI18n: (messages: Record<string, string>) => void;
+  setLocale: (locale: string) => void;
 }
 
 // CCProviders 接口
 interface ICCProviders {
   setData: (providers: unknown[], models: unknown, agents: unknown[], context: unknown[]) => void;
+  setAgents: (agents: unknown[]) => void;
+  setSkills: (skills: unknown[]) => void;
 }
 
 // 扩展 Window 接口
@@ -70,6 +75,20 @@ window.CCChat = {
     window.dispatchEvent(new CustomEvent('cc-message', {
       detail: { type: 'empty' }
     }));
+  },
+
+  // 设置会话列表
+  setSessionList: (sessions: string) => {
+    window.dispatchEvent(new CustomEvent('cc-session-list', {
+      detail: { sessions: JSON.parse(sessions) }
+    }));
+  },
+
+  // 设置 CLI 状态
+  setCliStatus: (version: string, hasUpdate: boolean) => {
+    window.dispatchEvent(new CustomEvent('cc-cli-status', {
+      detail: { version, hasUpdate }
+    }));
   }
 };
 
@@ -104,6 +123,14 @@ window.CCApp = {
     window.dispatchEvent(new CustomEvent('cc-i18n', {
       detail: { messages }
     }));
+  },
+
+  // 设置语言
+  setLocale: (locale: string) => {
+    console.log('[CCApp] setLocale', locale);
+    window.dispatchEvent(new CustomEvent('cc-locale', {
+      detail: { locale }
+    }));
   }
 };
 
@@ -113,6 +140,22 @@ window.CCProviders = {
     console.log('[CCProviders] setData', { providers, models, agents });
     window.dispatchEvent(new CustomEvent('cc-providers', {
       detail: { providers, models, agents }
+    }));
+  },
+
+  // 设置 Agents
+  setAgents: (agents: unknown[]) => {
+    console.log('[CCProviders] setAgents', agents);
+    window.dispatchEvent(new CustomEvent('cc-agents', {
+      detail: { agents }
+    }));
+  },
+
+  // 设置 Skills
+  setSkills: (skills: unknown[]) => {
+    console.log('[CCProviders] setSkills', skills);
+    window.dispatchEvent(new CustomEvent('cc-skills', {
+      detail: { skills }
     }));
   }
 };

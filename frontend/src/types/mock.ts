@@ -11,6 +11,8 @@ export interface MockSession {
   time: string;
   qc: number;
   msgs: MockMessage[];
+  /** 会话是否已有首次交互，用于控制是否计入历史 */
+  hasFirstMessage: boolean;
 }
 
 // ========== 消息 ==========
@@ -36,12 +38,18 @@ export interface MockToolCall {
 
 // ========== 供应商/模型/Agent ==========
 
+export interface MockProviderModels {
+  default: string;
+  opus: string;
+  max: string;
+}
+
 export interface MockProvider {
   id: string;
   name: string;
   url: string;
   key?: string;
-  preset: string;
+  models: MockProviderModels;
   st: 'ok' | 'err' | 'off';
 }
 

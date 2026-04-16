@@ -24,10 +24,10 @@
   --accent-bg: rgba(201, 135, 58, 0.08);
 
   /* 文本色 */
-  --fg-primary: #d0d1d8;
-  --fg-secondary: #87899a;
-  --fg-muted: #494b5a;
-  --fg-disabled: #31333d;
+  --fg-primary: #e8e9ed;
+  --fg-secondary: #9a9dac;
+  --fg-muted: #6a6d7a;
+  --fg-disabled: #4a4d5a;
 
   /* 边框色 */
   --border-default: #23252e;
@@ -116,7 +116,7 @@ body {
 
 /* Material Icons */
 .material-icons-round {
-  font-family: 'Material Icons Round';
+  font-family: 'Material Symbols Rounded';
   font-size: 17px;
   line-height: 1;
   user-select: none;

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useChatStore } from '@/stores';
+import { useConfigStore } from '@/stores';
 import { t, createTranslate, type Locale } from '@/i18n';
 
 /**
@@ -15,9 +15,8 @@ import { t, createTranslate, type Locale } from '@/i18n';
  * ```
  */
 export function useI18n() {
-  // 从全局 store 获取当前语言
-  // 注意：需要确保 chatStore 有 language 字段
-  const language = useChatStore((state) => (state as any).language) || 'zh-CN' as Locale;
+  // 从 useConfigStore 获取当前语言
+  const language = useConfigStore((state) => state.language) || 'zh-CN' as Locale;
 
   // 创建翻译函数（使用 useMemo 避免重复创建）
   const translate = useMemo(() => createTranslate(language), [language]);

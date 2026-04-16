@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { ConfirmDialog } from '@/components/common';
+import { useI18n } from '@/hooks/useI18n';
 import type { MockSession } from '@/types/mock';
 import styles from './HistoryPage.module.css';
 
@@ -19,10 +21,19 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
   onDeleteSession,
   onClose
 }) => {
+  const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState('');
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ open: false, title: '', message: '', onConfirm: () => {} });
 
   const filteredSessions = useMemo(() => {
     let result = sessions;
+    // 过滤掉还未发生首次交互的会话
+    result = result.filter(s => s.hasFirstMessage);
     if (mode === 'favorite') {
       result = result.filter(s => s.fav);
     }
@@ -50,7 +61,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
             <span className="material-icons-round">
               {mode === 'history' ? 'history' : 'star'}
             </span>
-            {mode === 'history' ? '历史会话' : '收藏会话'}
+            {mode === 'history' ? t('page.history') : t('page.favorites')}
           </h2>
           <button className={styles.closeBtn} onClick={onClose}>
             <span className="material-icons-round">close</span>
@@ -60,7 +71,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
           <span className="material-icons-round">search</span>
           <input
             type="text"
-            placeholder={`搜索${mode === 'history' ? '会话' : '收藏'}名称...`}
+            placeholder={t('session.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -70,16 +81,16 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
             <>
               <span>
                 <span className="material-icons-round">chat_bubble_outline</span>
-                共 {stats.totalCount} 个会话
+                {t('session.sessionCount', String(stats.totalCount))}
               </span>
               <span>
                 <span className="material-icons-round">help_outline</span>
-                共 {stats.questionCount} 次提问
+                {t('session.questionCount', String(stats.questionCount))}
               </span>
               {stats.latestSession && (
                 <span>
                   <span className="material-icons-round">schedule</span>
-                  最近：{stats.latestSession.time}
+                  {t('session.latest')}{stats.latestSession.time}
                 </span>
               )}
             </>
@@ -87,7 +98,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
           {mode === 'favorite' && (
             <span>
               <span className="material-icons-round">star</span>
-              共 {stats.favoriteCount} 个收藏
+              {t('session.favoriteCount', String(stats.favoriteCount))}
             </span>
           )}
         </div>
@@ -101,11 +112,11 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                 {mode === 'history' ? 'search_off' : 'star_border'}
               </span>
             </div>
-            <h3>未找到{mode === 'history' ? '匹配的会话' : '收藏会话'}</h3>
+            <h3>{mode === 'history' ? t('session.emptyHistory') : t('session.emptyFavorites')}</h3>
             <p>
               {mode === 'history'
-                ? '请尝试其他搜索关键词'
-                : '在历史会话中点击星标可添加收藏'}
+                ? t('session.searchPlaceholder')
+                : t('session.favoriteHint')}
             </p>
           </div>
         ) : (
@@ -126,7 +137,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                   {session.title}
                 </div>
                 <div className={styles.itemPreview}>
-                  {session.msgs[0]?.content || '暂无消息'}
+                  {session.msgs[0]?.content || t('session.noMessage')}
                 </div>
                 <div className={styles.itemMeta}>
                   <span>
@@ -135,7 +146,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                   </span>
                   <span>
                     <span className="material-icons-round">help_outline</span>
-                    {session.qc} 次提问
+                    {session.qc} {t('session.questionTimes')}
                   </span>
                 </div>
               </div>
@@ -146,7 +157,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                     e.stopPropagation();
                     onFavoriteToggle(session.id, !session.fav);
                   }}
-                  title={session.fav ? '取消收藏' : '收藏'}
+                  title={session.fav ? t('session.unfavorite') : t('session.favorite')}
                 >
                   <span className="material-icons-round">
                     {session.fav ? 'star' : 'star_outline'}
@@ -158,7 +169,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                     e.stopPropagation();
                     // TODO: 实现重命名功能
                   }}
-                  title="重命名"
+                  title={t('session.rename')}
                 >
                   <span className="material-icons-round">edit</span>
                 </button>
@@ -168,7 +179,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                     e.stopPropagation();
                     // TODO: 实现导出功能
                   }}
-                  title="导出"
+                  title={t('session.exportSession')}
                 >
                   <span className="material-icons-round">download</span>
                 </button>
@@ -176,11 +187,14 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
                   className={`${styles.actionBtn} ${styles.danger}`}
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (confirm(`确定删除会话 "${session.title}" 吗？`)) {
-                      onDeleteSession(session.id);
-                    }
+                    setConfirmDialog({
+                      open: true,
+                      title: t('session.delete'),
+                      message: t('session.deleteConfirm'),
+                      onConfirm: () => onDeleteSession(session.id)
+                    });
                   }}
-                  title="删除"
+                  title={t('session.delete')}
                 >
                   <span className="material-icons-round">delete_outline</span>
                 </button>
@@ -189,6 +203,20 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
           ))
         )}
       </div>
+
+      {/* 删除确认弹窗 */}
+      <ConfirmDialog
+        isOpen={confirmDialog.open}
+        mode="confirm"
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        variant="danger"
+        onConfirm={() => {
+          confirmDialog.onConfirm();
+          setConfirmDialog({ ...confirmDialog, open: false });
+        }}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, open: false })}
+      />
     </div>
   );
 };

@@ -1,7 +1,7 @@
 # CC Assistant 接口设计方案
 
-> **版本**: v5.2 (M2-C5/C6 新增版)  
-> **更新日期**: 2026-04-15  
+> **版本**: v5.3 (M2 JCEF Bridge 扩展版)  
+> **更新日期**: 2026-04-16  
 > **设计原则**: 以功能和交互动作为驱动，端到端接口设计，与实际代码对齐
 > **与架构对齐**: v5.1 与 CC_Assistant_Technical_Architecture.md v5.0 保持一致
 
@@ -1112,6 +1112,101 @@ class JcefMessageRenderer(private val browser: JBCefBrowser) : MessageRenderer {
     }
 }
 ```
+
+---
+
+### M2-011b: JCEF 双向通信总线 (前端 React ↔ Kotlin)
+
+| 属性 | 值 |
+|------|-----|
+| **功能描述** | 前端 React 组件与 Kotlin 后端的双向通信接口汇总 |
+| **优先级** | P0 |
+| **依赖** | M2-010 |
+| **通信方式** | Java→JS: `executeJavaScript()` + 自定义事件; JS→Java: `JBCefJSQuery` |
+
+#### Java → JS 全局对象 (Kotlin 调用)
+
+```typescript
+// CCChat - 消息操作
+window.CCChat = {
+  appendMessage(role, content, options),   // 追加完整消息
+  appendStreamingContent(role, content, messageId), // 流式追加
+  finishStreaming(messageId),              // 完成流式输出
+  clearMessages(),                         // 清空消息
+  showEmpty(),                             // 显示空状态
+  setSessionList(sessionsJson),            // 设置会话列表 (新增)
+  setCliStatus(version, hasUpdate),        // 设置 CLI 状态 (新增)
+}
+
+// CCApp - 应用级操作
+window.CCApp = {
+  applyTheme({variables, isDark}),         // 应用主题 CSS 变量
+  setTheme(themeId),                       // 设置主题 ID
+  applyI18n(messages),                     // 应用国际化字符串
+  setLocale(locale),                       // 设置语言 (新增)
+}
+
+// CCProviders - 数据注入
+window.CCProviders = {
+  setData(providers, models, agents, context), // 设置所有数据
+  setAgents(agents),                       // 设置 Agents (新增)
+  setSkills(skills),                       // 设置 Skills (新增)
+}
+```
+
+#### JS → Java 动作 (React 调用)
+
+```typescript
+// jcefBridge.send(action, data) 通过 JBCefJSQuery 发送
+
+// 消息操作
+jcefBridge.sendMessage(text, options)      // 发送消息
+jcefBridge.stopGeneration()                // 停止生成
+jcefBridge.copyMessage(id, content)        // 复制消息
+jcefBridge.quoteMessage(id, content)       // 引用消息
+
+// 会话操作
+jcefBridge.newSession()                    // 新建会话
+jcefBridge.deleteSession(id)               // 删除会话
+jcefBridge.toggleFavorite(id, fav)         // 切换收藏
+jcefBridge.renameSession(id, title)        // 重命名会话
+
+// 设置操作
+jcefBridge.themeChange(themeId)            // 主题变更
+jcefBridge.languageChange(locale)          // 语言变更
+jcefBridge.providerChange(providerId)      // 供应商切换
+jcefBridge.modelChange(modelId)            // 模型切换
+jcefBridge.modeChange(mode)                // 模式切换
+jcefBridge.agentChange(agentId)            // Agent 切换
+jcefBridge.thinkChange(enabled)            // 思考模式切换
+jcefBridge.enhancePrompt(text)             // 强化提示词
+
+// Provider/Agent/Skill CRUD (新增)
+jcefBridge.send('providerCreate', data)    // 创建供应商
+jcefBridge.send('providerUpdate', data)    // 更新供应商
+jcefBridge.send('providerDelete', id)      // 删除供应商
+jcefBridge.send('agentCreate', data)       // 创建 Agent
+jcefBridge.send('agentUpdate', data)       // 更新 Agent
+jcefBridge.send('agentDelete', id)         // 删除 Agent
+jcefBridge.send('skillCreate', data)       // 创建 Skill
+jcefBridge.send('skillUpdate', data)       // 更新 Skill
+jcefBridge.send('skillDelete', id)         // 删除 Skill
+```
+
+#### 自定义事件列表
+
+| 事件名 | 触发方 | 数据格式 |
+|--------|--------|----------|
+| `cc-message` | CCChat | `{type: 'append'\|'clear'\|'empty', role, content, id, timestamp, thinking}` |
+| `cc-stream` | CCChat | `{type: 'append'\|'finish', role, content, messageId}` |
+| `cc-theme` | CCApp | `{isDark, variables}` 或 `{themeId}` |
+| `cc-i18n` | CCApp | `{messages}` |
+| `cc-locale` | CCApp | `{locale}` |
+| `cc-providers` | CCProviders | `{providers, models, agents}` |
+| `cc-session-list` | CCChat | `{sessions}` |
+| `cc-cli-status` | CCChat | `{version, hasUpdate}` |
+| `cc-agents` | CCProviders | `{agents}` |
+| `cc-skills` | CCProviders | `{skills}` |
 
 ---
 
@@ -2632,10 +2727,11 @@ class PermissionDialog(
 | 21 | v5.1: 添加 M4-007 外观设置 (主题/背景/气泡) | P0 | ui.md 4.0 对齐 |
 | 22 | v5.2: 添加 M2-C5 历史会话加载 (引用) | P1 | 多会话核心交互 |
 | 23 | v5.2: 添加 M2-C6 消息引用 (Quote) | P1 | 跨会话引用场景 |
+| 24 | v5.3: 添加 M2-011b JCEF 双向通信总线 | P0 | 前后端联调完整接口 |
 
 ---
 
-*文档版本: v5.2*
+*文档版本: v5.3*
 
 *文档版本: v5.1*  
 *最后更新: 2026-04-15*  

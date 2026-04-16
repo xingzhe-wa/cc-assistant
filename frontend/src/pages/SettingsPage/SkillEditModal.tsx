@@ -29,6 +29,7 @@ export const SkillEditModal: React.FC<SkillEditModalProps> = ({
     description: '',
     triggerRule: ''
   });
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (skill) {
@@ -40,19 +41,20 @@ export const SkillEditModal: React.FC<SkillEditModalProps> = ({
         triggerRule: ''
       });
     }
+    setValidationError(null);
   }, [skill, isOpen]);
 
   const handleSubmit = () => {
     if (!formData.name.trim()) {
-      alert('请输入 Skill 名称');
+      setValidationError('请输入 Skill 名称');
       return;
     }
     if (!formData.description.trim()) {
-      alert('请输入描述');
+      setValidationError('请输入描述');
       return;
     }
     if (!formData.triggerRule.trim()) {
-      alert('请输入触发规则');
+      setValidationError('请输入触发规则');
       return;
     }
 
@@ -82,6 +84,12 @@ export const SkillEditModal: React.FC<SkillEditModalProps> = ({
       }
     >
       <div className={styles.form}>
+        {validationError && (
+          <div className={styles.error}>
+            <span className="material-icons-round">error</span>
+            {validationError}
+          </div>
+        )}
         <div className={styles.field}>
           <label className={styles.label}>
             Skill 名称 <span className={styles.required}>*</span>

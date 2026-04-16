@@ -1,5 +1,6 @@
 import React from 'react';
 import { useChatStore } from '@/stores';
+import { useI18n } from '@/hooks/useI18n';
 import { HistoryPage } from '../HistoryPage/HistoryPage';
 
 /**
@@ -8,21 +9,22 @@ import { HistoryPage } from '../HistoryPage/HistoryPage';
  * 复用 HistoryPage 组件，传入 mode="favorite"
  */
 export const FavoritesPage: React.FC = () => {
+  const { t } = useI18n();
   const { sessions, toggleSessionFavorite, deleteSession, setActiveSession, addToast } = useChatStore();
 
   const handleSessionClick = (session: any) => {
     setActiveSession(session.id);
-    addToast(`已加载会话: ${session.title}`, 'success');
+    addToast(t('toast.sessionLoaded'), 'success');
   };
 
   const handleFavoriteToggle = (id: string, fav: boolean) => {
     toggleSessionFavorite(id);
-    addToast(fav ? '已添加收藏' : '已取消收藏', 'success');
+    addToast(fav ? t('toast.favoriteAdded') : t('toast.favoriteRemoved'), 'success');
   };
 
   const handleDeleteSession = (id: string) => {
     deleteSession(id);
-    addToast('会话已删除', 'success');
+    addToast(t('toast.deleted'), 'success');
   };
 
   const handleClose = () => {

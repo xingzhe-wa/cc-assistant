@@ -24,6 +24,29 @@ export interface JavaBridge {
 
   // Provider/Model/Agent
   setProviders: (providers: MockProvider[], models: Record<string, MockModel[]>, agents: MockAgent[]) => void;
+
+  // 会话管理
+  onNewSession: (sessionId: string) => void;
+  onSessionList: (sessions: string) => void;
+
+  // Provider 管理
+  onProviderCreate: (provider: string) => void;
+  onProviderUpdate: (provider: string) => void;
+  onProviderDelete: (providerId: string) => void;
+
+  // Agent 管理
+  onAgentCreate: (agent: string) => void;
+  onAgentUpdate: (agent: string) => void;
+  onAgentDelete: (agentId: string) => void;
+
+  // Skill 管理
+  onSkillCreate: (skill: string) => void;
+  onSkillUpdate: (skill: string) => void;
+  onSkillDelete: (skillId: string) => void;
+
+  // 设置
+  onSettingsSave: (settings: string) => void;
+  onCheckCliUpdate: () => void;
 }
 
 // JS → Java 回调
@@ -136,6 +159,10 @@ export const jcefBridge = {
 
   newSession: () => {
     jcefBridge.send('newSession');
+  },
+
+  closePlugin: () => {
+    jcefBridge.send('closePlugin');
   },
 
   // 增强

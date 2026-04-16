@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { useChatStore } from '@/stores';
+import { useConfigStore } from '@/stores';
 import { applyTheme, getTheme, type ThemeId } from '@/theme';
 
 /**
@@ -19,9 +19,8 @@ import { applyTheme, getTheme, type ThemeId } from '@/theme';
  * ```
  */
 export function useTheme() {
-  // 从全局 store 获取当前主题
-  // 注意：需要确保 chatStore 有 theme 字段
-  const themeId = useChatStore((state) => (state as any).theme) || 'idea' as ThemeId;
+  // 从 useConfigStore 获取当前主题
+  const themeId = useConfigStore((state) => state.theme) || 'idea' as ThemeId;
 
   // 获取主题配置
   const theme = useMemo(() => getTheme(themeId), [themeId]);
@@ -34,12 +33,9 @@ export function useTheme() {
     applyTheme(themeId);
   }, [themeId]);
 
-  // 切换主题（需要 store 支持）
+  // 切换主题
   const setTheme = (newTheme: ThemeId) => {
-    const store = useChatStore.getState() as any;
-    if (store.setTheme) {
-      store.setTheme(newTheme);
-    }
+    useConfigStore.getState().setTheme(newTheme);
   };
 
   return {

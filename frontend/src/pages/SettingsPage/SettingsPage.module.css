@@ -246,7 +246,7 @@
   height: 20px;
   border-radius: 10px;
   border: none;
-  background: var(--fg4);
+  background: var(--fg3);
   cursor: pointer;
   position: relative;
   transition: background 0.2s;
@@ -338,7 +338,7 @@
   border-radius: var(--r);
   border: none;
   background: transparent;
-  color: var(--fg3);
+  color: var(--fg2);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -347,8 +347,8 @@
 }
 
 .providerActions button:hover {
-  background: var(--el);
-  color: var(--fg2);
+  background: var(--hv);
+  color: var(--fg);
 }
 
 .providerActions button .material-icons-round {

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { renderMarkdown } from '@/utils/markdown';
+import { useI18n } from '@/hooks/useI18n';
 import styles from './MarkdownContent.module.css';
 
 interface MarkdownContentProps {
@@ -11,6 +12,7 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({
   content,
   className = ''
 }) => {
+  const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -23,7 +25,7 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({
           const copyBtn = document.createElement('button');
           copyBtn.className = 'copy-code-btn';
           copyBtn.innerHTML = '<span class="material-icons-round">content_copy</span>';
-          copyBtn.title = '复制代码';
+          copyBtn.title = t('message.copyCode');
           copyBtn.onclick = () => {
             const code = block.textContent || '';
             navigator.clipboard.writeText(code);
@@ -33,7 +35,7 @@ export const MarkdownContent: React.FC<MarkdownContentProps> = ({
         }
       });
     }
-  }, [content]);
+  }, [content, t]);
 
   return (
     <div

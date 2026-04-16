@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Icon } from '../common';
+import { useI18n } from '@/hooks/useI18n';
 import type { MockDiffFile } from '@/types/mock';
 import './DiffViewer.css';
 
@@ -37,6 +38,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
   defaultExpanded = true,
   className = ''
 }) => {
+  const { t } = useI18n();
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   // 计算总计
@@ -57,7 +59,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
               name={expanded ? 'keyboard_arrow_down' : 'keyboard_arrow_right'}
               size="md"
             />
-            <span>代码变更</span>
+            <span>{t('diff.title')}</span>
             <span className="cc-diff-viewer__count">
               ({totalFiles} 个文件，+{totalAdd} -{totalDel})
             </span>
@@ -71,7 +73,7 @@ export const DiffViewer: React.FC<DiffViewerProps> = ({
                 setExpanded(!expanded);
               }}
             >
-              {expanded ? '收起' : '展开'}
+              {expanded ? t('diff.collapse') : t('diff.expand')}
             </button>
           </div>
         </div>

@@ -3,7 +3,7 @@
  * 监听 Java → JS 的全局对象调用（CCChat、CCApp、CCProviders）
  */
 import { useEffect } from 'react';
-import { useChatStore } from '@/stores';
+import { useChatStore, useConfigStore } from '@/stores';
 
 export const useJcefEvents = () => {
   const { addMessage, setStreaming, appendStreamingContent } = useChatStore();
@@ -99,11 +99,58 @@ export const useJcefEvents = () => {
       // 可以更新 store 中的 providers 数据
     };
 
+    // 监听会话列表更新
+    const handleSessionList = (e: CustomEvent) => {
+      console.log('[JCEF] Session list:', e.detail);
+    };
+
+    // 监听 CLI 状态更新
+    const handleCliStatus = (e: CustomEvent) => {
+      console.log('[JCEF] CLI status:', e.detail);
+    };
+
+    // 监听语言变更
+    const handleLocale = (e: CustomEvent) => {
+      console.log('[JCEF] Locale change:', e.detail);
+      const { locale } = e.detail;
+      if (locale) {
+        useConfigStore.getState().setLanguage(locale);
+        // 强制触发 useI18n hook 的 language 依赖更新
+        // 通过设置一个临时状态来强制重新渲染
+        window.dispatchEvent(new CustomEvent('cc-i18n-force-update', {
+          detail: { locale }
+        }));
+      }
+    };
+
+    // 监听 i18n 动态更新（如果 Kotlin 侧传递翻译消息）
+    const handleI18nUpdate = (e: CustomEvent) => {
+      console.log('[JCEF] I18n update:', e.detail);
+      // 如果有动态翻译消息，可以在这里处理
+      // 目前前端使用静态翻译文件，这里仅做日志
+    };
+
+    // 监听 Agents 更新
+    const handleAgents = (e: CustomEvent) => {
+      console.log('[JCEF] Agents:', e.detail);
+    };
+
+    // 监听 Skills 更新
+    const handleSkills = (e: CustomEvent) => {
+      console.log('[JCEF] Skills:', e.detail);
+    };
+
     // 注册事件监听
     window.addEventListener('cc-message', handleMessage as EventListener);
     window.addEventListener('cc-stream', handleStream as EventListener);
     window.addEventListener('cc-theme', handleTheme as EventListener);
     window.addEventListener('cc-providers', handleProviders as EventListener);
+    window.addEventListener('cc-session-list', handleSessionList as EventListener);
+    window.addEventListener('cc-cli-status', handleCliStatus as EventListener);
+    window.addEventListener('cc-locale', handleLocale as EventListener);
+    window.addEventListener('cc-i18n', handleI18nUpdate as EventListener);
+    window.addEventListener('cc-agents', handleAgents as EventListener);
+    window.addEventListener('cc-skills', handleSkills as EventListener);
 
     // 清理
     return () => {
@@ -111,6 +158,12 @@ export const useJcefEvents = () => {
       window.removeEventListener('cc-stream', handleStream as EventListener);
       window.removeEventListener('cc-theme', handleTheme as EventListener);
       window.removeEventListener('cc-providers', handleProviders as EventListener);
+      window.removeEventListener('cc-session-list', handleSessionList as EventListener);
+      window.removeEventListener('cc-cli-status', handleCliStatus as EventListener);
+      window.removeEventListener('cc-locale', handleLocale as EventListener);
+      window.removeEventListener('cc-i18n', handleI18nUpdate as EventListener);
+      window.removeEventListener('cc-agents', handleAgents as EventListener);
+      window.removeEventListener('cc-skills', handleSkills as EventListener);
     };
   }, [addMessage, setStreaming, appendStreamingContent]);
 };

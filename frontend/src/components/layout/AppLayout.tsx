@@ -22,6 +22,7 @@ interface AppLayoutProps {
   onSessionClick: (session: MockSession) => void;
   onFavoriteToggle: (id: string, fav: boolean) => void;
   onDeleteSession: (id: string) => void;
+  onRename: (id: string, title: string) => void;
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({
@@ -41,7 +42,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onSearchChange,
   onSessionClick,
   onFavoriteToggle,
-  onDeleteSession
+  onDeleteSession,
+  onRename
 }) => {
   return (
     <div className={styles.layout}>
@@ -58,6 +60,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onFavoriteClick={onFavoriteClick}
         onStreamToggle={onStreamToggle}
         onSettingsClick={onSettingsClick}
+        onRename={onRename}
       />
       <HistoryBar
         isOpen={historyOpen || favoriteOpen}

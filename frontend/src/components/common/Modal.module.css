@@ -57,6 +57,11 @@
   max-width: 92vw;
 }
 
+.xl {
+  width: 900px;
+  max-width: 95vw;
+}
+
 .header {
   display: flex;
   align-items: center;

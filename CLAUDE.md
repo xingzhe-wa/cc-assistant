@@ -273,6 +273,24 @@ val fullPrompt = previousMessages + "\n" + newMessage
 - **消息引用**: 引用前必须执行 Markdown stripping，保留纯文本
 - **Rewind vs Quote**: Rewind 丢弃后续消息创建新分支；Quote 保留当前对话追加引用
 
+### HC-014: 前端图标字体约束
+- **Material Icons 字体**: 必须使用 Google Fonts Material Symbols Rounded
+  - 在 `frontend/index.html` 中引入: `<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />`
+  - CSS 中设置: `font-family: 'Material Symbols Rounded'`
+- **JCEF 兼容性**: Google Fonts 在 JCEF 内部浏览器中可能因网络限制无法加载
+  - 如需完美兼容 JCEF，需将字体文件下载到 `src/main/resources/web/assets/` 本地目录
+  - 使用本地字体文件替代 Google Fonts CDN
+
+### HC-015: 前端国际化约束
+- **所有 UI 文本必须使用 i18n**: 禁止在组件中硬编码任何可见文本
+  - ✅ 正确: `<span>{t('toolbar.newSession')}</span>`
+  - ❌ 禁止: `<span>新建会话</span>`
+- **翻译函数**: 使用 `useI18n()` hook 获取翻译函数 `t(key)`
+- **翻译 key 命名规范**: `{模块}.{具体描述}`，如 `toolbar.newSession`、`settingsDetail.basicSettings`
+- **插值占位符**: 使用 `{0}`, `{1}` 等数字格式，而非 `{name}` 格式
+- **默认语言**: `zh-CN` (简体中文)，必须在 `frontend/src/i18n/locales/zh-CN.ts` 中定义所有 key
+- **动态切换**: 语言设置存储在 `useConfigStore().language`，修改后自动触发全局重新渲染
+
 ---
 
 ## 软约束 (SOFT CONSTRAINTS)
@@ -519,6 +537,15 @@ class JcefMessageRenderer {
    - 键盘导航支持 (Tab/Enter/Esc)
    - ARIA 标签完整
    - 对比度 ≥ 4.5:1
+
+5. **图标字体约束**
+   - 必须引入 Google Fonts Material Symbols Rounded
+   - JCEF 环境中 Google Fonts 可能无法加载，需准备本地字体备选方案
+
+6. **国际化约束**
+   - 所有可见文本必须通过 `t(key)` 函数获取
+   - 禁止硬编码任何文本（按钮标题、标签、提示信息等）
+   - Mock 数据中的品牌名称（如 "Claude"、"DeepSeek"）不需要翻译
 
 ### JCEF 约束与最佳实践
 
@@ -940,6 +967,7 @@ src/main/resources/providers/
 
 ### 国际化约定
 
+#### 后端国际化 (Kotlin)
 使用 `MyBundle.message()` 获取本地化字符串：
 ```kotlin
 // 在 resources/messages/MyBundle.properties 中定义
@@ -949,6 +977,31 @@ shuffle=Shuffle
 // 在代码中使用
 MyBundle.message("randomLabel", number)
 ```
+
+#### 前端国际化 (React)
+使用 `useI18n()` hook 获取翻译函数：
+```typescript
+// frontend/src/hooks/useI18n.ts
+const { t } = useI18n();
+
+// 翻译文件: frontend/src/i18n/locales/{locale}.ts
+const zhCN = {
+  toolbar: {
+    newSession: '新建会话',
+    history: '历史会话',
+    // ...
+  }
+};
+
+// 使用
+<span>{t('toolbar.newSession')}</span>
+```
+
+**前端 i18n 约束**:
+- 所有可见文本必须使用 `t(key)` 获取
+- key 命名: `{分组}.{具体名称}`，如 `toolbar.newSession`
+- 占位符: 使用 `{0}`, `{1}` 格式
+- 默认语言: `zh-CN`
 
 ---
 
@@ -1060,4 +1113,4 @@ scope: optional, indicates the affected module
 
 ---
 
-*最后更新: 2026-04-16*
+*最后更新: 2026-04-17*

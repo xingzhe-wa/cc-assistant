@@ -1,5 +1,6 @@
 import React from 'react';
 import { Icon } from '../common';
+import { useI18n } from '@/hooks/useI18n';
 import styles from './UserMessage.module.css';
 
 interface UserMessageProps {
@@ -14,6 +15,8 @@ export const UserMessage: React.FC<UserMessageProps> = ({
   content,
   onCopy
 }) => {
+  const { t } = useI18n();
+
   return (
     <div className={styles.container}>
       <div className={styles.bubble}>
@@ -21,7 +24,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({
         <button
           className={styles.copyBtn}
           onClick={() => onCopy?.(id, content)}
-          title="复制"
+          title={t('message.copy')}
         >
           <Icon name="content_copy" />
         </button>

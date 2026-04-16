@@ -1,6 +1,7 @@
 import React from 'react';
 import { TabBar } from './TabBar';
 import { Button } from '../common';
+import { useI18n } from '@/hooks/useI18n';
 import type { MockSession } from '@/types/mock';
 import styles from './TopBar.module.css';
 
@@ -17,6 +18,7 @@ interface TopBarProps {
   onFavoriteClick: () => void;
   onStreamToggle: () => void;
   onSettingsClick: () => void;
+  onRename: (id: string, title: string) => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -31,8 +33,11 @@ export const TopBar: React.FC<TopBarProps> = ({
   onHistoryClick,
   onFavoriteClick,
   onStreamToggle,
-  onSettingsClick
+  onSettingsClick,
+  onRename
 }) => {
+  const { t } = useI18n();
+
   return (
     <header className={styles.topbar}>
       <TabBar
@@ -41,6 +46,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         onTabClick={onTabClick}
         onTabClose={onTabClose}
         onNewTab={onNewTab}
+        onRename={onRename}
       />
       <div className={styles.actions}>
         <Button
@@ -48,24 +54,24 @@ export const TopBar: React.FC<TopBarProps> = ({
           iconOnly
           icon="add"
           onClick={onNewTab}
-          title="新建会话"
+          title={t('toolbar.newSession')}
         />
         <Button
           variant={historyOpen ? 'secondary' : 'ghost'}
           iconOnly
           icon="history"
           onClick={onHistoryClick}
-          title="历史会话"
+          title={t('toolbar.history')}
         />
         <Button
           variant={favoriteOpen ? 'secondary' : 'ghost'}
           iconOnly
           icon={favoriteOpen ? 'star' : 'star_outline'}
           onClick={onFavoriteClick}
-          title="收藏会话"
+          title={t('toolbar.favorites')}
         />
         <div className={styles.streamToggle} onClick={onStreamToggle}>
-          <span className={styles.streamLabel}>Stream</span>
+          <span className={styles.streamLabel}>{t('toolbar.stream')}</span>
           <span className={`${styles.streamTrack} ${streamEnabled ? styles.on : ''}`} />
         </div>
         <Button
@@ -73,7 +79,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           iconOnly
           icon="settings"
           onClick={onSettingsClick}
-          title="设置"
+          title={t('toolbar.settings')}
         />
       </div>
     </header>

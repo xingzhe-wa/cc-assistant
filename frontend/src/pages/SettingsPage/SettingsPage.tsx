@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useConfigStore } from '@/stores';
+import { useI18n } from '@/hooks/useI18n';
+import { ConfirmDialog } from '@/components/common';
 import styles from './SettingsPage.module.css';
 import { ProviderEditModal } from './ProviderEditModal';
 import { AgentEditModal } from './AgentEditModal';
@@ -14,18 +16,12 @@ type SettingsTab = 'basic' | 'provider' | 'agent' | 'skill';
 interface SettingSection {
   id: SettingsTab;
   icon: string;
-  label: string;
+  labelKey: string;
   group: string;
 }
 
-const settingsSections: SettingSection[] = [
-  { id: 'basic', icon: 'tune', label: '基础设置', group: '通用' },
-  { id: 'provider', icon: 'dns', label: '供应商管理', group: '集成' },
-  { id: 'agent', icon: 'smart_toy', label: 'Agent', group: '集成' },
-  { id: 'skill', icon: 'bolt', label: 'Skill', group: '集成' }
-];
-
 export const SettingsPage: React.FC<SettingsPageProps> = ({ onClose }) => {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<SettingsTab>('basic');
 
   // 编辑弹窗状态
@@ -33,6 +29,21 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onClose }) => {
   const [agentModalOpen, setAgentModalOpen] = useState(false);
   const [skillModalOpen, setSkillModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+
+  // ConfirmDialog 状态
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ open: false, title: '', message: '', onConfirm: () => {} });
+
+  const settingsSections: SettingSection[] = [
+    { id: 'basic', icon: 'tune', labelKey: 'settingsDetail.basicSettings', group: 'generalGroup' },
+    { id: 'provider', icon: 'dns', labelKey: 'settingsDetail.providerManage', group: 'integrationGroup' },
+    { id: 'agent', icon: 'smart_toy', labelKey: 'settingsDetail.agentManage', group: 'integrationGroup' },
+    { id: 'skill', icon: 'bolt', labelKey: 'settingsDetail.skillManage', group: 'integrationGroup' }
+  ];
 
   const handleEditProvider = (provider?: any) => {
     setEditingItem(provider || null);
@@ -49,16 +60,20 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onClose }) => {
     setSkillModalOpen(true);
   };
 
+  const handleDeleteConfirm = (title: string, message: string, onConfirm: () => void) => {
+    setConfirmDialog({ open: true, title, message, onConfirm });
+  };
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
         <button className={styles.backBtn} onClick={onClose}>
           <span className="material-icons-round">arrow_back</span>
-          返回
+          {t('common.back')}
         </button>
         <h1 className={styles.pageTitle}>
           <span className="material-icons-round">settings</span>
-          设置
+          {t('settings.title')}
         </h1>
       </header>
       <div className={styles.main}>
@@ -66,14 +81,14 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onClose }) => {
           {settingsSections.map((section) => (
             <React.Fragment key={section.id}>
               {section.group && (
-                <div className={styles.navGroup}>{section.group}</div>
+                <div className={styles.navGroup}>{t(`settingsDetail.${section.group}`)}</div>
               )}
               <button
                 className={`${styles.navItem} ${activeTab === section.id ? styles.active : ''}`}
                 onClick={() => setActiveTab(section.id)}
               >
                 <span className="material-icons-round">{section.icon}</span>
-                {section.label}
+                {t(section.labelKey)}
               </button>
             </React.Fragment>
           ))}
@@ -81,13 +96,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onClose }) => {
         <div className={styles.content}>
           {activeTab === 'basic' && <BasicSettings />}
           {activeTab === 'provider' && (
-            <ProviderSettings onEdit={handleEditProvider} />
+            <ProviderSettings onEdit={handleEditProvider} onDeleteConfirm={handleDeleteConfirm} />
           )}
           {activeTab === 'agent' && (
-            <AgentSettings onEdit={handleEditAgent} />
+            <AgentSettings onEdit={handleEditAgent} onDeleteConfirm={handleDeleteConfirm} />
           )}
           {activeTab === 'skill' && (
-            <SkillSettings onEdit={handleEditSkill} />
+            <SkillSettings onEdit={handleEditSkill} onDeleteConfirm={handleDeleteConfirm} />
           )}
         </div>
       </div>
@@ -108,12 +123,27 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onClose }) => {
         onClose={() => setSkillModalOpen(false)}
         skill={editingItem}
       />
+
+      {/* 删除确认弹窗 */}
+      <ConfirmDialog
+        isOpen={confirmDialog.open}
+        mode="confirm"
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        variant="danger"
+        onConfirm={() => {
+          confirmDialog.onConfirm();
+          setConfirmDialog({ ...confirmDialog, open: false });
+        }}
+        onCancel={() => setConfirmDialog({ ...confirmDialog, open: false })}
+      />
     </div>
   );
 };
 
 // 基础设置
 const BasicSettings: React.FC = () => {
+  const { t } = useI18n();
   const {
     cliVersion,
     cliAutoUpdate,
@@ -128,28 +158,28 @@ const BasicSettings: React.FC = () => {
     <div className={styles.section}>
       <div className={styles.sectionTitle}>
         <span className="material-icons-round">terminal</span>
-        CLI 版本
+        {t('settingsDetail.cliVersion')}
       </div>
       <div className={styles.row}>
         <div className={styles.label}>
-          Claude Code CLI
-          <small>当前安装版本 v{cliVersion}</small>
+          {t('settingsDetail.cliName')}
+          <small>{t('settingsDetail.currentVersion')} v{cliVersion}</small>
         </div>
         <div className={styles.ctrl}>
           <span style={{ fontSize: '11px', color: 'var(--gn)', display: 'flex', alignItems: 'center', gap: '4px' }}>
             <span className="material-icons-round" style={{ fontSize: '13px' }}>check_circle</span>
-            已是最新
+            {t('settingsDetail.latestVersion')}
           </span>
           <button className={styles.btn} onClick={() => console.log('检查更新')}>
             <span className="material-icons-round">sync</span>
-            检查更新
+            {t('settingsDetail.checkUpdate')}
           </button>
         </div>
       </div>
       <div className={styles.row}>
         <div className={styles.label}>
-          自动更新
-          <small>启动 IDE 时自动检测并更新 CLI</small>
+          {t('settingsDetail.autoUpdate')}
+          <small>{t('settingsDetail.autoUpdateDesc')}</small>
         </div>
         <button
           className={`${styles.toggle} ${cliAutoUpdate ? styles.on : ''}`}
@@ -159,12 +189,12 @@ const BasicSettings: React.FC = () => {
 
       <div className={styles.sectionTitle}>
         <span className="material-icons-round">language</span>
-        国际化
+        {t('settings.language')}
       </div>
       <div className={styles.row}>
         <div className={styles.label}>
-          界面语言
-          <small>重启插件后生效</small>
+          {t('settingsDetail.languageLabel')}
+          <small>{t('settingsDetail.languageDesc')}</small>
         </div>
         <select
           className={styles.select}
@@ -173,29 +203,30 @@ const BasicSettings: React.FC = () => {
         >
           <option value="zh-CN">简体中文</option>
           <option value="zh-TW">繁體中文</option>
-          <option value="en">English</option>
-          <option value="ja">日本語</option>
+          <option value="en-US">English</option>
+          <option value="ja-JP">日本語</option>
+          <option value="ko-KR">한국어</option>
         </select>
       </div>
 
       <div className={styles.sectionTitle}>
         <span className="material-icons-round">palette</span>
-        主题与外观
+        {t('settings.theme')}
       </div>
       <div className={styles.row}>
         <div className={styles.label}>
-          界面主题
-          <small>跟随 IDEA 主题自动切换</small>
+          {t('settingsDetail.themeLabel')}
+          <small>{t('settingsDetail.themeDesc')}</small>
         </div>
         <select
           className={styles.select}
           value={theme}
           onChange={(e) => setTheme(e.target.value as any)}
         >
-          <option value="idea">跟随 IDEA</option>
-          <option value="dark1">深色主题 1</option>
-          <option value="dark2">深色主题 2</option>
-          <option value="light">浅色主题</option>
+          <option value="idea">{t('settingsDetail.themeFollowIdea')}</option>
+          <option value="dark">{t('settingsDetail.themeDark')}</option>
+          <option value="light">{t('settingsDetail.themeLight')}</option>
+          <option value="highContrast">{t('settingsDetail.themeHighContrast')}</option>
         </select>
       </div>
     </div>
@@ -205,15 +236,19 @@ const BasicSettings: React.FC = () => {
 // 供应商设置
 interface ProviderSettingsProps {
   onEdit: (provider?: any) => void;
+  onDeleteConfirm: (title: string, message: string, onConfirm: () => void) => void;
 }
 
-const ProviderSettings: React.FC<ProviderSettingsProps> = ({ onEdit }) => {
+const ProviderSettings: React.FC<ProviderSettingsProps> = ({ onEdit, onDeleteConfirm }) => {
+  const { t } = useI18n();
   const { providers, deleteProvider } = useConfigStore();
 
   const handleDelete = (id: string, name: string) => {
-    if (confirm(`确定删除供应商 "${name}" 吗？`)) {
-      deleteProvider(id);
-    }
+    onDeleteConfirm(
+      t('provider.deleteProvider'),
+      t('provider.deleteConfirm', name),
+      () => deleteProvider(id)
+    );
   };
 
   return (
@@ -221,14 +256,14 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ onEdit }) => {
       <div className={styles.sectionTitle} style={{ justifyContent: 'space-between' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
           <span className="material-icons-round">dns</span>
-          供应商列表
+          {t('settingsDetail.providerList')}
         </span>
         <button
           className={`${styles.btn} ${styles.primary}`}
           onClick={() => onEdit()}
         >
           <span className="material-icons-round">add</span>
-          新增供应商
+          {t('provider.addProvider')}
         </button>
       </div>
       {providers.map((provider) => (
@@ -241,15 +276,15 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ onEdit }) => {
             </div>
           </div>
           <div className={styles.providerActions}>
-            <button title="编辑" onClick={() => onEdit(provider)}>
+            <button title={t('common.edit')} onClick={() => onEdit(provider)}>
               <span className="material-icons-round">edit</span>
             </button>
-            <button title="导出 JSON">
+            <button title={t('common.exportJson')}>
               <span className="material-icons-round">download</span>
             </button>
             <button
               className={styles.danger}
-              title="删除"
+              title={t('common.delete')}
               onClick={() => handleDelete(provider.id, provider.name)}
             >
               <span className="material-icons-round">delete_outline</span>
@@ -264,15 +299,19 @@ const ProviderSettings: React.FC<ProviderSettingsProps> = ({ onEdit }) => {
 // Agent 设置
 interface AgentSettingsProps {
   onEdit: (agent?: any) => void;
+  onDeleteConfirm: (title: string, message: string, onConfirm: () => void) => void;
 }
 
-const AgentSettings: React.FC<AgentSettingsProps> = ({ onEdit }) => {
+const AgentSettings: React.FC<AgentSettingsProps> = ({ onEdit, onDeleteConfirm }) => {
+  const { t } = useI18n();
   const { agents, deleteAgent } = useConfigStore();
 
   const handleDelete = (id: string, name: string) => {
-    if (confirm(`确定删除 Agent "${name}" 吗？`)) {
-      deleteAgent(id);
-    }
+    onDeleteConfirm(
+      t('agent.deleteAgent'),
+      t('agent.deleteConfirm', name),
+      () => deleteAgent(id)
+    );
   };
 
   return (
@@ -280,14 +319,14 @@ const AgentSettings: React.FC<AgentSettingsProps> = ({ onEdit }) => {
       <div className={styles.sectionTitle} style={{ justifyContent: 'space-between' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
           <span className="material-icons-round">smart_toy</span>
-          Agent 列表
+          {t('settingsDetail.agentList')}
         </span>
         <button
           className={`${styles.btn} ${styles.primary}`}
           onClick={() => onEdit()}
         >
           <span className="material-icons-round">add</span>
-          新增 Agent
+          {t('agent.addAgent')}
         </button>
       </div>
       {agents.map((agent) => (
@@ -302,15 +341,15 @@ const AgentSettings: React.FC<AgentSettingsProps> = ({ onEdit }) => {
             </div>
           </div>
           <div className={styles.providerActions}>
-            <button title="编辑" onClick={() => onEdit(agent)}>
+            <button title={t('common.edit')} onClick={() => onEdit(agent)}>
               <span className="material-icons-round">edit</span>
             </button>
-            <button title="导出 JSON">
+            <button title={t('common.exportJson')}>
               <span className="material-icons-round">download</span>
             </button>
             <button
               className={styles.danger}
-              title="删除"
+              title={t('common.delete')}
               onClick={() => handleDelete(agent.id, agent.name)}
             >
               <span className="material-icons-round">delete_outline</span>
@@ -325,15 +364,19 @@ const AgentSettings: React.FC<AgentSettingsProps> = ({ onEdit }) => {
 // Skill 设置
 interface SkillSettingsProps {
   onEdit: (skill?: any) => void;
+  onDeleteConfirm: (title: string, message: string, onConfirm: () => void) => void;
 }
 
-const SkillSettings: React.FC<SkillSettingsProps> = ({ onEdit }) => {
+const SkillSettings: React.FC<SkillSettingsProps> = ({ onEdit, onDeleteConfirm }) => {
+  const { t } = useI18n();
   const { skills, deleteSkill } = useConfigStore();
 
   const handleDelete = (id: string, name: string) => {
-    if (confirm(`确定删除 Skill "${name}" 吗？`)) {
-      deleteSkill(id);
-    }
+    onDeleteConfirm(
+      t('skill.deleteSkill'),
+      t('skill.deleteConfirm', name),
+      () => deleteSkill(id)
+    );
   };
 
   return (
@@ -341,14 +384,14 @@ const SkillSettings: React.FC<SkillSettingsProps> = ({ onEdit }) => {
       <div className={styles.sectionTitle} style={{ justifyContent: 'space-between' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
           <span className="material-icons-round">bolt</span>
-          Skill 列表
+          {t('settingsDetail.skillList')}
         </span>
         <button
           className={`${styles.btn} ${styles.primary}`}
           onClick={() => onEdit()}
         >
           <span className="material-icons-round">add</span>
-          新增 Skill
+          {t('skill.addSkill')}
         </button>
       </div>
       {skills.map((skill) => (
@@ -363,15 +406,15 @@ const SkillSettings: React.FC<SkillSettingsProps> = ({ onEdit }) => {
             </div>
           </div>
           <div className={styles.providerActions}>
-            <button title="编辑" onClick={() => onEdit(skill)}>
+            <button title={t('common.edit')} onClick={() => onEdit(skill)}>
               <span className="material-icons-round">edit</span>
             </button>
-            <button title="导出 JSON">
+            <button title={t('common.exportJson')}>
               <span className="material-icons-round">download</span>
             </button>
             <button
               className={styles.danger}
-              title="删除"
+              title={t('common.delete')}
               onClick={() => handleDelete(skill.id, skill.name)}
             >
               <span className="material-icons-round">delete_outline</span>

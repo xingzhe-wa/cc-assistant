@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { MockSession } from '@/types/mock';
 import { Button } from '../common';
+import { useI18n } from '@/hooks/useI18n';
 import styles from './HistoryBar.module.css';
 
 interface HistoryBarProps {
@@ -25,9 +26,12 @@ export const HistoryBar: React.FC<HistoryBarProps> = ({
   onDeleteSession,
   onModeSwitch
 }) => {
+  const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredSessions = sessions.filter(session => {
+    // 过滤掉还未发生首次交互的会话
+    if (!session.hasFirstMessage) return false;
     if (mode === 'favorite' && !session.fav) return false;
     if (searchQuery && !session.title.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
@@ -42,7 +46,7 @@ export const HistoryBar: React.FC<HistoryBarProps> = ({
           <span className="material-icons-round">search</span>
           <input
             type="text"
-            placeholder="搜索会话..."
+            placeholder={t('session.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -57,9 +61,9 @@ export const HistoryBar: React.FC<HistoryBarProps> = ({
                 className={styles.sessionContent}
                 onClick={() => onSessionClick(session)}
               >
-                <div className={styles.sessionTitle}>{session.title || '新对话'}</div>
+                <div className={styles.sessionTitle}>{session.title || t('session.newChat')}</div>
                 <div className={styles.sessionMeta}>
-                  <span>{session.qc} 条消息</span>
+                  <span>{session.qc} {t('session.questionTimes')}</span>
                   <span>·</span>
                   <span>{session.time}</span>
                 </div>
@@ -68,7 +72,7 @@ export const HistoryBar: React.FC<HistoryBarProps> = ({
                 <button
                   className={`${styles.actionBtn} ${session.fav ? styles.favOn : ''}`}
                   onClick={() => onFavoriteToggle(session.id, !session.fav)}
-                  title={session.fav ? '取消收藏' : '收藏'}
+                  title={session.fav ? t('session.unfavorite') : t('session.favorite')}
                 >
                   <span className="material-icons-round">
                     {session.fav ? 'star' : 'star_outline'}
@@ -77,7 +81,7 @@ export const HistoryBar: React.FC<HistoryBarProps> = ({
                 <button
                   className={styles.actionBtn}
                   onClick={() => onDeleteSession(session.id)}
-                  title="删除"
+                  title={t('session.delete')}
                 >
                   <span className="material-icons-round">delete</span>
                 </button>
@@ -86,7 +90,7 @@ export const HistoryBar: React.FC<HistoryBarProps> = ({
           ))}
           {filteredSessions.length === 0 && (
             <div className={styles.empty}>
-              {mode === 'favorite' ? '暂无收藏会话' : '暂无会话记录'}
+              {mode === 'favorite' ? t('session.emptyFavorites') : t('session.emptyHistory')}
             </div>
           )}
         </div>
@@ -98,7 +102,7 @@ export const HistoryBar: React.FC<HistoryBarProps> = ({
               icon="star"
               onClick={onModeSwitch}
             >
-              收藏会话
+              {t('page.favorites')}
             </Button>
           </div>
         )}

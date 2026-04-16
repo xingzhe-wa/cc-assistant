@@ -7,15 +7,21 @@ import { SettingsPage, HistoryPage } from './pages';
 import { useChatStore } from './stores';
 import { mockProviders, getMockModelsByProvider, mockAgents } from './mock';
 import { useJcefEvents } from './hooks/useJcefEvents';
+import { useI18n } from './hooks/useI18n';
+import { useTheme } from './hooks/useTheme';
 import type { MockSession } from './types/mock';
 import './styles/global.css';
 
 const App: React.FC = () => {
   // 监听 JCEF 全局对象事件
   useJcefEvents();
+  // 应用主题
+  useTheme();
+  const { t } = useI18n();
   const {
     sessions,
     activeSessionId,
+    openTabs,
     streaming,
     streamingContent,
     streamEnabled,
@@ -33,6 +39,7 @@ const App: React.FC = () => {
     closeSession,
     deleteSession,
     toggleSessionFavorite,
+    renameSession,
     setInputValue,
     sendMessage,
     stopGeneration,
@@ -52,6 +59,8 @@ const App: React.FC = () => {
 
   const activeSession = sessions.find(s => s.id === activeSessionId);
   const models = getMockModelsByProvider(currentProvider);
+  // 只显示在Tab栏中打开的会话
+  const openTabSessions = sessions.filter(s => openTabs.includes(s.id));
 
   const handleTabClick = useCallback((id: string) => {
     setActiveSession(id);
@@ -60,6 +69,29 @@ const App: React.FC = () => {
   const handleTabClose = useCallback((id: string) => {
     closeSession(id);
   }, [closeSession]);
+
+  // 从历史/收藏加载会话到新Tab
+  const handleSessionClick = useCallback((session: MockSession) => {
+    const { openTabs: currentOpenTabs } = useChatStore.getState();
+    // 如果会话不在Tab列表中，则添加
+    if (!currentOpenTabs.includes(session.id)) {
+      const { openTabs: currentTabs } = useChatStore.getState();
+      useChatStore.setState({
+        openTabs: [...currentTabs, session.id],
+        activeSessionId: session.id
+      });
+    } else {
+      // 如果已打开，直接切换
+      setActiveSession(session.id);
+    }
+    addToast(t('toast.sessionLoaded'), 'success');
+    toggleHistory();
+  }, [setActiveSession, addToast, toggleHistory, t]);
+
+  const handleRename = useCallback((id: string, title: string) => {
+    renameSession(id, title);
+    addToast(t('toast.renamed'), 'success');
+  }, [renameSession, addToast, t]);
 
   const handleNewTab = useCallback(() => {
     createSession();
@@ -77,32 +109,26 @@ const App: React.FC = () => {
     setCurrentPage('settings');
   }, [setCurrentPage]);
 
-  const handleSessionClick = useCallback((session: MockSession) => {
-    setActiveSession(session.id);
-    addToast(`已加载会话: ${session.title}`, 'success');
-    toggleHistory();
-  }, [setActiveSession, addToast, toggleHistory]);
-
   const handleFavoriteToggle = useCallback((id: string, fav: boolean) => {
     toggleSessionFavorite(id);
-    addToast(fav ? '已添加收藏' : '已取消收藏', 'success');
-  }, [toggleSessionFavorite, addToast]);
+    addToast(fav ? t('toast.favoriteAdded') : t('toast.favoriteRemoved'), 'success');
+  }, [toggleSessionFavorite, addToast, t]);
 
   const handleDeleteSession = useCallback((id: string) => {
     deleteSession(id);
-    addToast('会话已删除', 'success');
-  }, [deleteSession, addToast]);
+    addToast(t('toast.deleted'), 'success');
+  }, [deleteSession, addToast, t]);
 
   const handleCopy = useCallback((_id: string, content: string) => {
     navigator.clipboard.writeText(content);
-    addToast('已复制到剪贴板', 'success');
-  }, [addToast]);
+    addToast(t('toast.copied'), 'success');
+  }, [addToast, t]);
 
   const handleQuote = useCallback((_id: string, content: string) => {
     const quoted = content.split('\n').map(line => `> ${line}`).join('\n');
     setInputValue(`${quoted}\n\n${inputValue}`);
-    addToast('已添加到输入框', 'info');
-  }, [inputValue, setInputValue, addToast]);
+    addToast(t('toast.quoteAdded'), 'info');
+  }, [inputValue, setInputValue, addToast, t]);
 
   const handleQuickAction = useCallback((text: string) => {
     setInputValue(text);
@@ -117,7 +143,7 @@ const App: React.FC = () => {
     <>
       {currentPage === 'chat' && (
         <AppLayout
-          sessions={sessions}
+          sessions={openTabSessions}
           activeSessionId={activeSessionId || ''}
           streamEnabled={streamEnabled}
           historyOpen={false}
@@ -133,6 +159,7 @@ const App: React.FC = () => {
           onSessionClick={handleSessionClick}
           onFavoriteToggle={handleFavoriteToggle}
           onDeleteSession={handleDeleteSession}
+          onRename={handleRename}
         >
           <MessageArea
             messages={activeSession?.msgs || []}

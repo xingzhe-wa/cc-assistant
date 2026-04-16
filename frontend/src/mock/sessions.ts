@@ -7,6 +7,7 @@ export const mockSessions: MockSession[] = [
     fav: true,
     time: '02-15 10:30',
     qc: 3,
+    hasFirstMessage: true,
     msgs: [
       {
         id: 'm0',
@@ -83,6 +84,7 @@ class SessionService {
     fav: false,
     time: '02-14 16:20',
     qc: 2,
+    hasFirstMessage: true,
     msgs: [
       {
         id: 'm4',
@@ -113,7 +115,8 @@ JTabbedPane tabs = new JTabbedPane(
     fav: false,
     time: '02-13 09:10',
     qc: 0,
-    msgs: []
+    msgs: [],
+    hasFirstMessage: true
   }
 ];
 
@@ -128,6 +131,7 @@ export const createMockSession = (title: string): MockSession => {
     fav: false,
     time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
     qc: 0,
-    msgs: []
+    msgs: [],
+    hasFirstMessage: false
   };
 };

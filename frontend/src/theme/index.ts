@@ -1,6 +1,7 @@
 import { ideaTheme } from './themes/idea';
 import { darkTheme } from './themes/dark';
 import { lightTheme } from './themes/light';
+import { highContrastTheme } from './themes/highContrast';
 import type { Theme, ThemeId, ThemeVariables, ThemeConfig } from './types';
 
 // 导出类型
@@ -21,7 +22,7 @@ export const themes: Record<ThemeId, Theme> = {
   idea: ideaTheme,
   dark: darkTheme,
   light: lightTheme,
-  highContrast: ideaTheme // 回退到 IDEA 主题
+  highContrast: highContrastTheme
 };
 
 /** 默认主题 */

@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Icon } from '../common';
 import { highlightCode } from '@/utils/highlight';
+import { useI18n } from '@/hooks/useI18n';
 import './CodeBlock.css';
 
 export interface CodeBlockProps {
@@ -40,6 +41,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   maxHeight,
   className = ''
 }) => {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   const [highlightedCode, setHighlightedCode] = useState('');
 
@@ -82,7 +84,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
             <button
               className="cc-code-block__copy"
               onClick={handleCopy}
-              title={copied ? '已复制' : '复制代码'}
+              title={copied ? t('common.copied') : t('message.copyCode')}
               type="button"
             >
               <Icon name={copied ? 'check' : 'content_copy'} size="sm" />

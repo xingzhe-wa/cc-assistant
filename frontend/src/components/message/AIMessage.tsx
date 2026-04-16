@@ -1,6 +1,7 @@
 import React from 'react';
 import { MarkdownContent } from './MarkdownContent';
 import { Icon } from '../common';
+import { useI18n } from '@/hooks/useI18n';
 import styles from './AIMessage.module.css';
 
 interface AIMessageProps {
@@ -26,6 +27,8 @@ export const AIMessage: React.FC<AIMessageProps> = ({
   onRegenerate,
   onRewind
 }) => {
+  const { t } = useI18n();
+
   return (
     <div className={styles.container}>
       <div className={styles.avatar}>
@@ -37,7 +40,7 @@ export const AIMessage: React.FC<AIMessageProps> = ({
           {thinking && (
             <>
               <span className={styles.dot} />
-              <span className={styles.thinkingBadge}>思考中</span>
+              <span className={styles.thinkingBadge}>{t('message.thinking')}</span>
             </>
           )}
         </div>
@@ -48,34 +51,34 @@ export const AIMessage: React.FC<AIMessageProps> = ({
           <button
             className={styles.actionBtn}
             onClick={() => onCopy?.(id, content)}
-            title="复制"
+            title={t('message.copy')}
           >
             <Icon name="content_copy" />
-            <span>复制</span>
+            <span>{t('message.copy')}</span>
           </button>
           <button
             className={styles.actionBtn}
             onClick={() => onQuote?.(id, content)}
-            title="引用"
+            title={t('message.quote')}
           >
             <Icon name="format_quote" />
-            <span>引用</span>
+            <span>{t('message.quote')}</span>
           </button>
           <button
             className={styles.actionBtn}
             onClick={() => onRegenerate?.(id)}
-            title="重新生成"
+            title={t('message.regenerate')}
           >
             <Icon name="refresh" />
-            <span>重新生成</span>
+            <span>{t('message.regenerate')}</span>
           </button>
           <button
             className={styles.actionBtn}
             onClick={() => onRewind?.(id)}
-            title="回溯"
+            title={t('message.rewind')}
           >
             <Icon name="undo" />
-            <span>回溯</span>
+            <span>{t('message.rewind')}</span>
           </button>
         </div>
       </div>

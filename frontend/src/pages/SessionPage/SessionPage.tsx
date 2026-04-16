@@ -40,6 +40,7 @@ export const SessionPage: React.FC<SessionPageProps> = ({ className = '' }) => {
     closeSession,
     deleteSession,
     toggleSessionFavorite,
+    renameSession,
     setInputValue,
     sendMessage,
     stopGeneration,
@@ -66,6 +67,10 @@ export const SessionPage: React.FC<SessionPageProps> = ({ className = '' }) => {
   const handleTabClose = useCallback((id: string) => {
     closeSession(id);
   }, [closeSession]);
+
+  const handleRename = useCallback((id: string, title: string) => {
+    renameSession(id, title);
+  }, [renameSession]);
 
   const handleNewTab = useCallback(() => {
     createSession();
@@ -142,6 +147,7 @@ export const SessionPage: React.FC<SessionPageProps> = ({ className = '' }) => {
         onSessionClick={handleSessionClick}
         onFavoriteToggle={handleFavoriteToggle}
         onDeleteSession={handleDeleteSession}
+        onRename={handleRename}
       >
         <MessageArea
           messages={activeSession?.msgs || []}

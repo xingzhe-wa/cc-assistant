@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '@/hooks/useI18n';
 import styles from './ContextBar.module.css';
 
 interface ContextBarProps {
@@ -10,6 +11,7 @@ export const ContextBar: React.FC<ContextBarProps> = ({
   used,
   total = 100
 }) => {
+  const { t } = useI18n();
   const percentage = Math.min(100, Math.round((used / total) * 100));
   const color = percentage < 50
     ? 'var(--color-success)'
@@ -19,7 +21,7 @@ export const ContextBar: React.FC<ContextBarProps> = ({
 
   return (
     <div className={styles.container}>
-      <span className={styles.label}>上下文</span>
+      <span className={styles.label}>{t('input.context')}</span>
       <div className={styles.bar}>
         <div
           className={styles.fill}

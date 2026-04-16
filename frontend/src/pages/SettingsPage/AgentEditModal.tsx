@@ -29,6 +29,7 @@ export const AgentEditModal: React.FC<AgentEditModalProps> = ({
     description: '',
     systemPrompt: ''
   });
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (agent) {
@@ -40,19 +41,20 @@ export const AgentEditModal: React.FC<AgentEditModalProps> = ({
         systemPrompt: ''
       });
     }
+    setValidationError(null);
   }, [agent, isOpen]);
 
   const handleSubmit = () => {
     if (!formData.name.trim()) {
-      alert('请输入 Agent 名称');
+      setValidationError('请输入 Agent 名称');
       return;
     }
     if (!formData.description.trim()) {
-      alert('请输入描述');
+      setValidationError('请输入描述');
       return;
     }
     if (!formData.systemPrompt.trim()) {
-      alert('请输入系统提示词');
+      setValidationError('请输入系统提示词');
       return;
     }
 
@@ -82,6 +84,12 @@ export const AgentEditModal: React.FC<AgentEditModalProps> = ({
       }
     >
       <div className={styles.form}>
+        {validationError && (
+          <div className={styles.error}>
+            <span className="material-icons-round">error</span>
+            {validationError}
+          </div>
+        )}
         <div className={styles.field}>
           <label className={styles.label}>
             Agent 名称 <span className={styles.required}>*</span>

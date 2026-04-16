@@ -64,7 +64,7 @@
   border-radius: var(--radius-sm);
   border: none;
   background: transparent;
-  color: var(--fg-disabled);
+  color: var(--fg-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -87,4 +87,15 @@
 
 .closeBtn .material-icons-round {
   font-size: 12px;
+}
+
+.renameInput {
+  width: 90px;
+  padding: 2px 4px;
+  font-size: 11.5px;
+  border: 1px solid var(--accent-primary);
+  border-radius: var(--radius-sm);
+  background: var(--bg-element);
+  color: var(--fg-primary);
+  outline: none;
 }

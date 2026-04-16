@@ -4,6 +4,9 @@
  */
 
 import { create } from 'zustand';
+import type { Locale } from '@/i18n/types';
+import type { ThemeId } from '@/theme/types';
+import { jcefBridge } from '@/utils/jcef';
 
 interface ConfigState {
   // CLI 配置
@@ -11,10 +14,10 @@ interface ConfigState {
   cliAutoUpdate: boolean;
 
   // 国际化
-  language: 'zh-CN' | 'zh-TW' | 'en' | 'ja';
+  language: Locale;
 
   // 主题
-  theme: 'idea' | 'dark1' | 'dark2' | 'light';
+  theme: ThemeId;
   chatBackground: 'default' | 'color' | 'image';
   messageBubbleColor: string;
   codeBlockColor: string;
@@ -52,8 +55,8 @@ interface ConfigState {
   // Actions
   setCliVersion: (version: string) => void;
   setCliAutoUpdate: (enabled: boolean) => void;
-  setLanguage: (lang: ConfigState['language']) => void;
-  setTheme: (theme: ConfigState['theme']) => void;
+  setLanguage: (lang: Locale) => void;
+  setTheme: (theme: ThemeId) => void;
   setChatBackground: (bg: ConfigState['chatBackground']) => void;
   setMessageBubbleColor: (color: string) => void;
   setCodeBlockColor: (color: string) => void;
@@ -117,45 +120,84 @@ export const useConfigStore = create<ConfigState>((set) => ({
   // Actions
   setCliVersion: (version) => set({ cliVersion: version }),
   setCliAutoUpdate: (enabled) => set({ cliAutoUpdate: enabled }),
-  setLanguage: (lang) => set({ language: lang }),
-  setTheme: (theme) => set({ theme }),
+  setLanguage: (lang) => {
+    set({ language: lang });
+    jcefBridge.languageChange(lang);
+  },
+  setTheme: (theme) => {
+    set({ theme });
+    jcefBridge.themeChange(theme);
+  },
   setChatBackground: (bg) => set({ chatBackground: bg }),
   setMessageBubbleColor: (color) => set({ messageBubbleColor: color }),
   setCodeBlockColor: (color) => set({ codeBlockColor: color }),
 
-  addProvider: (provider) => set((state) => ({
-    providers: [...state.providers, { ...provider, id: `p${Date.now()}` }]
-  })),
+  addProvider: (provider) => {
+    const newProvider = { ...provider, id: `p${Date.now()}` };
+    set((state) => ({
+      providers: [...state.providers, newProvider]
+    }));
+    jcefBridge.send('providerCreate', newProvider);
+  },
 
-  updateProvider: (id, provider) => set((state) => ({
-    providers: state.providers.map((p) => (p.id === id ? { ...p, ...provider } : p))
-  })),
+  updateProvider: (id, provider) => {
+    set((state) => ({
+      providers: state.providers.map((p) => (p.id === id ? { ...p, ...provider } : p))
+    }));
+    const updated = { ...provider, id };
+    jcefBridge.send('providerUpdate', updated);
+  },
 
-  deleteProvider: (id) => set((state) => ({
-    providers: state.providers.filter((p) => p.id !== id)
-  })),
+  deleteProvider: (id) => {
+    set((state) => ({
+      providers: state.providers.filter((p) => p.id !== id)
+    }));
+    jcefBridge.send('providerDelete', id);
+  },
 
-  addAgent: (agent) => set((state) => ({
-    agents: [...state.agents, { ...agent, id: `a${Date.now()}` }]
-  })),
+  addAgent: (agent) => {
+    const newAgent = { ...agent, id: `a${Date.now()}` };
+    set((state) => ({
+      agents: [...state.agents, newAgent]
+    }));
+    jcefBridge.send('agentCreate', newAgent);
+  },
 
-  updateAgent: (id, agent) => set((state) => ({
-    agents: state.agents.map((a) => (a.id === id ? { ...a, ...agent } : a))
-  })),
+  updateAgent: (id, agent) => {
+    set((state) => ({
+      agents: state.agents.map((a) => (a.id === id ? { ...a, ...agent } : a))
+    }));
+    const updated = { ...agent, id };
+    jcefBridge.send('agentUpdate', updated);
+  },
 
-  deleteAgent: (id) => set((state) => ({
-    agents: state.agents.filter((a) => a.id !== id)
-  })),
+  deleteAgent: (id) => {
+    set((state) => ({
+      agents: state.agents.filter((a) => a.id !== id)
+    }));
+    jcefBridge.send('agentDelete', id);
+  },
 
-  addSkill: (skill) => set((state) => ({
-    skills: [...state.skills, { ...skill, id: `sk${Date.now()}` }]
-  })),
+  addSkill: (skill) => {
+    const newSkill = { ...skill, id: `sk${Date.now()}` };
+    set((state) => ({
+      skills: [...state.skills, newSkill]
+    }));
+    jcefBridge.send('skillCreate', newSkill);
+  },
 
-  updateSkill: (id, skill) => set((state) => ({
-    skills: state.skills.map((s) => (s.id === id ? { ...s, ...skill } : s))
-  })),
+  updateSkill: (id, skill) => {
+    set((state) => ({
+      skills: state.skills.map((s) => (s.id === id ? { ...s, ...skill } : s))
+    }));
+    const updated = { ...skill, id };
+    jcefBridge.send('skillUpdate', updated);
+  },
 
-  deleteSkill: (id) => set((state) => ({
-    skills: state.skills.filter((s) => s.id !== id)
-  }))
+  deleteSkill: (id) => {
+    set((state) => ({
+      skills: state.skills.filter((s) => s.id !== id)
+    }));
+    jcefBridge.send('skillDelete', id);
+  }
 }));

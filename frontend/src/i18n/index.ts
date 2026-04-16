@@ -1,5 +1,7 @@
 import { zhCN } from './locales/zh-CN';
 import { enUS } from './locales/en-US';
+import { jaJP } from './locales/ja-JP';
+import { koKR } from './locales/ko-KR';
 import type { Locale, LocaleMessages } from './types';
 
 // 导出类型
@@ -21,8 +23,8 @@ export type { Locale, LocaleMessages };
 export const messages: Record<Locale, LocaleMessages> = {
   'zh-CN': zhCN as LocaleMessages,
   'en-US': enUS as LocaleMessages,
-  'ja-JP': zhCN as LocaleMessages, // 回退到中文
-  'ko-KR': zhCN as LocaleMessages  // 回退到中文
+  'ja-JP': jaJP as LocaleMessages,
+  'ko-KR': koKR as LocaleMessages
 };
 
 /** 默认语言 */
@@ -43,15 +45,17 @@ export function getMessages(locale: Locale): LocaleMessages {
  *
  * @param key - 翻译键（支持点号路径，如 'common.confirm'）
  * @param locale - 语言代码
+ * @param params - 可选参数，用于插值
  * @returns 翻译后的文本
  *
  * @example
  * ```ts
  * t('common.confirm', 'zh-CN') // '确定'
  * t('common.save', 'en-US')    // 'Save'
+ * t('provider.deleteConfirm', 'zh-CN', 'MyProvider') // '确定删除供应商 "MyProvider" 吗？'
  * ```
  */
-export function t(key: string, locale: Locale = defaultLocale): string {
+export function t(key: string, locale: Locale = defaultLocale, ...params: string[]): string {
   const msgs = getMessages(locale);
   const keys = key.split('.');
   let result: any = msgs;
@@ -65,7 +69,14 @@ export function t(key: string, locale: Locale = defaultLocale): string {
     }
   }
 
-  return typeof result === 'string' ? result : key;
+  if (typeof result !== 'string') return key;
+
+  // 插值：替换 {name}, {0}, {1} 等占位符
+  return params.reduce((str, param, index) => {
+    return str
+      .replace(new RegExp(`\\{${index}\\}`, 'g'), param)
+      .replace(new RegExp(`\\{${index}=\\w+\\}`, 'g'), param);
+  }, result);
 }
 
 /**
@@ -78,8 +89,9 @@ export function t(key: string, locale: Locale = defaultLocale): string {
  * ```ts
  * const translate = createTranslate('en-US');
  * translate('common.confirm') // 'Confirm'
+ * translate('provider.deleteConfirm', 'MyProvider') // 'Are you sure you want to delete provider "MyProvider"?'
  * ```
  */
 export function createTranslate(locale: Locale) {
-  return (key: string) => t(key, locale);
+  return (key: string, ...params: string[]) => t(key, locale, ...params);
 }

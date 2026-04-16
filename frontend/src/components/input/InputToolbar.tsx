@@ -2,6 +2,7 @@ import React from 'react';
 import { Dropdown } from './Dropdown';
 import { ContextBar } from './ContextBar';
 import { Icon, Button } from '../common';
+import { useI18n } from '@/hooks/useI18n';
 import type { MockProvider, MockModel, MockAgent, Mode } from '@/types/mock';
 import styles from './InputToolbar.module.css';
 
@@ -30,12 +31,6 @@ interface InputToolbarProps {
   onEnhance: () => void;
 }
 
-const modeOptions = [
-  { id: 'auto', name: 'auto', icon: 'auto_mode' },
-  { id: 'plan', name: 'plan', icon: 'account_tree' },
-  { id: 'agent', name: 'agent', icon: 'smart_toy' }
-] as const;
-
 export const InputToolbar: React.FC<InputToolbarProps> = ({
   providers,
   currentProvider,
@@ -53,6 +48,14 @@ export const InputToolbar: React.FC<InputToolbarProps> = ({
   contextUsed,
   onEnhance
 }) => {
+  const { t } = useI18n();
+
+  const modeOptions = [
+    { id: 'auto', name: t('modes.auto'), icon: 'auto_mode' },
+    { id: 'plan', name: t('modes.plan'), icon: 'account_tree' },
+    { id: 'agent', name: t('modes.agent'), icon: 'smart_toy' }
+  ] as const;
+
   const providerOptions = providers.map(p => ({
     id: p.id,
     name: p.name,
@@ -81,14 +84,14 @@ export const InputToolbar: React.FC<InputToolbarProps> = ({
           iconOnly
           icon="image"
           size="sm"
-          title="添加图片"
+          title={t('input.attachImage')}
         />
         <Button
           variant="ghost"
           iconOnly
           icon="attach_file"
           size="sm"
-          title="添加文件"
+          title={t('input.attachFile')}
         />
         <ContextBar used={contextUsed} />
       </div>
@@ -97,7 +100,7 @@ export const InputToolbar: React.FC<InputToolbarProps> = ({
           trigger={
             <div className={styles.trigger}>
               <Icon name="dns" />
-              <span>{currentProv?.name || 'Provider'}</span>
+              <span>{currentProv?.name || t('settings.provider')}</span>
               <Icon name="expand_more" size="xs" />
             </div>
           }
@@ -110,7 +113,7 @@ export const InputToolbar: React.FC<InputToolbarProps> = ({
           trigger={
             <div className={styles.trigger}>
               <Icon name="auto_mode" />
-              <span>{currentMode}</span>
+              <span>{t(`modes.${currentMode}`)}</span>
               <Icon name="expand_more" size="xs" />
             </div>
           }
@@ -123,7 +126,7 @@ export const InputToolbar: React.FC<InputToolbarProps> = ({
           trigger={
             <div className={styles.trigger}>
               <Icon name="model_training" />
-              <span>{currentModel}</span>
+              <span>{models.find(m => m.id === currentModel)?.name || currentModel}</span>
               <Icon name="expand_more" size="xs" />
             </div>
           }
@@ -140,14 +143,14 @@ export const InputToolbar: React.FC<InputToolbarProps> = ({
           size="sm"
           onClick={onThinkToggle}
         >
-          思考
+          {t('modes.thinking')}
         </Button>
 
         <Dropdown
           trigger={
             <div className={styles.trigger}>
               <Icon name="smart_toy" />
-              <span>{agents.find(a => a.id === currentAgent)?.name || 'Agent'}</span>
+              <span>{agents.find(a => a.id === currentAgent)?.name || t('settings.agent')}</span>
               <Icon name="expand_more" size="xs" />
             </div>
           }
@@ -162,7 +165,7 @@ export const InputToolbar: React.FC<InputToolbarProps> = ({
           size="sm"
           onClick={onEnhance}
         >
-          强化
+          {t('input.enhance')}
         </Button>
       </div>
     </div>

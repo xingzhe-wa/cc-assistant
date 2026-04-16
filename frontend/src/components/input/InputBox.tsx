@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { Button } from '../common';
+import { useI18n } from '@/hooks/useI18n';
 import styles from './InputBox.module.css';
 
 interface InputBoxProps {
@@ -18,9 +19,10 @@ export const InputBox: React.FC<InputBoxProps> = ({
   onSend,
   onStop,
   streaming,
-  placeholder = '输入消息...',
+  placeholder,
   disabled = false
 }) => {
+  const { t } = useI18n();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -48,7 +50,7 @@ export const InputBox: React.FC<InputBoxProps> = ({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
+          placeholder={placeholder || t('input.placeholder')}
           disabled={disabled}
           rows={1}
         />
@@ -59,7 +61,7 @@ export const InputBox: React.FC<InputBoxProps> = ({
           onClick={streaming ? onStop : onSend}
           disabled={!streaming && !value.trim()}
           className={styles.sendBtn}
-          title={streaming ? '停止' : '发送 (Ctrl+Enter)'}
+          title={streaming ? t('input.stop') : `${t('input.send')} (Ctrl+Enter)`}
         />
       </div>
     </div>
