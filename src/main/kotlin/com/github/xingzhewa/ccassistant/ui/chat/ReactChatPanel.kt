@@ -46,26 +46,14 @@ class ReactChatPanel(
             return
         }
 
-        jcefPanel = JcefChatPanel().apply {
-            mockMode = true  // 开发阶段使用 Mock 模式
-
-            // 设置回调
-            onSendMessage = { text, options ->
-                handleSendMessage(text, options)
-            }
-            onCheckCli = {
-                checkCliStatus()
-            }
-            onProviderChange = { providerId ->
-                logger.info("Provider changed: $providerId")
-            }
-            onThemeChange = { themeId ->
-                logger.info("Theme changed: $themeId")
-            }
+        // 🔧 临时使用简单测试面板验证 JCEF
+        val testPanel = SimpleJcefTestPanel()
+        testPanel.onSendMessage = { text ->
+            logger.info("收到来自 JCEF 的消息: $text")
+            handleSendMessage(text, JcefChatPanel.MessageOptions())
         }
-
-        add(jcefPanel!!.createPanel(), BorderLayout.CENTER)
-        logger.info("ReactChatPanel initialized")
+        add(testPanel.createPanel(), BorderLayout.CENTER)
+        logger.info("ReactChatPanel initialized (using SimpleJcefTestPanel)")
     }
 
     private fun initCliBridge() {

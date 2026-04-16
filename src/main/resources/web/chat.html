@@ -1,52 +1,14 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CC Assistant</title>
-  <link rel="stylesheet" href="./assets/index.css">
-  <style>
-    :root {
-      --bg-primary: #ffffff;
-      --bg-secondary: #f7f8fa;
-      --bg-hover: #f0f1f3;
-      --text-primary: #1f1f1f;
-      --text-secondary: #6b7280;
-      --border-color: #e5e7eb;
-      --accent-color: #3b82f6;
-    }
-    [data-theme="dark"] {
-      --bg-primary: #1a1a1a;
-      --bg-secondary: #252525;
-      --bg-hover: #333333;
-      --text-primary: #ffffff;
-      --text-secondary: #a1a1a1;
-      --border-color: #3f3f3f;
-    }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: var(--bg-primary);
-      color: var(--text-primary);
-      overflow: hidden;
-    }
-    #root { width: 100vw; height: 100vh; }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
-    pre code.hljs { background: #1e1e1e !important; padding: 16px !important; border-radius: 8px; overflow-x: auto; }
-    .markdown-content { line-height: 1.6; }
-    .markdown-content p { margin-bottom: 12px; }
-    .markdown-content p:last-child { margin-bottom: 0; }
-    .markdown-content ul, .markdown-content ol { margin-left: 20px; margin-bottom: 12px; }
-    .markdown-content li { margin-bottom: 4px; }
-    .markdown-content code:not(pre code) { background: var(--bg-hover); padding: 2px 6px; border-radius: 4px; font-size: 0.9em; }
-    .markdown-content blockquote { border-left: 3px solid var(--accent-color); padding-left: 12px; margin: 12px 0; color: var(--text-secondary); }
-  </style>
-</head>
-<body>
-  <div id="root"></div>
-  <script type="module" src="./assets/index.js"></script>
-</body>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>frontend</title>
+    <script type="module" crossorigin src="./assets/index.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
 </html>

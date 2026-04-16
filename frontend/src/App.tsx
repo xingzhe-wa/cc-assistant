@@ -5,10 +5,13 @@ import { InputArea } from './components/input';
 import { ToastContainer } from './components/common';
 import { useChatStore } from './stores';
 import { mockProviders, getMockModelsByProvider, mockAgents } from './mock';
+import { useJcefEvents } from './hooks/useJcefEvents';
 import type { MockSession } from './types/mock';
 import './styles/global.css';
 
 const App: React.FC = () => {
+  // 监听 JCEF 全局对象事件
+  useJcefEvents();
   const {
     sessions,
     activeSessionId,

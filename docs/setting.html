@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CC Assistant - 界面原型（历史/收藏/设置）</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link href="www.w3schools.com/icon?family=Material+Icons+Round" rel="stylesheet">
+<style>
+:root{--bg:#111214;--sf:#17181d;--el:#1e2028;--hv:#272933;--ac:#c9873a;--ac2:#daa04e;--gn:#50b85e;--gn2:rgba(80,184,94,.1);--rd:#d95555;--rd2:rgba(217,85,85,.1);--cy:#4db8cc;--pp:#9b80e8;--fg:#d0d1d8;--fg2:#87899a;--fg3:#494b5a;--fg4:#31333d;--bd:#23252e;--bd2:#1b1d24;--r:5px;--r2:7px;--r3:10px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans SC',sans-serif;background:var(--bg);color:var(--fg);overflow:hidden;height:100vh}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--fg4);border-radius:2px}
+.mi{font-family:'Material Icons Round';font-size:17px;line-height:1;user-select:none}
+.mi-s{font-size:14px}
+
+.page-tabs{display:flex;align-items:center;height:40px;background:var(--sf);border-bottom:1px solid var(--bd2);padding:0 16px;gap:4px}
+.page-tab{padding:6px 16px;border-radius:var(--r);border:none;background:0 0;color:var(--fg3);cursor:pointer;font-size:12px;font-family:'Noto Sans SC',sans-serif;transition:all .12s;display:flex;align-items:center;gap:5px}
+.page-tab:hover{background:var(--hv);color:var(--fg2)}
+.page-tab.on{background:rgba(201,135,58,.1);color:var(--ac)}
+.page-tab .mi{font-size:15px}
+.page-tab .badge{font-size:10px;padding:0 5px;height:16px;border-radius:8px;background:var(--bd);color:var(--fg3);display:flex;align-items:center;font-family:'JetBrains Mono',monospace}
+.page-tab.on .badge{background:rgba(201,135,58,.15);color:var(--ac)}
+.page-hint{margin-left:auto;font-size:11px;color:var(--fg4)}
+
+.page{display:none;height:calc(100vh - 40px);overflow:hidden}
+.page.show{display:flex}
+
+/* 历史会话 */
+.hist-page{flex-direction:column;background:var(--bg)}
+.hist-header{padding:16px 24px 0;flex-shrink:0}
+.hist-header h2{font-size:16px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.hist-header h2 .mi{font-size:20px;color:var(--ac)}
+.hist-search{position:relative}
+.hist-search input{width:100%;height:36px;padding:0 12px 0 36px;border-radius:var(--r2);border:1px solid var(--bd);background:var(--sf);color:var(--fg);font-size:12.5px;outline:none;font-family:'Noto Sans SC',sans-serif;transition:border-color .15s}
+.hist-search input:focus{border-color:var(--ac)}
+.hist-search input::placeholder{color:var(--fg4)}
+.hist-search .mi{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:17px;color:var(--fg3);pointer-events:none}
+.hist-stats{display:flex;align-items:center;gap:12px;margin-top:10px;font-size:11px;color:var(--fg3)}
+.hist-stats span{display:flex;align-items:center;gap:3px}
+.hist-list{flex:1;overflow-y:auto;padding:12px 24px 24px}
+.hist-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:var(--r2);border:1px solid var(--bd2);cursor:pointer;transition:all .12s;margin-bottom:6px;position:relative}
+.hist-item:hover{border-color:var(--bd);background:var(--hv)}
+.hist-item-icon{width:36px;height:36px;border-radius:var(--r2);background:var(--el);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.hist-item-icon .mi{font-size:18px;color:var(--fg3)}
+.hist-item-body{flex:1;min-width:0}
+.hist-item-title{font-size:13px;color:var(--fg);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.hist-item-title .fav-mark{color:var(--ac);font-size:14px;flex-shrink:0}
+.hist-item-preview{font-size:11.5px;color:var(--fg3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px}
+.hist-item-meta{display:flex;align-items:center;gap:10px;font-size:10.5px;color:var(--fg4)}
+.hist-item-meta .mi{font-size:12px}
+.hist-item-actions{display:flex;gap:2px;position:absolute;right:10px;top:50%;transform:translateY(-50%);opacity:0;transition:opacity .12s}
+.hist-item:hover .hist-item-actions{opacity:1}
+.hia{width:28px;height:28px;border-radius:var(--r);border:none;background:0 0;color:var(--fg3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .1s}
+.hia:hover{background:var(--el);color:var(--fg2)}
+.hia .mi{font-size:16px}
+.hia.fav-on{color:var(--ac)}
+.hia.danger:hover{background:var(--rd2);color:var(--rd)}
+
+.fav-jump{position:fixed;bottom:28px;right:28px;z-index:10}
+.fav-jump-btn{width:56px;height:56px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--ac),#a06a28);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(201,135,58,.35);transition:all .2s}
+.fav-jump-btn:hover{transform:scale(1.08);box-shadow:0 6px 28px rgba(201,135,58,.45)}
+.fav-jump-btn:active{transform:scale(.95)}
+.fav-jump-btn .mi{font-size:24px}
+.fav-jump-label{position:absolute;bottom:calc(100% + 8px);right:0;white-space:nowrap;font-size:11px;color:var(--fg3);background:var(--el);border:1px solid var(--bd);border-radius:var(--r);padding:4px 10px;box-shadow:0 2px 8px rgba(0,0,0,.3);pointer-events:none;opacity:0;transition:opacity .15s}
+.fav-jump:hover .fav-jump-label{opacity:1}
+
+/* 收藏 */
+.fav-page{flex-direction:column;background:var(--bg)}
+.fav-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px}
+.fav-empty-ic{width:56px;height:56px;border-radius:var(--r3);background:rgba(201,135,58,.07);display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+.fav-empty-ic .mi{font-size:26px;color:var(--ac)}
+.fav-empty h3{font-size:14px;font-weight:500;color:var(--fg2);margin-bottom:4px}
+.fav-empty p{font-size:12px;color:var(--fg3)}
+
+/* 设置 */
+.set-page{flex-direction:row;background:var(--bg)}
+.set-nav{width:180px;min-width:180px;background:var(--sf);border-right:1px solid var(--bd2);padding:10px 6px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.set-nav-group{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--fg4);padding:10px 10px 4px}
+.set-nav-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r);cursor:pointer;font-size:12.5px;color:var(--fg2);transition:all .1s}
+.set-nav-item:hover{background:var(--hv);color:var(--fg)}
+.set-nav-item.on{background:rgba(201,135,58,.1);color:var(--ac)}
+.set-nav-item .mi{font-size:17px;opacity:.7}
+.set-nav-item.on .mi{opacity:1}
+.set-content{flex:1;overflow-y:auto;padding:20px 24px}
+.set-section{margin-bottom:24px}
+.set-section-title{font-size:14px;font-weight:600;color:var(--fg);margin-bottom:12px;display:flex;align-items:center;gap:7px;padding-bottom:8px;border-bottom:1px solid var(--bd2)}
+.set-section-title .mi{font-size:16px;color:var(--ac)}
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--bd2)}
+.set-row:last-child{border-bottom:none}
+.set-label{font-size:12.5px;color:var(--fg2)}
+.set-label small{display:block;font-size:11px;color:var(--fg3);margin-top:2px}
+.set-ctrl{display:flex;align-items:center;gap:8px}
+.s-select{height:30px;padding:0 10px;border-radius:var(--r);border:1px solid var(--bd);background:var(--bg);color:var(--fg);font-size:12px;outline:none;font-family:'Noto Sans SC',sans-serif;cursor:pointer;transition:border-color .12s}
+.s-select:focus{border-color:var(--ac)}
+.s-select option{background:var(--el);color:var(--fg)}
+.s-input{height:30px;padding:0 10px;border-radius:var(--r);border:1px solid var(--bd);background:var(--bg);color:var(--fg);font-size:12px;outline:none;font-family:'Noto Sans SC',sans-serif;width:220px;transition:border-color .12s}
+.s-input:focus{border-color:var(--ac)}
+.s-toggle{width:38px;height:20px;border-radius:10px;border:none;background:var(--fg4);cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
+.s-toggle.on{background:var(--ac)}
+.s-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s}
+.s-toggle.on::after{transform:translateX(18px)}
+.s-btn{height:30px;padding:0 14px;border-radius:var(--r);border:1px solid var(--bd);background:var(--el);color:var(--fg2);cursor:pointer;font-size:12px;display:flex;align-items:center;gap:5px;font-family:'Noto Sans SC',sans-serif;transition:all .12s}
+.s-btn:hover{background:var(--hv);color:var(--fg)}
+.s-btn .mi{font-size:15px}
+.s-btn.primary{background:var(--ac);border-color:var(--ac);color:var(--bg);font-weight:500}
+.s-btn.primary:hover{background:var(--ac2)}
+.s-btn.danger{border-color:var(--rd);color:var(--rd);background:var(--rd2)}
+.s-btn.danger:hover{background:var(--rd);color:#fff}
+.s-color{width:36px;height:28px;border-radius:var(--r);border:1px solid var(--bd);background:var(--bg);cursor:pointer;padding:2px}
+.s-color input{width:100%;height:100%;border:none;border-radius:3px;cursor:pointer;background:0 0}
+
+.prov-card{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1px solid var(--bd2);border-radius:var(--r2);margin-bottom:6px;transition:all .12s}
+.prov-card:hover{border-color:var(--bd);background:var(--hv)}
+.prov-info{display:flex;align-items:center;gap:10px}
+.prov-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.prov-dot.ok{background:var(--gn)}.prov-dot.err{background:var(--rd)}.prov-dot.off{background:var(--fg4)}
+.prov-name{font-size:13px;color:var(--fg);font-weight:500}
+.prov-url{font-size:11px;color:var(--fg3);font-family:'JetBrains Mono',monospace;margin-top:1px}
+.prov-models{font-size:10.5px;color:var(--fg3);margin-top:2px;display:flex;gap:6px;flex-wrap:wrap}
+.prov-models span{padding:0 5px;border-radius:3px;background:var(--bg);border:1px solid var(--bd2);font-family:'JetBrains Mono',monospace}
+.prov-actions{display:flex;gap:3px}
+.prov-actions button{width:28px;height:28px;border-radius:var(--r);border:none;background:0 0;color:var(--fg3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .1s}
+.prov-actions button:hover{background:var(--el);color:var(--fg2)}
+.prov-actions button .mi{font-size:16px}
+.prov-actions button.danger:hover{background:var(--rd2);color:var(--rd)}
+
+.list-card{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid var(--bd2);border-radius:var(--r2);margin-bottom:6px;transition:all .12s}
+.list-card:hover{border-color:var(--bd);background:var(--hv)}
+.list-card-icon{width:32px;height:32px;border-radius:var(--r);background:var(--el);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.list-card-icon .mi{font-size:16px;color:var(--fg3)}
+.list-card-info{flex:1;margin-left:10px}
+.list-card-name{font-size:12.5px;color:var(--fg)}
+.list-card-desc{font-size:11px;color:var(--fg3);margin-top:1px}
+.list-card-actions{display:flex;gap:3px}
+
+/* 弹窗 */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.show{opacity:1;pointer-events:auto}
+.modal-box{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.95);width:560px;max-width:92vw;background:var(--sf);border:1px solid var(--bd);border-radius:var(--r3);z-index:101;opacity:0;pointer-events:none;transition:all .22s ease;display:flex;flex-direction:column}
+.modal-box.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--bd2);flex-shrink:0}
+.modal-header h3{font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px}
+.modal-header h3 .mi{font-size:18px;color:var(--ac)}
+.modal-close{width:28px;height:28px;border-radius:var(--r);border:none;background:0 0;color:var(--fg3);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.modal-close:hover{background:var(--rd2);color:var(--rd)}
+.modal-body{padding:16px 18px;overflow-y:auto;max-height:60vh}
+.modal-footer{padding:12px 18px;border-top:1px solid var(--bd2);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0}
+
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;color:var(--fg2);margin-bottom:5px;display:flex;align-items:center;gap:4px}
+.form-label small{color:var(--fg3);font-size:11px;font-weight:400}
+.form-input{width:100%;height:34px;padding:0 10px;border-radius:var(--r);border:1px solid var(--bd);background:var(--bg);color:var(--fg);font-size:12.5px;outline:none;font-family:'Noto Sans SC',sans-serif;transition:border-color .12s}
+.form-input:focus{border-color:var(--ac)}
+.form-textarea{width:100%;min-height:120px;padding:8px 10px;border-radius:var(--r);border:1px solid var(--bd);background:var(--bg);color:var(--fg);font-size:11.5px;outline:none;font-family:'JetBrains Mono',monospace;resize:vertical;line-height:1.5;transition:border-color .12s}
+.form-textarea:focus{border-color:var(--ac)}
+.shortcut-btns{display:flex;gap:6px;margin-bottom:14px}
+.shortcut-btn{padding:5px 14px;border-radius:var(--r);border:1px solid var(--bd);background:var(--bg);color:var(--fg2);cursor:pointer;font-size:12px;font-family:'Noto Sans SC',sans-serif;transition:all .12s}
+.shortcut-btn:hover{border-color:var(--ac);color:var(--ac);background:rgba(201,135,58,.05)}
+.form-hint{font-size:11px;color:var(--fg4);margin-top:4px;display:flex;align-items:center;gap:4px}
+.form-hint .mi{font-size:12px}
+.form-sync-indicator{font-size:10px;color:var(--gn);font-family:'JetBrains Mono',monospace;opacity:0;transition:opacity .3s;margin-left:6px}
+.form-sync-indicator.show{opacity:1}
+
+/* 模型预设三行 */
+.model-presets{display:flex;flex-direction:column;gap:8px}
+.model-preset-row{display:flex;align-items:center;gap:8px}
+.model-preset-label{width:60px;flex-shrink:0;font-size:11.5px;font-family:'JetBrains Mono',monospace;color:var(--fg3);text-align:right;user-select:none}
+.model-preset-row .form-input{font-family:'JetBrains Mono',monospace;font-size:12px}
+
+.toast-c{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:999;display:flex;flex-direction:column;gap:5px;align-items:center}
+.toast{padding:7px 14px;border-radius:var(--r2);background:var(--el);border:1px solid var(--bd);box-shadow:0 4px 16px rgba(0,0,0,.4);font-size:12.5px;color:var(--fg);display:flex;align-items:center;gap:6px;animation:tI .2s ease,tO .2s ease 2.2s forwards;white-space:nowrap}
+.toast .mi{font-size:15px}
+.toast.ok .mi{color:var(--gn)}.toast.er .mi{color:var(--rd)}.toast.in .mi{color:var(--cy)}
+@keyframes tI{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes tO{from{opacity:1}to{opacity:0;transform:translateY(-4px)}}
+</style>
+</head>
+<body>
+
+<div class="page-tabs">
+  <button class="page-tab on" onclick="switchPage('hist')"><span class="mi">history</span>历史会话<span class="badge">6</span></button>
+  <button class="page-tab" onclick="switchPage('fav')"><span class="mi">star</span>收藏会话<span class="badge">2</span></button>
+  <button class="page-tab" onclick="switchPage('set')"><span class="mi">settings</span>设置</button>
+  <span class="page-hint">点击切换界面预览</span>
+</div>
+
+<!-- 历史会话 -->
+<div class="page hist-page show" id="pageHist">
+  <div class="hist-header">
+    <h2><span class="mi">history</span>历史会话</h2>
+    <div class="hist-search"><span class="mi">search</span><input id="histSearchInput" placeholder="搜索会话名称..." oninput="filterHist()"></div>
+    <div class="hist-stats">
+      <span><span class="mi">chat_bubble_outline</span>共 6 个会话</span>
+      <span><span class="mi">help_outline</span>共 18 次提问</span>
+      <span><span class="mi">schedule</span>最近：02-15 11:45</span>
+    </div>
+  </div>
+  <div class="hist-list" id="histList"></div>
+  <div class="fav-jump"><div class="fav-jump-label">收藏会话</div><button class="fav-jump-btn" onclick="switchPage('fav')"><span class="mi">star</span></button></div>
+</div>
+
+<!-- 收藏会话 -->
+<div class="page fav-page" id="pageFav">
+  <div class="hist-header">
+    <h2><span class="mi">star</span>收藏会话</h2>
+    <div class="hist-search"><span class="mi">search</span><input id="favSearchInput" placeholder="搜索收藏会话..." oninput="filterFav()"></div>
+    <div class="hist-stats"><span><span class="mi">star</span>共 2 个收藏</span></div>
+  </div>
+  <div class="hist-list" id="favList"></div>
+</div>
+
+<!-- 设置 -->
+<div class="page set-page" id="pageSet">
+  <div class="set-nav" id="setNav"></div>
+  <div class="set-content" id="setContent"></div>
+</div>
+
+<!-- 供应商编辑弹窗 -->
+<div class="modal-overlay" id="provModalOv" onclick="closeProvModal()"></div>
+<div class="modal-box" id="provModal">
+  <div class="modal-header"><h3><span class="mi">dns</span><span id="provModalTitle">新增供应商</span></h3><button class="modal-close" onclick="closeProvModal()"><span class="mi">close</span></button></div>
+  <div class="modal-body" id="provModalBody"></div>
+  <div class="modal-footer">
+    <button class="s-btn" onclick="toast('in','JSON 已复制');copyProvJson()"><span class="mi">content_copy</span>复制 JSON</button>
+    <button class="s-btn" onclick="closeProvModal()">取消</button>
+    <button class="s-btn primary" onclick="saveProv();closeProvModal()"><span class="mi">check</span>保存</button>
+  </div>
+</div>
+
+<!-- Agent编辑弹窗 -->
+<div class="modal-overlay" id="agentModalOv" onclick="closeAgentModal()"></div>
+<div class="modal-box" id="agentModal" style="width:480px">
+  <div class="modal-header"><h3><span class="mi">smart_toy</span><span id="agentModalTitle">新增 Agent</span></h3><button class="modal-close" onclick="closeAgentModal()"><span class="mi">close</span></button></div>
+  <div class="modal-body" id="agentModalBody"></div>
+  <div class="modal-footer"><button class="s-btn" onclick="closeAgentModal()">取消</button><button class="s-btn primary" onclick="toast('ok','Agent 已保存');closeAgentModal()"><span class="mi">check</span>保存</button></div>
+</div>
+
+<!-- Skill编辑弹窗 -->
+<div class="modal-overlay" id="skillModalOv" onclick="closeSkillModal()"></div>
+<div class="modal-box" id="skillModal" style="width:480px">
+  <div class="modal-header"><h3><span class="mi">bolt</span><span id="skillModalTitle">新增 Skill</span></h3><button class="modal-close" onclick="closeSkillModal()"><span class="mi">close</span></button></div>
+  <div class="modal-body" id="skillModalBody"></div>
+  <div class="modal-footer"><button class="s-btn" onclick="closeSkillModal()">取消</button><button class="s-btn primary" onclick="toast('ok','Skill 已保存');closeSkillModal()"><span class="mi">check</span>保存</button></div>
+</div>
+
+<div class="toast-c" id="toastC"></div>
+
+<script>
+/* ===== 数据 ===== */
+const sessions=[
+  {id:'s0',title:'实现 SessionService 会话管理',fav:true,time:'02-15 10:30',qc:3,preview:'帮我实现 SessionService，支持会话的创建、保存、获取、删除和列表功能'},
+  {id:'s1',title:'修复 Tab 栏滚动问题',fav:false,time:'02-15 09:15',qc:2,preview:'Tab 栏超出时没有滚动条，帮我排查修复'},
+  {id:'s2',title:'实现 JCEF Browser 管理器',fav:true,time:'02-14 16:20',qc:4,preview:'帮我实现 M2-A1 的 JCEF Browser 管理器'},
+  {id:'s3',title:'Diff 审查弹窗实现方案',fav:false,time:'02-14 14:05',qc:2,preview:'设计一个左右分栏的 Diff 审查弹窗'},
+  {id:'s4',title:'Rewind 功能数据模型设计',fav:false,time:'02-13 11:30',qc:3,preview:'讨论 Rewind 回溯功能的数据模型和交互流程'},
+  {id:'s5',title:'消息引用 Quote 实现',fav:false,time:'02-12 09:00',qc:4,preview:'实现跨会话的消息引用功能'}
+];
+
+const providers=[
+  {id:'p0',name:'Claude',url:'https://api.anthropic.com',key:'sk-ant-***',models:{default:'claude-4.5',opus:'claude-opus-4',max:'claude-max'},st:'ok'},
+  {id:'p1',name:'GLM',url:'https://open.bigmodel.cn/api/paas/v4',key:'***',models:{default:'glm-5',opus:'glm-5-plus',max:'glm-5-max'},st:'ok'},
+  {id:'p2',name:'Minimax',url:'https://api.minimax.chat/v1',key:'***',models:{default:'minimax-standard',opus:'minimax-pro',max:'minimax-max'},st:'err'}
+];
+
+const agents=[
+  {id:'a0',name:'代码助手',desc:'专注于代码编写、优化和调试'},
+  {id:'a1',name:'文档生成器',desc:'自动生成项目文档和 API 文档'},
+  {id:'a2',name:'测试专家',desc:'编写单元测试和集成测试用例'}
+];
+
+const skills=[
+  {id:'sk0',name:'代码审查',desc:'对代码进行静态分析和质量评估'},
+  {id:'sk1',name:'单元测试生成',desc:'根据代码自动生成测试用例'},
+  {id:'sk2',name:'性能分析',desc:'分析代码性能瓶颈并给出优化建议'}
+];
+
+/* ===== 页面切换 ===== */
+function switchPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('show'));
+  document.querySelectorAll('.page-tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById({hist:'pageHist',fav:'pageFav',set:'pageSet'}[id]).classList.add('show');
+  document.querySelectorAll('.page-tab')[{hist:0,fav:1,set:2}[id]].classList.add('on');
+}
+
+/* ===== 历史会话 ===== */
+function renderHist(){
+  const q=document.getElementById('histSearchInput').value.trim().toLowerCase();
+  const list=q?sessions.filter(s=>s.title.toLowerCase().includes(q)):sessions;
+  const ct=document.getElementById('histList');
+  if(!list.length){ct.innerHTML='<div style="padding:40px;text-align:center;color:var(--fg3);font-size:13px">未找到匹配的会话</div>';return;}
+  ct.innerHTML=list.map(s=>`
+    <div class="hist-item" onclick="toast('in','加载会话至当前 Tab: ${esc(s.title)}')">
+      <div class="hist-item-icon"><span class="mi">chat_bubble_outline</span></div>
+      <div class="hist-item-body">
+        <div class="hist-item-title">${s.fav?'<span class="mi fav-mark">star</span>':''}${esc(s.title)}</div>
+        <div class="hist-item-preview">${esc(s.preview)}</div>
+        <div class="hist-item-meta"><span><span class="mi">schedule</span>${s.time}</span><span><span class="mi">help_outline</span>${s.qc} 次提问</span></div>
+      </div>
+      <div class="hist-item-actions">
+        <button class="hia ${s.fav?'fav-on':''}" onclick="event.stopPropagation();togFav('${s.id}')" title="${s.fav?'取消收藏':'收藏'}"><span class="mi">${s.fav?'star':'star_outline'}</span></button>
+        <button class="hia" onclick="event.stopPropagation();rnSess('${s.id}')" title="重命名"><span class="mi">edit</span></button>
+        <button class="hia" onclick="event.stopPropagation();toast('ok','已导出 JSON')" title="导出"><span class="mi">download</span></button>
+        <button class="hia danger" onclick="event.stopPropagation();delSess('${s.id}')" title="删除"><span class="mi">delete_outline</span></button>
+      </div>
+    </div>`).join('');
+}
+function filterHist(){renderHist();}
+
+/* ===== 收藏会话 ===== */
+function renderFav(){
+  const q=document.getElementById('favSearchInput').value.trim().toLowerCase();
+  const list=sessions.filter(s=>s.fav);
+  const fl=q?list.filter(s=>s.title.toLowerCase().includes(q)):list;
+  const ct=document.getElementById('favList');
+  if(!fl.length){ct.innerHTML='<div class="fav-empty"><div class="fav-empty-ic"><span class="mi">star_border</span></div><h3>暂无收藏会话</h3><p>在历史会话中点击星标可添加收藏</p></div>';return;}
+  ct.innerHTML=fl.map(s=>`
+    <div class="hist-item" onclick="toast('in','加载会话至当前 Tab: ${esc(s.title)}')">
+      <div class="hist-item-icon" style="background:rgba(201,135,58,.1)"><span class="mi" style="color:var(--ac)">star</span></div>
+      <div class="hist-item-body">
+        <div class="hist-item-title"><span class="mi fav-mark">star</span>${esc(s.title)}</div>
+        <div class="hist-item-preview">${esc(s.preview)}</div>
+        <div class="hist-item-meta"><span><span class="mi">schedule</span>${s.time}</span><span><span class="mi">help_outline</span>${s.qc} 次提问</span></div>
+      </div>
+      <div class="hist-item-actions">
+        <button class="hia" onclick="event.stopPropagation();toast('ok','已导出 JSON')" title="导出"><span class="mi">download</span></button>
+        <button class="hia danger" onclick="event.stopPropagation();delSess('${s.id}')" title="删除"><span class="mi">delete_outline</span></button>
+      </div>
+    </div>`).join('');
+}
+function filterFav(){renderFav();}
+
+/* ===== 会话操作 ===== */
+function togFav(id){const s=sessions.find(x=>x.id===id);if(s){s.fav=!s.fav;renderHist();renderFav();updateBadges();toast('ok',s.fav?'已添加收藏':'已取消收藏');}}
+function rnSess(id){
+  const s=sessions.find(x=>x.id===id);if(!s)return;
+  document.querySelectorAll('.hist-item').forEach(it=>{
+    const t=it.querySelector('.hist-item-title');
+    if(t&&it.onclick?.toString().includes(id)){
+      const sp=document.createElement('span');sp.textContent=s.title;sp.contentEditable=true;sp.style.outline='none';sp.style.borderBottom='1px solid var(--ac)';
+      t.innerHTML='';t.appendChild(sp);sp.focus();
+      const r=document.createRange();r.selectNodeContents(sp);window.getSelection().removeAllRanges();window.getSelection().addRange(r);
+      const done=()=>{sp.contentEditable=false;const v=sp.textContent.trim();if(v)s.title=v;sp.style.borderBottom='none';renderHist();renderFav();};
+      sp.onblur=done;sp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();sp.blur();}if(e.key==='Escape'){sp.textContent=s.title;sp.blur();}};
+    }
+  });
+}
+function delSess(id){const i=sessions.findIndex(s=>s.id===id);const els=document.querySelectorAll('.hist-item');const el=els[i];if(el){el.style.opacity='0';el.style.transform='translateX(20px)';el.style.transition='all .2s';}setTimeout(()=>{sessions.splice(i,1);renderHist();renderFav();updateBadges();toast('ok','会话已删除');},200);}
+function updateBadges(){const tabs=document.querySelectorAll('.page-tab .badge');tabs[0].textContent=sessions.length;tabs[1].textContent=sessions.filter(s=>s.fav).length;}
+
+/* ===== 设置导航 ===== */
+const setNavItems=[{group:'通用',items:[{id:'basic',icon:'tune',label:'基础设置'}]},{group:'集成',items:[{id:'provider',icon:'dns',label:'供应商管理'},{id:'agent',icon:'smart_toy',label:'Agent'},{id:'skill',icon:'bolt',label:'Skill'}]}];
+let curSetTab='basic';
+function buildSetNav(){document.getElementById('setNav').innerHTML=setNavItems.map(g=>`<div class="set-nav-group">${g.group}</div>${g.items.map(it=>`<div class="set-nav-item ${it.id===curSetTab?'on':''}" onclick="swSetTab('${it.id}')"><span class="mi">${it.icon}</span>${it.label}</div>`).join('')}`).join('');}
+function swSetTab(id){curSetTab=id;buildSetNav();const ct=document.getElementById('setContent');ct.innerHTML={basic:renderBasic,provider:renderProvider,agent:renderAgent,skill:renderSkill}[id]();}
+
+/* ===== 基础设置 ===== */
+function renderBasic(){return `
+<div class="set-section"><div class="set-section-title"><span class="mi">terminal</span>CLI 版本</div>
+  <div class="set-row"><div class="set-label">Claude Code CLI<small>当前安装版本 v1.0.28</small></div><div class="set-ctrl"><span style="font-size:11px;color:var(--gn);display:flex;align-items:center;gap:4px"><span class="mi" style="font-size:13px">check_circle</span>已是最新</span><button class="s-btn" onclick="toast('in','正在检查更新...')"><span class="mi">sync</span>检查更新</button></div></div>
+  <div class="set-row"><div class="set-label">自动更新<small>启动 IDE 时自动检测并更新 CLI</small></div><button class="s-toggle on" onclick="this.classList.toggle('on');toast('ok','设置已更新')"></button></div>
+</div>
+<div class="set-section"><div class="set-section-title"><span class="mi">language</span>国际化</div>
+  <div class="set-row"><div class="set-label">界面语言<small>重启插件后生效</small></div><select class="s-select" onchange="toast('ok','语言设置已更新')"><option value="zh-CN" selected>简体中文</option><option value="zh-TW">繁體中文</option><option value="en">English</option><option value="ja">日本語</option></select></div>
+</div>
+<div class="set-section"><div class="set-section-title"><span class="mi">palette</span>主题与外观</div>
+  <div class="set-row"><div class="set-label">界面主题<small>跟随 IDEA 主题自动切换</small></div><select class="s-select" onchange="toast('ok','主题已切换')"><option value="idea" selected>跟随 IDEA</option><option value="dark1">深色主题 1</option><option value="dark2">深色主题 2</option><option value="light">浅色主题</option></select></div>
+  <div class="set-row"><div class="set-label">对话背景<small>消息区域的背景填充方式</small></div><select class="s-select" onchange="toast('ok','背景已切换')"><option value="default" selected>跟随主题</option><option value="color">颜色填充</option><option value="image">图片填充</option></select></div>
+  <div class="set-row"><div class="set-label">消息气泡背景</div><div class="set-ctrl"><div class="s-color"><input type="color" value="#1a1b20" onchange="toast('ok','颜色已更新')"></div><span style="font-size:11px;color:var(--fg3);font-family:'JetBrains Mono',monospace">#1a1b20</span></div></div>
+  <div class="set-row"><div class="set-label">代码块背景</div><div class="set-ctrl"><div class="s-color"><input type="color" value="#111214" onchange="toast('ok','颜色已更新')"></div><span style="font-size:11px;color:var(--fg3);font-family:'JetBrains Mono',monospace">#111214</span></div></div>
+</div>`;}
+
+/* ===== 供应商管理 ===== */
+function renderProvider(){return `
+<div class="set-section">
+  <div class="set-section-title" style="justify-content:space-between">
+    <span style="display:flex;align-items:center;gap:7px"><span class="mi">dns</span>供应商列表</span>
+    <button class="s-btn primary" onclick="openProvModal()"><span class="mi">add</span>新增供应商</button>
+  </div>
+  ${providers.map(p=>`
+    <div class="prov-card">
+      <div class="prov-info">
+        <span class="prov-dot ${p.st}"></span>
+        <div>
+          <div class="prov-name">${esc(p.name)}</div>
+          <div class="prov-url">${esc(p.url)}</div>
+          <div class="prov-models">
+            <span>default: ${esc(p.models.default)}</span>
+            <span>opus: ${esc(p.models.opus)}</span>
+            <span>max: ${esc(p.models.max)}</span>
+          </div>
+        </div>
+      </div>
+      <div class="prov-actions">
+        <button onclick="openProvModal('${p.id}')" title="编辑"><span class="mi">edit</span></button>
+        <button onclick="toast('ok','已导出 JSON')" title="导出 JSON"><span class="mi">download</span></button>
+        <button class="danger" onclick="delProv('${p.id}')" title="删除"><span class="mi">delete_outline</span></button>
+      </div>
+    </div>`).join('')}
+  <div class="form-hint" style="margin-top:8px"><span class="mi">info</span>状态：<span style="color:var(--gn)">● 正常</span> <span style="color:var(--rd)">● 异常</span> <span style="color:var(--fg4)">● 未检测</span>　　模型预设决定对话界面「模型」悬浮框的可选范围</div>
+</div>`;}
+
+function delProv(id){const i=providers.findIndex(p=>p.id===id);const cards=document.querySelectorAll('.prov-card');if(cards[i]){cards[i].style.opacity='0';cards[i].style.transform='scale(.97)';cards[i].style.transition='all .2s';}setTimeout(()=>{providers.splice(i,1);swSetTab('provider');toast('ok','供应商已删除');},200);}
+
+/* ===== 供应商编辑弹窗（核心：所有文本框与JSON双向同步） ===== */
+let editingProv=null;
+let provSyncTimer=null;
+
+// 所有表单字段的 id 列表
+const provFieldIds=['fmProvName','fmProvUrl','fmProvKey','fmModelDefault','fmModelOpus','fmModelMax'];
+
+function openProvModal(id){
+  editingProv=id?providers.find(p=>p.id===id):null;
+  const p=editingProv;
+  document.getElementById('provModalTitle').textContent=p?'编辑供应商：'+p.name:'新增供应商';
+  document.getElementById('provModalBody').innerHTML=`
+    <div class="shortcut-btns">
+      <button class="shortcut-btn" onclick="fillProv('claude')">Claude</button>
+      <button class="shortcut-btn" onclick="fillProv('glm')">GLM</button>
+      <button class="shortcut-btn" onclick="fillProv('minimax')">Minimax</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">供应商名称<span class="form-sync-indicator" id="syncName"></span></label>
+      <input class="form-input" id="fmProvName" value="${p?esc(p.name):''}" placeholder="例如：Claude">
+    </div>
+    <div class="form-group">
+      <label class="form-label">URL<span class="form-sync-indicator" id="syncUrl"></span></label>
+      <input class="form-input" id="fmProvUrl" value="${p?esc(p.url):''}" placeholder="https://api.example.com" style="font-family:'JetBrains Mono',monospace;font-size:12px">
+    </div>
+    <div class="form-group">
+      <label class="form-label">API Key<span class="form-sync-indicator" id="syncKey"></span></label>
+      <input class="form-input" id="fmProvKey" type="password" value="${p?esc(p.key):''}" placeholder="输入 API Key">
+      <div class="form-hint"><span class="mi">lock</span>密钥仅在本地存储，不会上传</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">模型预设 <small>对应对话界面「模型」悬浮框的 default / opus / max 三个选项</small><span class="form-sync-indicator" id="syncModels"></span></label>
+      <div class="model-presets">
+        <div class="model-preset-row">
+          <span class="model-preset-label">default</span>
+          <input class="form-input" id="fmModelDefault" value="${p?esc(p.models.default):''}" placeholder="默认模型标识">
+        </div>
+        <div class="model-preset-row">
+          <span class="model-preset-label">opus</span>
+          <input class="form-input" id="fmModelOpus" value="${p?esc(p.models.opus):''}" placeholder="高能力模型标识">
+        </div>
+        <div class="model-preset-row">
+          <span class="model-preset-label">max</span>
+          <input class="form-input" id="fmModelMax" value="${p?esc(p.models.max):''}" placeholder="最大模型标识">
+        </div>
+      </div>
+      <div class="form-hint"><span class="mi">info</span>例如 Claude：default=claude-4.5 / opus=claude-opus-4 / max=claude-max</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">JSON 配置 <small>~/.claude/settings.json 格式，与上方所有字段实时双向同步</small></label>
+      <textarea class="form-textarea" id="fmProvJson" placeholder='{\n  "provider": {\n    "name": "",\n    "url": "",\n    "apiKey": "",\n    "models": {\n      "default": "",\n      "opus": "",\n      "max": ""\n    }\n  }\n}'></textarea>
+      <div class="form-hint" style="justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:4px"><span class="mi">sync</span>编辑 JSON 后点击下方按钮可反向填充所有文本框</span>
+      </div>
+      <button class="s-btn" style="margin-top:6px" onclick="syncJsonToForm()"><span class="mi">arrow_upward</span>从 JSON 填充到上方字段</button>
+    </div>`;
+
+  // 初始化JSON
+  if(p)setTimeout(()=>{document.getElementById('fmProvJson').value=buildProvJson();},10);
+  else setTimeout(()=>{document.getElementById('fmProvJson').value=buildProvJson();},10);
+
+  document.getElementById('provModalOv').classList.add('show');
+  document.getElementById('provModal').classList.add('show');
+
+  // 绑定所有文本框的实时同步：文本框 → JSON
+  setTimeout(()=>{
+    provFieldIds.forEach(id=>{
+      const el=document.getElementById(id);
+      el.addEventListener('input',formToJson);
+    });
+    // JSON 也监听：JSON → 如果合法就同步回表单（实时双向）
+    document.getElementById('fmProvJson').addEventListener('input',jsonToFormLive);
+  },30);
+}
+
+function closeProvModal(){
+  document.getElementById('provModalOv').classList.remove('show');
+  document.getElementById('provModal').classList.remove('show');
+  editingProv=null;
+  if(provSyncTimer){clearTimeout(provSyncTimer);provSyncTimer=null;}
+}
+
+// 从表单字段读取值，构建JSON对象
+function readFormValues(){
+  return {
+    provider:{
+      name:document.getElementById('fmProvName').value,
+      url:document.getElementById('fmProvUrl').value,
+      apiKey:document.getElementById('fmProvKey').value,
+      models:{
+        default:document.getElementById('fmModelDefault').value,
+        opus:document.getElementById('fmModelOpus').value,
+        max:document.getElementById('fmModelMax').value
+      }
+    }
+  };
+}
+
+// 构建格式化JSON字符串
+function buildProvJson(){
+  try{return JSON.stringify(readFormValues(),null,2);}
+  catch(e){return '{}';}
+}
+
+// 表单 → JSON（带防抖 + 同步指示器闪烁）
+function formToJson(){
+  if(provSyncTimer)clearTimeout(provSyncTimer);
+  provSyncTimer=setTimeout(()=>{
+    const jsonEl=document.getElementById('fmProvJson');
+    // 记录光标位置
+    const start=jsonEl.selectionStart;
+    const end=jsonEl.selectionEnd;
+    const scrollTop=jsonEl.scrollTop;
+    const newVal=buildProvJson();
+    jsonEl.value=newVal;
+    // 恢复光标（尽量）
+    jsonEl.selectionStart=Math.min(start,newVal.length);
+    jsonEl.selectionEnd=Math.min(end,newVal.length);
+    jsonEl.scrollTop=scrollTop;
+    flashSync(['syncName','syncUrl','syncKey','syncModels']);
+  },80);
+}
+
+// JSON → 表单（实时双向：用户在JSON中打字时自动回填）
+function jsonToFormLive(){
+  if(provSyncTimer)clearTimeout(provSyncTimer);
+  provSyncTimer=setTimeout(()=>{
+    try{
+      const obj=JSON.parse(document.getElementById('fmProvJson').value);
+      const p=obj.provider||obj;
+      if(p.name!==undefined)document.getElementById('fmProvName').value=p.name;
+      if(p.url!==undefined)document.getElementById('fmProvUrl').value=p.url;
+      if(p.apiKey!==undefined)document.getElementById('fmProvKey').value=p.apiKey;
+      if(p.models){
+        if(p.models.default!==undefined)document.getElementById('fmModelDefault').value=p.models.default;
+        if(p.models.opus!==undefined)document.getElementById('fmModelOpus').value=p.models.opus;
+        if(p.models.max!==undefined)document.getElementById('fmModelMax').value=p.models.max;
+      }
+      flashSync(['syncName','syncUrl','syncKey','syncModels']);
+    }catch(e){
+      // JSON 格式不合法时不同步，用户还在编辑中
+    }
+  },120);
+}
+
+// 手动点击"从 JSON 填充"按钮（JSON 格式错误时给提示）
+function syncJsonToForm(){
+  try{
+    const obj=JSON.parse(document.getElementById('fmProvJson').value);
+    const p=obj.provider||obj;
+    if(p.name!==undefined)document.getElementById('fmProvName').value=p.name;
+    if(p.url!==undefined)document.getElementById('fmProvUrl').value=p.url;
+    if(p.apiKey!==undefined)document.getElementById('fmProvKey').value=p.apiKey;
+    if(p.models){
+      if(p.models.default!==undefined)document.getElementById('fmModelDefault').value=p.models.default;
+      if(p.models.opus!==undefined)document.getElementById('fmModelOpus').value=p.models.opus;
+      if(p.models.max!==undefined)document.getElementById('fmModelMax').value=p.models.max;
+    }
+    flashSync(['syncName','syncUrl','syncKey','syncModels']);
+    toast('ok','已从 JSON 反向填充到所有字段');
+  }catch(e){
+    toast('er','JSON 格式错误，请检查后再试');
+  }
+}
+
+// 同步指示器闪烁
+function flashSync(ids){
+  ids.forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.textContent='synced';
+    el.classList.add('show');
+    setTimeout(()=>{el.classList.remove('show');},800);
+  });
+}
+
+// 快捷填充
+const provPresets={
+  claude:{name:'Claude',url:'https://api.anthropic.com',models:{default:'claude-4.5',opus:'claude-opus-4',max:'claude-max'}},
+  glm:{name:'GLM',url:'https://open.bigmodel.cn/api/paas/v4',models:{default:'glm-5',opus:'glm-5-plus',max:'glm-5-max'}},
+  minimax:{name:'Minimax',url:'https://api.minimax.chat/v1',models:{default:'minimax-standard',opus:'minimax-pro',max:'minimax-max'}}
+};
+function fillProv(key){
+  const pr=provPresets[key];if(!pr)return;
+  document.getElementById('fmProvName').value=pr.name;
+  document.getElementById('fmProvUrl').value=pr.url;
+  document.getElementById('fmModelDefault').value=pr.models.default;
+  document.getElementById('fmModelOpus').value=pr.models.opus;
+  document.getElementById('fmModelMax').value=pr.models.max;
+  formToJson();
+  toast('in','已填充 '+pr.name+' 配置（API Key 需手动填写）');
+}
+
+// 保存供应商
+function saveProv(){
+  const name=document.getElementById('fmProvName').value.trim();
+  if(!name){toast('er','请输入供应商名称');return;}
+  const data=readFormValues().provider;
+  if(editingProv){
+    const p=editingProv;
+    p.name=data.name;p.url=data.url;p.key=data.apiKey;
+    p.models.default=data.models.default;p.models.opus=data.models.opus;p.models.max=data.models.max;
+  }else{
+    providers.push({id:'p'+Date.now(),name:data.name,url:data.url,key:data.apiKey,models:{default:data.models.default,opus:data.models.opus,max:data.models.max},st:'ok'});
+  }
+  swSetTab('provider');
+  toast('ok','供应商已保存');
+}
+
+function copyProvJson(){navigator.clipboard.writeText(document.getElementById('fmProvJson').value).catch(()=>{});}
+
+/* ===== Agent ===== */
+function renderAgent(){return `
+<div class="set-section">
+  <div class="set-section-title" style="justify-content:space-between">
+    <span style="display:flex;align-items:center;gap:7px"><span class="mi">smart_toy</span>Agent 列表</span>
+    <button class="s-btn primary" onclick="openAgentModal()"><span class="mi">add</span>新增 Agent</button>
+  </div>
+  ${agents.map(a=>`<div class="list-card"><div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0"><div class="list-card-icon"><span class="mi">smart_toy</span></div><div class="list-card-info"><div class="list-card-name">${esc(a.name)}</div><div class="list-card-desc">${esc(a.desc)}</div></div></div><div class="list-card-actions"><button class="hia" onclick="openAgentModal('${a.id}')" title="编辑"><span class="mi">edit</span></button><button class="hia" onclick="toast('ok','已导出 JSON')" title="导出 JSON"><span class="mi">download</span></button><button class="hia danger" onclick="delAgent('${a.id}')" title="删除"><span class="mi">delete_outline</span></button></div></div>`).join('')}
+</div>`;}
+function delAgent(id){const i=agents.findIndex(a=>a.id===id);const cards=document.querySelectorAll('.list-card');if(cards[i]){cards[i].style.opacity='0';cards[i].style.transition='all .2s';}setTimeout(()=>{agents.splice(i,1);swSetTab('agent');toast('ok','Agent 已删除');},200);}
+let editingAgent=null;
+function openAgentModal(id){
+  editingAgent=id?agents.find(a=>a.id===id):null;const a=editingAgent;
+  document.getElementById('agentModalTitle').textContent=a?'编辑 Agent：'+a.name:'新增 Agent';
+  document.getElementById('agentModalBody').innerHTML=`
+    <div class="form-group"><label class="form-label">Agent 名称</label><input class="form-input" id="fmAgentName" value="${a?esc(a.name):''}" placeholder="例如：代码助手"></div>
+    <div class="form-group"><label class="form-label">描述</label><input class="form-input" id="fmAgentDesc" value="${a?esc(a.desc):''}" placeholder="简要描述该 Agent 的功能"></div>
+    <div class="form-group"><label class="form-label">System Prompt</label><textarea class="form-textarea" style="min-height:80px" id="fmAgentPrompt" placeholder="输入该 Agent 的系统提示词...">${a?'你是一个'+a.name+'。'+a.desc:''}</textarea></div>
+    <div class="form-group"><label class="form-label">JSON 配置 <small>~/.claude/agents/{name}.json</small></label><textarea class="form-textarea" id="fmAgentJson">${a?JSON.stringify({name:a.name,description:a.desc,systemPrompt:'你是一个'+a.name+'。'+a.desc},null,2):''}</textarea><button class="s-btn" style="margin-top:6px" onclick="try{const o=JSON.parse(document.getElementById('fmAgentJson').value);if(o.name)document.getElementById('fmAgentName').value=o.name;if(o.description)document.getElementById('fmAgentDesc').value=o.description;if(o.systemPrompt)document.getElementById('fmAgentPrompt').value=o.systemPrompt;toast('ok','已从 JSON 填充')}catch(e){toast('er','JSON 格式错误')}"><span class="mi">arrow_upward</span>从 JSON 填充</button></div>`;
+  document.getElementById('agentModalOv').classList.add('show');document.getElementById('agentModal').classList.add('show');
+}
+function closeAgentModal(){document.getElementById('agentModalOv').classList.remove('show');document.getElementById('agentModal').classList.remove('show');editingAgent=null;}
+
+/* ===== Skill ===== */
+function renderSkill(){return `
+<div class="set-section">
+  <div class="set-section-title" style="justify-content:space-between">
+    <span style="display:flex;align-items:center;gap:7px"><span class="mi">bolt</span>Skill 列表</span>
+    <button class="s-btn primary" onclick="openSkillModal()"><span class="mi">add</span>新增 Skill</button>
+  </div>
+  ${skills.map(sk=>`<div class="list-card"><div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0"><div class="list-card-icon"><span class="mi">bolt</span></div><div class="list-card-info"><div class="list-card-name">${esc(sk.name)}</div><div class="list-card-desc">${esc(sk.desc)}</div></div></div><div class="list-card-actions"><button class="hia" onclick="openSkillModal('${sk.id}')" title="编辑"><span class="mi">edit</span></button><button class="hia" onclick="toast('ok','已导出 JSON')" title="导出 JSON"><span class="mi">download</span></button><button class="hia danger" onclick="delSkill('${sk.id}')" title="删除"><span class="mi">delete_outline</span></button></div></div>`).join('')}
+</div>`;}
+function delSkill(id){const i=skills.findIndex(sk=>sk.id===id);const cards=document.querySelectorAll('.list-card');if(cards[i]){cards[i].style.opacity='0';cards[i].style.transition='all .2s';}setTimeout(()=>{skills.splice(i,1);swSetTab('skill');toast('ok','Skill 已删除');},200);}
+let editingSkill=null;
+function openSkillModal(id){
+  editingSkill=id?skills.find(sk=>sk.id===id):null;const sk=editingSkill;
+  document.getElementById('skillModalTitle').textContent=sk?'编辑 Skill：'+sk.name:'新增 Skill';
+  document.getElementById('skillModalBody').innerHTML=`
+    <div class="form-group"><label class="form-label">Skill 名称</label><input class="form-input" id="fmSkillName" value="${sk?esc(sk.name):''}" placeholder="例如：代码审查"></div>
+    <div class="form-group"><label class="form-label">描述</label><input class="form-input" id="fmSkillDesc" value="${sk?esc(sk.desc):''}" placeholder="简要描述该 Skill 的功能"></div>
+    <div class="form-group"><label class="form-label">触发规则</label><textarea class="form-textarea" style="min-height:50px" id="fmSkillRule" placeholder="定义触发条件">${sk?'当用户消息包含"'+sk.name+'"相关关键词时自动触发':'当用户消息包含相关关键词时自动触发'}</textarea></div>
+    <div class="form-group"><label class="form-label">JSON 配置 <small>~/.claude/skills/{name}.json</small></label><textarea class="form-textarea" id="fmSkillJson">${sk?JSON.stringify({name:sk.name,description:sk.desc,triggerRule:'关键词触发'},null,2):''}</textarea><button class="s-btn" style="margin-top:6px" onclick="try{const o=JSON.parse(document.getElementById('fmSkillJson').value);if(o.name)document.getElementById('fmSkillName').value=o.name;if(o.description)document.getElementById('fmSkillDesc').value=o.description;if(o.triggerRule)document.getElementById('fmSkillRule').value=o.triggerRule;toast('ok','已从 JSON 填充')}catch(e){toast('er','JSON 格式错误')}"><span class="mi">arrow_upward</span>从 JSON 填充</button></div>`;
+  document.getElementById('skillModalOv').classList.add('show');document.getElementById('skillModal').classList.add('show');
+}
+function closeSkillModal(){document.getElementById('skillModalOv').classList.remove('show');document.getElementById('skillModal').classList.remove('show');editingSkill=null;}
+
+/* ===== Toast ===== */
+function toast(type,msg){const c=document.getElementById('toastC');const ic={ok:'check_circle',er:'error',in:'info'};const t=document.createElement('div');t.className='toast '+type;t.innerHTML=`<span class="mi">${ic[type]}</span>${msg}`;c.appendChild(t);setTimeout(()=>t.remove(),2600);}
+
+/* ===== 工具 ===== */
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+/* ===== 初始化 ===== */
+renderHist();renderFav();buildSetNav();swSetTab('basic');
+</script>
+</body>
+</html>

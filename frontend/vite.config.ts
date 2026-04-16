@@ -1,10 +1,33 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import fs from 'fs'
+import type { Plugin } from 'vite'
+
+// 插件：构建后复制 index.html 为 chat.html
+function copyChatHtml(): Plugin {
+  return {
+    name: 'copy-chat-html',
+    writeBundle() {
+      const distDir = path.resolve(__dirname, 'dist')
+      const indexHtml = path.join(distDir, 'index.html')
+      const chatHtml = path.join(distDir, 'chat.html')
+
+      if (fs.existsSync(indexHtml)) {
+        let content = fs.readFileSync(indexHtml, 'utf-8')
+        // 修改相对路径，确保在 JCEF 中正确加载
+        content = content.replace(/href="\//g, 'href="./')
+          .replace(/src="\//g, 'src="./')
+        fs.writeFileSync(chatHtml, content)
+        console.log('✓ Created chat.html from index.html')
+      }
+    }
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), copyChatHtml()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

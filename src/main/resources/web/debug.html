@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: Arial, sans-serif;
+    }
+    h1 { color: white; }
+  </style>
+</head>
+<body>
+  <h1>如果你能看到这个，JCEF 正常工作！</h1>
+  <p style="color:white">Time: <span id="time"></span></p>
+  <script>
+    document.getElementById('time').textContent = new Date().toLocaleString();
+    console.log('Page loaded successfully');
+  </script>
+</body>
+</html>

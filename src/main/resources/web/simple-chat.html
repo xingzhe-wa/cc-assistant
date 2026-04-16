@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CC Assistant - Simple Test</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: white;
+    }
+    .container {
+      text-align: center;
+      padding: 40px;
+    }
+    h1 { font-size: 32px; margin-bottom: 20px; }
+    p { font-size: 16px; opacity: 0.9; margin-bottom: 30px; }
+    .status {
+      background: rgba(255,255,255,0.2);
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    .success { color: #4ade80; font-weight: bold; }
+    .btn {
+      background: white;
+      color: #667eea;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 10px;
+    }
+    .btn:hover { opacity: 0.9; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>CC Assistant</h1>
+    <p>JCEF 测试页面 - 如果你能看到这个，说明基础环境正常</p>
+
+    <div class="status">
+      <div id="status">检查中...</div>
+    </div>
+
+    <button class="btn" onclick="testJavaBridge()">测试 Java 桥接</button>
+    <button class="btn" onclick="sendMessage()">发送测试消息</button>
+
+    <div id="messages" style="margin-top: 20px; text-align: left; max-width: 400px;"></div>
+  </div>
+
+  <script>
+    // 检查环境
+    const statusEl = document.getElementById('status');
+    const messagesEl = document.getElementById('messages');
+
+    function addMessage(msg) {
+      const div = document.createElement('div');
+      div.style.cssText = 'background: rgba(255,255,255,0.1); padding: 10px; margin: 5px 0; border-radius: 4px;';
+      div.textContent = msg;
+      messagesEl.appendChild(div);
+    }
+
+    // 检查 JCEF 环境
+    if (typeof window !== 'undefined') {
+      statusEl.innerHTML = '<span class="success">✓ JCEF 环境正常</span>';
+      addMessage('页面加载时间: ' + new Date().toLocaleTimeString());
+    }
+
+    // 测试 Java 桥接
+    function testJavaBridge() {
+      addMessage('javaBridge 存在: ' + (typeof window.javaBridge !== 'undefined'));
+      if (typeof window.javaBridge !== 'undefined') {
+        addMessage('javaBridge.onSendMessage: ' + typeof window.javaBridge.onSendMessage);
+      }
+    }
+
+    // 发送消息到 Java
+    function sendMessage() {
+      addMessage('尝试发送消息到 Java...');
+      if (typeof window.javaBridge !== 'undefined' && window.javaBridge.onSendMessage) {
+        window.javaBridge.onSendMessage('Hello from JCEF!', {});
+        addMessage('消息已发送');
+      } else {
+        addMessage('⚠️ javaBridge 不可用');
+      }
+    }
+
+    // 全局对象供 Java 调用
+    window.CCChat = {
+      appendMessage: function(role, content, options) {
+        addMessage('[Java→JS] ' + role + ': ' + content.substring(0, 50));
+      }
+    };
+
+    console.log('[SimpleChat] Page loaded');
+  </script>
+</body>
+</html>

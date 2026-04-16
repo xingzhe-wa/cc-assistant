@@ -94,7 +94,18 @@ class JcefChatPanel : Disposable {
         }
 
         try {
-            val url = "/web/chat.html"
+            // 加载资源 URL - 使用类加载器获取资源路径
+            // 注意：ClassLoader#getResource 不支持前导斜杠，必须去掉
+            val resourcePath = "web/chat.html"
+            val resourceUrl = this::class.java.classLoader.getResource(resourcePath)
+            if (resourceUrl == null) {
+                logger.error("Resource not found: $resourcePath")
+                return createFallbackPanel()
+            }
+
+            val url = resourceUrl.toString()
+            logger.info("Loading resource from: $url")
+
             browser = JBCefBrowser(url)
 
             messageContainer = JPanel(BorderLayout())
@@ -103,7 +114,7 @@ class JcefChatPanel : Disposable {
 
             initializeJSBridge()
             isInitialized = true
-            logger.info("JcefChatPanel created with URL: $url")
+            logger.info("JcefChatPanel created")
 
         } catch (e: Throwable) {
             logger.error("Failed to create JCEF Browser", e)
