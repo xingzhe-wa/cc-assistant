@@ -3,6 +3,7 @@ import { AppLayout } from './components/layout';
 import { MessageArea } from './components/message';
 import { InputArea } from './components/input';
 import { ToastContainer } from './components/common';
+import { SettingsPage, HistoryPage } from './pages';
 import { useChatStore } from './stores';
 import { mockProviders, getMockModelsByProvider, mockAgents } from './mock';
 import { useJcefEvents } from './hooks/useJcefEvents';
@@ -18,8 +19,7 @@ const App: React.FC = () => {
     streaming,
     streamingContent,
     streamEnabled,
-    historyOpen,
-    favoriteOpen,
+    currentPage,
     inputValue,
     currentProvider,
     currentModel,
@@ -44,7 +44,7 @@ const App: React.FC = () => {
     setCurrentModel,
     setCurrentMode,
     setCurrentAgent,
-    setSettingsOpen,
+    setCurrentPage,
     addToast,
     removeToast,
     enhancePrompt
@@ -74,18 +74,19 @@ const App: React.FC = () => {
   }, [toggleFavoritePanel]);
 
   const handleSettingsClick = useCallback(() => {
-    setSettingsOpen(true);
-  }, [setSettingsOpen]);
+    setCurrentPage('settings');
+  }, [setCurrentPage]);
 
   const handleSessionClick = useCallback((session: MockSession) => {
-    createSession();
+    setActiveSession(session.id);
     addToast(`已加载会话: ${session.title}`, 'success');
     toggleHistory();
-  }, [createSession, addToast, toggleHistory]);
+  }, [setActiveSession, addToast, toggleHistory]);
 
-  const handleFavoriteToggle = useCallback((id: string) => {
+  const handleFavoriteToggle = useCallback((id: string, fav: boolean) => {
     toggleSessionFavorite(id);
-  }, [toggleSessionFavorite]);
+    addToast(fav ? '已添加收藏' : '已取消收藏', 'success');
+  }, [toggleSessionFavorite, addToast]);
 
   const handleDeleteSession = useCallback((id: string) => {
     deleteSession(id);
@@ -114,55 +115,80 @@ const App: React.FC = () => {
 
   return (
     <>
-      <AppLayout
-        sessions={sessions}
-        activeSessionId={activeSessionId || ''}
-        streamEnabled={streamEnabled}
-        historyOpen={historyOpen}
-        favoriteOpen={favoriteOpen}
-        onTabClick={handleTabClick}
-        onTabClose={handleTabClose}
-        onNewTab={handleNewTab}
-        onHistoryClick={handleHistoryClick}
-        onFavoriteClick={handleFavoriteClick}
-        onStreamToggle={toggleStream}
-        onSettingsClick={handleSettingsClick}
-        onSearchChange={() => {}}
-        onSessionClick={handleSessionClick}
-        onFavoriteToggle={handleFavoriteToggle}
-        onDeleteSession={handleDeleteSession}
-      >
-        <MessageArea
-          messages={activeSession?.msgs || []}
-          streaming={streaming}
-          streamingContent={streamingContent}
-          onCopy={handleCopy}
-          onQuote={handleQuote}
-          onQuickAction={handleQuickAction}
+      {currentPage === 'chat' && (
+        <AppLayout
+          sessions={sessions}
+          activeSessionId={activeSessionId || ''}
+          streamEnabled={streamEnabled}
+          historyOpen={false}
+          favoriteOpen={false}
+          onTabClick={handleTabClick}
+          onTabClose={handleTabClose}
+          onNewTab={handleNewTab}
+          onHistoryClick={handleHistoryClick}
+          onFavoriteClick={handleFavoriteClick}
+          onStreamToggle={toggleStream}
+          onSettingsClick={handleSettingsClick}
+          onSearchChange={() => {}}
+          onSessionClick={handleSessionClick}
+          onFavoriteToggle={handleFavoriteToggle}
+          onDeleteSession={handleDeleteSession}
+        >
+          <MessageArea
+            messages={activeSession?.msgs || []}
+            streaming={streaming}
+            streamingContent={streamingContent}
+            onCopy={handleCopy}
+            onQuote={handleQuote}
+            onQuickAction={handleQuickAction}
+          />
+          <InputArea
+            value={inputValue}
+            onChange={setInputValue}
+            onSend={handleSend}
+            onStop={stopGeneration}
+            streaming={streaming}
+            providers={mockProviders}
+            currentProvider={currentProvider}
+            onProviderChange={setCurrentProvider}
+            models={models}
+            currentModel={currentModel}
+            onModelChange={setCurrentModel}
+            currentMode={currentMode}
+            onModeChange={setCurrentMode}
+            agents={mockAgents}
+            currentAgent={currentAgent}
+            onAgentChange={setCurrentAgent}
+            thinkEnabled={thinkEnabled}
+            onThinkToggle={toggleThink}
+            contextUsed={contextUsed}
+            onEnhance={enhancePrompt}
+          />
+        </AppLayout>
+      )}
+      {currentPage === 'history' && (
+        <HistoryPage
+          mode="history"
+          sessions={sessions}
+          onSessionClick={handleSessionClick}
+          onFavoriteToggle={handleFavoriteToggle}
+          onDeleteSession={handleDeleteSession}
+          onClose={handleHistoryClick}
         />
-        <InputArea
-          value={inputValue}
-          onChange={setInputValue}
-          onSend={handleSend}
-          onStop={stopGeneration}
-          streaming={streaming}
-          providers={mockProviders}
-          currentProvider={currentProvider}
-          onProviderChange={setCurrentProvider}
-          models={models}
-          currentModel={currentModel}
-          onModelChange={setCurrentModel}
-          currentMode={currentMode}
-          onModeChange={setCurrentMode}
-          agents={mockAgents}
-          currentAgent={currentAgent}
-          onAgentChange={setCurrentAgent}
-          thinkEnabled={thinkEnabled}
-          onThinkToggle={toggleThink}
-          contextUsed={contextUsed}
-          onEnhance={enhancePrompt}
+      )}
+      {currentPage === 'favorite' && (
+        <HistoryPage
+          mode="favorite"
+          sessions={sessions}
+          onSessionClick={handleSessionClick}
+          onFavoriteToggle={handleFavoriteToggle}
+          onDeleteSession={handleDeleteSession}
+          onClose={handleFavoriteClick}
         />
-      </AppLayout>
+      )}
+      {currentPage === 'settings' && (
+        <SettingsPage onClose={() => setCurrentPage('chat')} />
+      )}
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </>
   );

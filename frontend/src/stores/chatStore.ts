@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { MockSession, MockMessage, Toast as ToastType, ToastType as ToastVariant } from '@/types/mock';
+import type { PageType } from '@/pages/types';
 import { mockSessions, createMockSession, mockDiffFiles } from '@/mock';
 
 interface ChatState {
@@ -21,6 +22,7 @@ interface ChatState {
   inputValue: string;
 
   // UI State
+  currentPage: PageType;
   historyOpen: boolean;
   favoriteOpen: boolean;
   settingsOpen: boolean;
@@ -52,6 +54,7 @@ interface ChatState {
   stopGeneration: () => void;
 
   // UI Actions
+  setCurrentPage: (page: PageType) => void;
   setHistoryOpen: (open: boolean) => void;
   setFavoriteOpen: (open: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
@@ -83,6 +86,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   diffFiles: mockDiffFiles,
   toasts: [],
   inputValue: '',
+  currentPage: 'chat',
   historyOpen: false,
   favoriteOpen: false,
   settingsOpen: false,
@@ -213,17 +217,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   // UI Actions
+  setCurrentPage: (page) => set({ currentPage: page }),
   setHistoryOpen: (open) => set({ historyOpen: open }),
   setFavoriteOpen: (open) => set({ favoriteOpen: open }),
-  setSettingsOpen: (open) => set({ settingsOpen: open }),
+  setSettingsOpen: (open) => set({ settingsOpen: open, currentPage: open ? 'settings' : 'chat' }),
 
   toggleHistory: () => set((state) => ({
-    historyOpen: !state.historyOpen,
+    currentPage: state.currentPage === 'history' ? 'chat' : 'history',
+    historyOpen: state.currentPage !== 'history',
     favoriteOpen: false
   })),
 
   toggleFavoritePanel: () => set((state) => ({
-    favoriteOpen: !state.favoriteOpen,
+    currentPage: state.currentPage === 'favorite' ? 'chat' : 'favorite',
+    favoriteOpen: state.currentPage !== 'favorite',
     historyOpen: false
   })),
 

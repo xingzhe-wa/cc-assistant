@@ -42,6 +42,30 @@
   /* 字体 */
   --font-sans: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+
+  /* ========== 原型兼容变量 ========== */
+  /* 与 session.html 和 setting.html 保持一致的变量名 */
+  --bg: #111214;
+  --sf: #17181d;
+  --el: #1e2028;
+  --hv: #272933;
+  --ac: #c9873a;
+  --ac2: #daa04e;
+  --gn: #50b85e;
+  --gn2: rgba(80, 184, 94, 0.1);
+  --rd: #d95555;
+  --rd2: rgba(217, 85, 85, 0.1);
+  --cy: #4db8cc;
+  --pp: #9b80e8;
+  --fg: #d0d1d8;
+  --fg2: #87899a;
+  --fg3: #494b5a;
+  --fg4: #31333d;
+  --bd: #23252e;
+  --bd2: #1b1d24;
+  --r: 5px;
+  --r2: 7px;
+  --r3: 10px;
 }
 
 * {

@@ -1,0 +1,154 @@
+/* 编辑弹窗共享样式 */
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--bd2);
+}
+
+.btnConfirm {
+  height: 32px;
+  padding: 0 16px;
+  border-radius: var(--r);
+  border: none;
+  background: var(--ac);
+  color: var(--bg);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.btnConfirm:hover {
+  background: var(--ac2);
+}
+
+.btnCancel {
+  height: 32px;
+  padding: 0 16px;
+  border-radius: var(--r);
+  border: 1px solid var(--bd);
+  background: var(--el);
+  color: var(--fg2);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.btnCancel:hover {
+  background: var(--hv);
+  color: var(--fg);
+}
+
+/* 表单样式 */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: var(--sf);
+  border-radius: var(--r);
+  border: 1px solid var(--bd2);
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg2);
+}
+
+.subLabel {
+  font-size: 11.5px;
+  color: var(--fg3);
+}
+
+.required {
+  color: var(--rd);
+  margin-left: 2px;
+}
+
+.input {
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--r);
+  border: 1px solid var(--bd);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.12s;
+}
+
+.input:focus {
+  border-color: var(--ac);
+}
+
+.input::placeholder {
+  color: var(--fg4);
+}
+
+.textarea {
+  min-height: 80px;
+  padding: 8px 10px;
+  border-radius: var(--r);
+  border: 1px solid var(--bd);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 12px;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.12s;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.textarea:focus {
+  border-color: var(--ac);
+}
+
+.textarea::placeholder {
+  color: var(--fg4);
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--fg4);
+  margin-top: 2px;
+}
+
+.select {
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--r);
+  border: 1px solid var(--bd);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.12s;
+}
+
+.select:focus {
+  border-color: var(--ac);
+}
+
+.select option {
+  background: var(--el);
+  color: var(--fg);
+}

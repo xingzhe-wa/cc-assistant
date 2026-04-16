@@ -1,0 +1,404 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  height: 100%;
+  width: 100%;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--bd2);
+  background: var(--sf);
+  flex-shrink: 0;
+}
+
+.backBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: var(--r);
+  border: none;
+  background: transparent;
+  color: var(--fg2);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.backBtn:hover {
+  background: var(--hv);
+  color: var(--fg);
+}
+
+.backBtn .material-icons-round {
+  font-size: 18px;
+}
+
+.pageTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+  margin: 0;
+}
+
+.pageTitle .material-icons-round {
+  font-size: 18px;
+  color: var(--ac);
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.nav {
+  width: 180px;
+  min-width: 180px;
+  background: var(--sf);
+  border-right: 1px solid var(--bd2);
+  padding: 10px 6px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navGroup {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fg4);
+  padding: 10px 10px 4px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--r);
+  cursor: pointer;
+  font-size: 12.5px;
+  color: var(--fg2);
+  transition: all 0.1s;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+}
+
+.navItem:hover {
+  background: var(--hv);
+  color: var(--fg);
+}
+
+.navItem.active {
+  background: rgba(201, 135, 58, 0.1);
+  color: var(--ac);
+}
+
+.navItem .material-icons-round {
+  font-size: 17px;
+  opacity: 0.7;
+}
+
+.navItem.active .material-icons-round {
+  opacity: 1;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+
+.section {
+  margin-bottom: 24px;
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--bd2);
+}
+
+.sectionTitle .material-icons-round {
+  font-size: 16px;
+  color: var(--ac);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--bd2);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.label {
+  font-size: 12.5px;
+  color: var(--fg2);
+}
+
+.label small {
+  display: block;
+  font-size: 11px;
+  color: var(--fg3);
+  margin-top: 2px;
+}
+
+.ctrl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.select {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: var(--r);
+  border: 1px solid var(--bd);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.12s;
+}
+
+.select:focus {
+  border-color: var(--ac);
+}
+
+.select option {
+  background: var(--el);
+  color: var(--fg);
+}
+
+.btn {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: var(--r);
+  border: 1px solid var(--bd);
+  background: var(--el);
+  color: var(--fg2);
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.12s;
+}
+
+.btn:hover {
+  background: var(--hv);
+  color: var(--fg);
+}
+
+.btn .material-icons-round {
+  font-size: 15px;
+}
+
+.btn.primary {
+  background: var(--ac);
+  border-color: var(--ac);
+  color: var(--bg);
+  font-weight: 500;
+}
+
+.btn.primary:hover {
+  background: var(--ac2);
+}
+
+.btn.danger {
+  border-color: var(--rd);
+  color: var(--rd);
+  background: var(--rd2);
+}
+
+.btn.danger:hover {
+  background: var(--rd);
+  color: #fff;
+}
+
+.toggle {
+  width: 38px;
+  height: 20px;
+  border-radius: 10px;
+  border: none;
+  background: var(--fg4);
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.toggle.on {
+  background: var(--ac);
+}
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s;
+}
+
+.toggle.on::after {
+  transform: translateX(18px);
+}
+
+.providerCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border: 1px solid var(--bd2);
+  border-radius: var(--r2);
+  margin-bottom: 6px;
+  transition: all 0.12s;
+}
+
+.providerCard:hover {
+  border-color: var(--bd);
+  background: var(--hv);
+}
+
+.providerInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.providerDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.providerDot.ok {
+  background: var(--gn);
+}
+
+.providerDot.err {
+  background: var(--rd);
+}
+
+.providerDot.off {
+  background: var(--fg4);
+}
+
+.providerName {
+  font-size: 13px;
+  color: var(--fg);
+  font-weight: 500;
+}
+
+.providerUrl {
+  font-size: 11px;
+  color: var(--fg3);
+  font-family: 'JetBrains Mono', monospace;
+  margin-top: 1px;
+}
+
+.providerActions {
+  display: flex;
+  gap: 3px;
+}
+
+.providerActions button {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r);
+  border: none;
+  background: transparent;
+  color: var(--fg3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+}
+
+.providerActions button:hover {
+  background: var(--el);
+  color: var(--fg2);
+}
+
+.providerActions button .material-icons-round {
+  font-size: 16px;
+}
+
+.providerActions button.danger:hover {
+  background: var(--rd2);
+  color: var(--rd);
+}
+
+.listCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border: 1px solid var(--bd2);
+  border-radius: var(--r2);
+  margin-bottom: 6px;
+  transition: all 0.12s;
+}
+
+.listCard:hover {
+  border-color: var(--bd);
+  background: var(--hv);
+}
+
+.listCardIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r);
+  background: var(--el);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.listCardIcon .material-icons-round {
+  font-size: 16px;
+  color: var(--fg3);
+}
+
+.listCardName {
+  font-size: 12.5px;
+  color: var(--fg);
+}
+
+.listCardDesc {
+  font-size: 11px;
+  color: var(--fg3);
+  margin-top: 1px;
+}
