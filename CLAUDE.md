@@ -72,6 +72,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ./gradlew patchPluginXml
 ```
 
+### 前端开发
+```bash
+# 进入前端目录
+cd frontend
+
+# 安装依赖 (首次)
+npm install
+
+# 启动开发服务器 (HMR)
+npm run dev
+# 访问 http://localhost:5173 查看效果
+
+# 构建生产版本
+npm run build
+
+# 同步到插件资源目录
+# (前端 npm run build 后，Gradle 会自动同步到 src/main/resources/web/)
+./gradlew copyFrontendResources
+```
+
 ### 代码检查
 ```bash
 # Qodana 代码质量检查
@@ -84,7 +104,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### MVP 开发阶段
 
-项目当前处于 **M1: 极简对话 (已完成)** 阶段，下一步为 **M2: 多会话 + JCEF 切换**。详细里程碑见 `docs/CC_Assistant_Technical_Architecture.md` 第 11 节。
+项目当前处于 **M2: 多会话 + JCEF (进行中)** 阶段。详细里程碑见 `docs/CC_Assistant_Technical_Architecture.md` 第 11 节。
 
 **已确认架构决策**:
 - 多轮对话: `--resume <session_id>` (CLI 原生支持，已验证)
@@ -100,15 +120,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 已实现模块
 
 | 模块 | 文件路径 | 状态 | 说明 |
-|-----|---------|-----|------|
+|------|---------|------|------|
 | CliBridgeService | `bridge/CliBridgeService.kt` | ✅ 完成 | CLI 进程管理 (APP Service) |
 | NdjsonParser | `bridge/NdjsonParser.kt` | ✅ 完成 | NDJSON 解析器 (Gson) |
 | CliMessage | `bridge/CliMessage.kt` | ✅ 完成 | 消息类型定义 |
 | ProviderService | `model/Provider.kt` | ✅ 完成 | Provider 管理 + 资源模板加载 |
-| ChatPanel | `ui/ChatPanel.kt` | ✅ M1完成 | Swing 聊天面板 (M2 切换 JCEF) |
-| ToolWindow | `toolWindow/MyToolWindowFactory.kt` | ✅ 完成 | 接入 ChatPanel |
+| JcefChatPanel | `ui/chat/JcefChatPanel.kt` | ✅ M2-A | JCEF 面板 + Java↔JS 通信 |
+| ReactChatPanel | `ui/chat/ReactChatPanel.kt` | ✅ M2-A | React 集成层 |
+| ToolWindow | `toolWindow/MyToolWindowFactory.kt` | ✅ 完成 | 接入 ReactChatPanel |
 | ConfigService | `config/AppConfigState.kt` | ✅ 完成 | 应用配置持久化 |
 | Provider 模板 | `resources/providers/*.json` | ✅ 完成 | 6 个预置供应商 JSON |
+
+### 前端已实现模块
+
+| 模块 | 文件路径 | 状态 | 说明 |
+|------|---------|------|------|
+| 前端脚手架 | `frontend/` | ✅ 完成 | Vite + React 18 + TypeScript |
+| Mock 数据 | `frontend/src/mock/` | ✅ 完成 | 会话/Provider/Agent Mock 数据 |
+| 状态管理 | `frontend/src/stores/chatStore.ts` | ✅ 完成 | Zustand 状态管理 |
+| 布局组件 | `frontend/src/components/layout/` | ✅ 完成 | AppLayout/TopBar/TabBar/HistoryBar |
+| 消息组件 | `frontend/src/components/message/` | ✅ 完成 | MessageArea/AIMessage/UserMessage |
+| 输入组件 | `frontend/src/components/input/` | ✅ 完成 | InputBox/InputToolbar |
+| Markdown 渲染 | `frontend/src/utils/markdown.ts` | ✅ 完成 | marked.js + highlight.js |
+| JCEF 集成 | `frontend/src/lib/jcef-integration.ts` | ✅ 完成 | CCChat/CCApp/CCProviders 全局对象 |
+| 前端资源 | `src/main/resources/web/` | ✅ 完成 | 构建产物同步目录 |
 
 ### 待清理样板代码
 - `MyProjectService.kt` - 样板服务，可删除或改造
@@ -902,4 +937,4 @@ scope: optional, indicates the affected module
 
 ---
 
-*最后更新: 2026-04-15*
+*最后更新: 2026-04-16*

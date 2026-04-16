@@ -16,10 +16,23 @@ export default defineConfig({
       '@/utils': path.resolve(__dirname, './src/utils'),
       '@/types': path.resolve(__dirname, './src/types'),
       '@/mock': path.resolve(__dirname, './src/mock'),
+      '@/lib': path.resolve(__dirname, './src/lib'),
     }
   },
   server: {
     port: 5173,
     strictPort: true
+  },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    rollupOptions: {
+      output: {
+        // 确保资源文件名稳定
+        assetFileNames: 'assets/[name][extname]',
+        chunkFileNames: 'assets/[name].js',
+        entryFileNames: 'assets/[name].js',
+      }
+    }
   }
 })

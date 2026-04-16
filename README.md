@@ -3,6 +3,17 @@
 ![Build](https://github.com/xingzhe-wa/cc-assistant/workflows/Build/badge.svg)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
+<!-- Plugin description -->
+CC Assistant 是一款 IntelliJ IDEA 插件，为 Claude Code CLI 提供原生 IDE 集成。通过内嵌聊天界面，让开发者无需离开 IDE 即可与 Claude AI 进行交互，获得智能编程辅助。
+
+**特性:**
+- Claude Code CLI 直连 - 不自行封装 SDK
+- 多会话管理 - 支持多个并发对话
+- Markdown 渲染 - 代码高亮、Diff 可视化
+- 流式输出 - 实时显示 AI 响应
+- 多 Provider 支持 - Claude、DeepSeek、Gemini、GLM、Kimi、Qwen
+<!-- Plugin description end -->
+
 > Claude Code CLI 的 JetBrains IDE UI 壳子，提供内嵌对话界面
 
 CC Assistant 是一款 IntelliJ IDEA 插件，为 Claude Code CLI 提供原生 IDE 集成。通过内嵌聊天界面，让开发者无需离开 IDE 即可与 Claude AI 进行交互，获得智能编程辅助。

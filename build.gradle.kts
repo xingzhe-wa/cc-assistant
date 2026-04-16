@@ -137,6 +137,21 @@ tasks {
     publishPlugin {
         dependsOn(patchChangelog)
     }
+
+    // 复制前端构建产物到资源目录 (前端需要先运行 npm run build)
+    register<Copy>("copyFrontendResources") {
+        from(file("frontend/dist")) {
+            include("**/*")
+        }
+        into(file("src/main/resources/web"))
+        inputs.dir(file("frontend/dist"))
+        outputs.dir(file("src/main/resources/web"))
+    }
+
+    // 处理资源
+    processResources {
+        dependsOn("copyFrontendResources")
+    }
 }
 
 intellijPlatformTesting {
