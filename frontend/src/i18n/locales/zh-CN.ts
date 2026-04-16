@@ -113,6 +113,7 @@ export const zhCN = {
     sessionLoaded: '已加载会话',
     favoriteAdded: '已添加收藏',
     favoriteRemoved: '已取消收藏',
+    renamed: '重命名成功',
     quoteAdded: '已添加到输入框'
   },
 

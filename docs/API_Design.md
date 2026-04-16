@@ -1,9 +1,9 @@
 # CC Assistant 接口设计方案
 
-> **版本**: v6.2 (UI Token化 + MessageTimeline 精确定位版)
+> **版本**: v6.3 (ThinkingBlock + i18n补全 + 前端覆盖率评审版)
 > **更新日期**: 2026-04-17
 > **设计原则**: 以功能和交互动作为驱动，端到端接口设计，与实际代码对齐
-> **与架构对齐**: v6.2 与 CC_Assistant_Technical_Architecture.md v6.2 保持一致
+> **与架构对齐**: v6.3 与 CC_Assistant_Technical_Architecture.md v6.3 保持一致
 
 ---
 
@@ -3084,9 +3084,12 @@ interface MockSkill {
 | 35 | v6.2: MessageTimeline 实际 offsetTop 定位 + keyboard a11y | P2 | 导航精度 |
 | 36 | v6.2: 合并 messageIn/cursorBlink/toastIn 重复动画 | P2 | 代码整洁 |
 | 37 | v6.2: ScrollArea scrollbar 宽度 10px → 4px | P3 | 视觉统一 |
+| 38 | v6.3: ThinkingBlock 折叠/展开组件 | P1 | AI思考过程可视化 |
+| 39 | v6.3: i18n toast.renamed/quoteAdded补全 + SessionPage 硬编码修复 | P1 | 国际化 |
+| 40 | v6.3: SessionPage 5处hardcoded toast字符串 → t() 调用 | P1 | 国际化 |
 
 ---
 
-*文档版本: v6.2*
+*文档版本: v6.3*
 *最后更新: 2026-04-17*
-*同步关联: CC_Assistant_Technical_Architecture.md v6.2, plan/README.md v6.2*
+*同步关联: CC_Assistant_Technical_Architecture.md v6.3, plan/README.md v6.3*

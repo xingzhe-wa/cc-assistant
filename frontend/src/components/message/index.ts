@@ -6,3 +6,6 @@ export { MarkdownContent } from './MarkdownContent';
 export { EmptyState } from './EmptyState';
 export { CodeBlock } from './CodeBlock';
 export { DiffViewer } from './DiffViewer';
+export { ThinkingBlock } from './ThinkingBlock';
+export { ScrollButtons } from './ScrollButtons';
+export { MessageTimeline } from './MessageTimeline';

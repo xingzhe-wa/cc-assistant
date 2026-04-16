@@ -42,7 +42,14 @@ export const koKR = {
     searchPlaceholder: '세션 검색...',
     emptyHistory: '기록 세션 없음',
     emptyFavorites: '즐겨찾기 세션 없음',
-    exportSession: '세션 내보내기'
+    exportSession: '세션 내보내기',
+    sessionCount: '{0}개 세션',
+    questionCount: '{0}회 질문',
+    questionTimes: '회 질문',
+    latest: '최신：',
+    favoriteCount: '{0}개 즐겨찾기',
+    favoriteHint: '기록 세션의 별표를 클릭하면 즐겨찾기에 추가됩니다',
+    noMessage: '메시지 없음'
   },
 
   // 消息
@@ -106,6 +113,7 @@ export const koKR = {
     sessionLoaded: '세션이 로드됨',
     favoriteAdded: '즐겨찾기에 추가됨',
     favoriteRemoved: '즐겨찾기에서 제거됨',
+    renamed: '이름이 변경되었습니다',
     quoteAdded: '입력 상자에 추가됨'
   },
 
@@ -220,7 +228,7 @@ export const koKR = {
     reviewChanges: '변경 사항 검토'
   },
 
-  // 模式
+  // 모드
   modes: {
     auto: '자동 모드',
     plan: 'Plan 모드',
@@ -230,8 +238,19 @@ export const koKR = {
     stream: '스트림 출력'
   },
 
+  // 툴바
+  toolbar: {
+    newSession: '새 채팅',
+    history: '기록',
+    favorites: '즐겨찾기',
+    stream: '스트림',
+    settings: '설정'
+  },
+
   // 设置页详情
   settingsDetail: {
+    cliName: 'Claude Code CLI',
+    currentVersion: '현재 버전',
     cliVersion: 'CLI 버전',
     latestVersion: '최신 버전',
     checkUpdate: '업데이트 확인',

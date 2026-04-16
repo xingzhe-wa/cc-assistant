@@ -1,6 +1,6 @@
 # CC Assistant 产品技术架构文档
 
-> **版本**: v6.2 (UI Token化 + MessageTimeline 精确定位版)
+> **版本**: v6.3 (ThinkingBlock + i18n补全 + 前端覆盖率评审版)
 > **更新日期**: 2026-04-17
 > **插件名称**: CC Assistant
 > **开发模板**: [intellij-platform-plugin-template](https://github.com/JetBrains/intellij-platform-plugin-template)
@@ -3868,6 +3868,6 @@ settings.about=About
 
 ---
 
-> **文档版本**: v6.2 (UI Token化 + MessageTimeline 精确定位版)
+> **文档版本**: v6.3 (ThinkingBlock + i18n补全 + 前端覆盖率评审版)
 > **最后更新**: 2026-04-17
-> **同步关联**: API_Design.md v6.2, plan/README.md v6.2
+> **同步关联**: API_Design.md v6.3, plan/README.md v6.3

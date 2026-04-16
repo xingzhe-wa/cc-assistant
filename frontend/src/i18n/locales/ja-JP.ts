@@ -42,7 +42,14 @@ export const jaJP = {
     searchPlaceholder: 'セッションを検索...',
     emptyHistory: '履歴セッションなし',
     emptyFavorites: 'お気に入りセッションなし',
-    exportSession: 'セッションをエクスポート'
+    exportSession: 'セッションをエクスポート',
+    sessionCount: '{0} 件のセッション',
+    questionCount: '{0} 回の質問',
+    questionTimes: '回の質問',
+    latest: '最新：',
+    favoriteCount: '{0} 件のお気に入り',
+    favoriteHint: '履歴セッションの星印をクリックしてお気に入りに追加',
+    noMessage: 'メッセージなし'
   },
 
   // メッセージ
@@ -106,6 +113,7 @@ export const jaJP = {
     sessionLoaded: 'セッションを読み込みました',
     favoriteAdded: 'お気に入りに追加しました',
     favoriteRemoved: 'お気に入りから削除しました',
+    renamed: '名前を変更しました',
     quoteAdded: '入力ボックスに追加しました'
   },
 
@@ -230,8 +238,19 @@ export const jaJP = {
     stream: 'ストリーム出力'
   },
 
+  // ツールバー
+  toolbar: {
+    newSession: '新規チャット',
+    history: '履歴',
+    favorites: 'お気に入り',
+    stream: 'ストリーム',
+    settings: '設定'
+  },
+
   // 設定ページ詳細
   settingsDetail: {
+    cliName: 'Claude Code CLI',
+    currentVersion: '現在のバージョン',
     cliVersion: 'CLI バージョン',
     latestVersion: '最新です',
     checkUpdate: '更新を確認',

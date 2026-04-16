@@ -3,6 +3,7 @@ import { AppLayout } from '@/components/layout';
 import { MessageArea } from '@/components/message';
 import { InputArea, PromptEnhancePanel } from '@/components/input';
 import { useChatStore } from '@/stores';
+import { useI18n } from '@/hooks/useI18n';
 import type { MockSession } from '@/types/mock';
 
 export interface SessionPageProps {
@@ -67,6 +68,7 @@ export const SessionPage: React.FC<SessionPageProps> = ({ className = '' }) => {
     subAgentName,
     diffFiles,
   } = useChatStore();
+  const { t } = useI18n();
 
   const activeSession = sessions.find(s => s.id === activeSessionId);
 
@@ -103,31 +105,31 @@ export const SessionPage: React.FC<SessionPageProps> = ({ className = '' }) => {
   // 历史会话操作
   const handleSessionClick = useCallback((session: MockSession) => {
     setActiveSession(session.id);
-    addToast(`已加载会话: ${session.title}`, 'success');
+    addToast(`${t('toast.sessionLoaded')}: ${session.title}`, 'success');
     toggleHistory();
-  }, [setActiveSession, addToast, toggleHistory]);
+  }, [setActiveSession, addToast, toggleHistory, t]);
 
   const handleFavoriteToggle = useCallback((id: string, fav: boolean) => {
     toggleSessionFavorite(id);
-    addToast(fav ? '已添加收藏' : '已取消收藏', 'success');
-  }, [toggleSessionFavorite, addToast]);
+    addToast(fav ? t('toast.favoriteAdded') : t('toast.favoriteRemoved'), 'success');
+  }, [toggleSessionFavorite, addToast, t]);
 
   const handleDeleteSession = useCallback((id: string) => {
     deleteSession(id);
-    addToast('会话已删除', 'success');
-  }, [deleteSession, addToast]);
+    addToast(t('toast.deleted'), 'success');
+  }, [deleteSession, addToast, t]);
 
   // 消息操作
   const handleCopy = useCallback((_id: string, content: string) => {
     navigator.clipboard.writeText(content);
-    addToast('已复制到剪贴板', 'success');
-  }, [addToast]);
+    addToast(t('toast.copied'), 'success');
+  }, [addToast, t]);
 
   const handleQuote = useCallback((_id: string, content: string) => {
     const quoted = content.split('\n').map(line => `> ${line}`).join('\n');
     setInputValue(`${quoted}\n\n${inputValue}`);
-    addToast('已添加到输入框', 'info');
-  }, [inputValue, setInputValue, addToast]);
+    addToast(t('toast.quoteAdded'), 'info');
+  }, [inputValue, setInputValue, addToast, t]);
 
   const handleQuickAction = useCallback((text: string) => {
     setInputValue(text);

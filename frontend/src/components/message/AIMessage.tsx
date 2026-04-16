@@ -1,5 +1,6 @@
 import React from 'react';
 import { MarkdownContent } from './MarkdownContent';
+import { ThinkingBlock } from './ThinkingBlock';
 import { Icon } from '../common';
 import { useI18n } from '@/hooks/useI18n';
 import styles from './AIMessage.module.css';
@@ -37,13 +38,8 @@ export const AIMessage: React.FC<AIMessageProps> = ({
       <div className={styles.body}>
         <div className={styles.header}>
           <span className={styles.time}>{timestamp || '00:00'}</span>
-          {thinking && (
-            <>
-              <span className={styles.dot} />
-              <span className={styles.thinkingBadge}>{t('message.thinking')}</span>
-            </>
-          )}
         </div>
+        {thinking && <ThinkingBlock content={thinking} />}
         <div className={`${styles.content} ${streaming ? styles.streaming : ''}`}>
           <MarkdownContent content={content} />
         </div>

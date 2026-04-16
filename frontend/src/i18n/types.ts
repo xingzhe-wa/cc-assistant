@@ -3,7 +3,7 @@
  */
 
 /** 支持的语言 */
-export type Locale = 'zh-CN' | 'en-US' | 'ja-JP' | 'ko-KR';
+export type Locale = 'zh-CN' | 'zh-TW' | 'en-US' | 'ja-JP' | 'ko-KR';
 
 /** 翻译消息结构 */
 export interface LocaleMessages {
@@ -47,6 +47,13 @@ export interface LocaleMessages {
     emptyHistory: string;
     emptyFavorites: string;
     exportSession: string;
+    sessionCount: string;
+    questionCount: string;
+    questionTimes: string;
+    latest: string;
+    favoriteCount: string;
+    favoriteHint: string;
+    noMessage: string;
   };
 
   // 消息
@@ -110,6 +117,8 @@ export interface LocaleMessages {
     sessionLoaded: string;
     favoriteAdded: string;
     favoriteRemoved: string;
+    renamed: string;
+    quoteAdded: string;
   };
 
   // 错误
@@ -223,6 +232,15 @@ export interface LocaleMessages {
     reviewChanges: string;
   };
 
+  // 工具栏
+  toolbar: {
+    newSession: string;
+    history: string;
+    favorites: string;
+    stream: string;
+    settings: string;
+  };
+
   // 模式
   modes: {
     auto: string;
@@ -235,6 +253,8 @@ export interface LocaleMessages {
 
   // 设置页详情
   settingsDetail: {
+    cliName: string;
+    currentVersion: string;
     cliVersion: string;
     latestVersion: string;
     checkUpdate: string;

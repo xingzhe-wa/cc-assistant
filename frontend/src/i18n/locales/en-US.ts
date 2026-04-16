@@ -42,7 +42,14 @@ export const enUS = {
     searchPlaceholder: 'Search sessions...',
     emptyHistory: 'No history sessions',
     emptyFavorites: 'No favorite sessions',
-    exportSession: 'Export Session'
+    exportSession: 'Export Session',
+    sessionCount: '{0} sessions',
+    questionCount: '{0} questions',
+    questionTimes: 'questions',
+    latest: 'Latest: ',
+    favoriteCount: '{0} favorites',
+    favoriteHint: 'Click the star on a history session to add it to favorites',
+    noMessage: 'No messages yet'
   },
 
   // 消息
@@ -106,6 +113,7 @@ export const enUS = {
     sessionLoaded: 'Session loaded',
     favoriteAdded: 'Added to favorites',
     favoriteRemoved: 'Removed from favorites',
+    renamed: 'Renamed successfully',
     quoteAdded: 'Added to input box'
   },
 
@@ -220,6 +228,15 @@ export const enUS = {
     reviewChanges: 'Review Changes'
   },
 
+  // 工具栏
+  toolbar: {
+    newSession: 'New Chat',
+    history: 'History',
+    favorites: 'Favorites',
+    stream: 'Stream',
+    settings: 'Settings'
+  },
+
   // 模式
   modes: {
     auto: 'Auto Mode',
@@ -232,6 +249,8 @@ export const enUS = {
 
   // 设置页详情
   settingsDetail: {
+    cliName: 'Claude Code CLI',
+    currentVersion: 'Current Version',
     cliVersion: 'CLI Version',
     latestVersion: 'Up to date',
     checkUpdate: 'Check Update',

@@ -1,4 +1,5 @@
 import { zhCN } from './locales/zh-CN';
+import { zhTW } from './locales/zh-TW';
 import { enUS } from './locales/en-US';
 import { jaJP } from './locales/ja-JP';
 import { koKR } from './locales/ko-KR';
@@ -14,14 +15,16 @@ export type { Locale, LocaleMessages };
  *
  * 提供多语言支持，支持的语言：
  * - zh-CN: 简体中文
+ * - zh-TW: 繁體中文
  * - en-US: 英文
- * - ja-JP: 日文（待实现）
- * - ko-KR: 韩文（待实现）
+ * - ja-JP: 日文
+ * - ko-KR: 韩文
  */
 
 /** 所有翻译消息 */
 export const messages: Record<Locale, LocaleMessages> = {
   'zh-CN': zhCN as LocaleMessages,
+  'zh-TW': zhTW as LocaleMessages,
   'en-US': enUS as LocaleMessages,
   'ja-JP': jaJP as LocaleMessages,
   'ko-KR': koKR as LocaleMessages
