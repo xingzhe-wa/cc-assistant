@@ -36,7 +36,8 @@
       "Bash(curl -sL \"https://fonts.googleapis.com/css2?family=Material+Icons+Round\" -o /tmp/mi.css)",
       "Read(//tmp/**)",
       "Bash(curl -sL \"https://fonts.googleapis.com/css2?family=Material+Icons+Round\")",
-      "Bash(curl -sL \"https://fonts.gstatic.com/s/materialiconsround/v109/LDItaoyNOAY6Uewc665JcIzCKsKc_M9flwmM.otf\" -o src/main/resources/web/vendor/material-icons/MaterialIconsRound-Regular.otf)"
+      "Bash(curl -sL \"https://fonts.gstatic.com/s/materialiconsround/v109/LDItaoyNOAY6Uewc665JcIzCKsKc_M9flwmM.otf\" -o src/main/resources/web/vendor/material-icons/MaterialIconsRound-Regular.otf)",
+      "Bash(head:*)"
     ]
   },
   "enabledPlugins": {
