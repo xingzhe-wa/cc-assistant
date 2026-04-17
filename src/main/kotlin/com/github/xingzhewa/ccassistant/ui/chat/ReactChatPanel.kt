@@ -3,6 +3,7 @@ package com.github.xingzhewa.ccassistant.ui.chat
 import com.github.xingzhewa.ccassistant.bridge.CliBridgeService
 import com.github.xingzhewa.ccassistant.bridge.CliMessage
 import com.github.xingzhewa.ccassistant.bridge.CliMessageCallback
+import com.github.xingzhewa.ccassistant.model.ProviderService
 import com.github.xingzhewa.ccassistant.services.SkillAgentService
 import com.google.gson.Gson
 import com.intellij.openapi.application.ApplicationManager
@@ -109,6 +110,9 @@ class ReactChatPanel(
 
         // 初始化后扫描 Skills/Agents 并推送到前端
         invokeLater { scanAndPushSkillsAgents() }
+
+        // 注入预置 Provider 数据（从后端获取）
+        invokeLater { pushProvidersToFrontend() }
 
         logger.info("ReactChatPanel initialized with JcefChatPanel")
     }
@@ -363,6 +367,33 @@ class ReactChatPanel(
             }
         } catch (e: Exception) {
             logger.warn("Failed to scan skills/agents", e)
+        }
+    }
+
+    /**
+     * 推送预置 Provider 数据到前端
+     */
+    private fun pushProvidersToFrontend() {
+        try {
+            // 从预置配置转换为前端数据格式
+            val providers = ProviderService.PRESET_PROVIDERS.map {
+                JcefChatPanel.ProviderData(it.id, it.name, it.endpoint)
+            }
+
+            val models = ProviderService.PRESET_MODELS.mapValues { (_, models) ->
+                models.map { JcefChatPanel.ModelData(it.id, it.name) }
+            }
+
+            val agents = ProviderService.PRESET_AGENTS.map {
+                JcefChatPanel.AgentData(it.id, it.name ?: it.id)
+            }
+
+            if (providers.isNotEmpty()) {
+                jcefPanel?.setProviders(providers, models, agents)
+                logger.info("Pushed ${providers.size} providers to frontend")
+            }
+        } catch (e: Exception) {
+            logger.warn("Failed to push providers to frontend", e)
         }
     }
 }

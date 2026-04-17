@@ -364,7 +364,7 @@ export const ProviderEditModal: React.FC<ProviderEditModalProps> = ({
             className={styles.textarea}
             value={jsonText}
             onChange={(e) => handleJsonChange(e.target.value)}
-            placeholder='{"provider": {"name": "", "url": "", "apiKey": "", "models": {...}}}'
+            placeholder='{"env": {"ANTHROPIC_BASE_URL": "", "ANTHROPIC_AUTH_TOKEN": ""}, "permissions": {"allow": [], "deny": []}}'
           />
           <div className={styles.formHint}>
             <span className="material-icons-round">info</span>

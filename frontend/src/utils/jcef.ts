@@ -3,7 +3,9 @@
  * 定义前端与 Java 层的双向通信接口
  */
 
-import type { MockProvider, MockModel, MockAgent, SendOptions } from '@/types/mock';
+import type { SendOptions } from '@/types/mock';
+import { dataService } from '@/services/dataService';
+import type { Provider, Model, Skill, Agent } from '@/services/dataService';
 
 // Java Bridge 接口
 export interface JavaBridge {
@@ -23,7 +25,7 @@ export interface JavaBridge {
   applyI18n: (messages: Record<string, string>) => void;
 
   // Provider/Model/Agent
-  setProviders: (providers: MockProvider[], models: Record<string, MockModel[]>, agents: MockAgent[]) => void;
+  setProviders: (providers: Provider[], models: Record<string, Model[]>, agents: Agent[]) => void;
 
   // 会话管理
   onNewSession: (sessionId: string) => void;
@@ -46,6 +48,7 @@ export interface JavaBridge {
 
   // 设置
   onSettingsSave: (settings: string) => void;
+  onClosePlugin: () => void;
   onCheckCliUpdate: () => void;
 }
 
@@ -105,73 +108,131 @@ export const jcefBridge = {
     jcefBridge.send('quoteMessage', { id, content });
   },
 
-  sendMessage: (text: string, options: SendOptions) => {
-    jcefBridge.send('sendMessage', { text, options });
+  regenerateMessage: (id: string) => {
+    jcefBridge.send('regenerate', { id });
   },
 
+  rewindTo: (id: string) => {
+    jcefBridge.send('rewind', { id });
+  },
+
+  // 发送消息
+  sendMessage: (text: string, options?: SendOptions) => {
+    jcefBridge.send('sendMessage', { text, ...options });
+  },
+
+  // 停止生成
   stopGeneration: () => {
     jcefBridge.send('stopGeneration');
   },
 
-  // 主题
-  themeChange: (themeId: string) => {
-    jcefBridge.send('themeChange', themeId);
-  },
-
-  // 语言
-  languageChange: (locale: string) => {
-    jcefBridge.send('languageChange', locale);
-  },
-
-  // 设置
-  providerChange: (providerId: string) => {
-    jcefBridge.send('providerChange', providerId);
-  },
-
-  modelChange: (modelId: string) => {
-    jcefBridge.send('modelChange', modelId);
-  },
-
-  modeChange: (mode: string) => {
-    jcefBridge.send('modeChange', mode);
-  },
-
-  agentChange: (agentId: string) => {
-    jcefBridge.send('agentChange', agentId);
-  },
-
-  thinkChange: (enabled: boolean) => {
-    jcefBridge.send('thinkChange', enabled);
-  },
-
-  // 会话
-  toggleFavorite: (id: string, fav: boolean) => {
-    jcefBridge.send('toggleFavorite', { id, fav });
-  },
-
-  renameSession: (id: string, title: string) => {
-    jcefBridge.send('renameSession', { id, title });
-  },
-
-  deleteSession: (id: string) => {
-    jcefBridge.send('deleteSession', id);
-  },
-
+  // 会话操作
   newSession: () => {
     jcefBridge.send('newSession');
   },
 
+  switchSession: (sessionId: string) => {
+    jcefBridge.send('switchSession', { sessionId });
+  },
+
+  deleteSession: (sessionId: string) => {
+    jcefBridge.send('deleteSession', { sessionId });
+  },
+
+  toggleFavorite: (sessionId: string) => {
+    jcefBridge.send('toggleFavorite', { sessionId });
+  },
+
+  renameSession: (sessionId: string, title: string) => {
+    jcefBridge.send('renameSession', { sessionId, title });
+  },
+
+  // 设置操作
+  themeChange: (themeId: string) => {
+    jcefBridge.send('themeChange', { themeId });
+  },
+
+  languageChange: (locale: string) => {
+    jcefBridge.send('languageChange', { locale });
+  },
+
+  providerChange: (providerId: string) => {
+    dataService.switchProvider(providerId);
+    jcefBridge.send('providerChange', { providerId });
+  },
+
+  modelChange: (modelId: string) => {
+    jcefBridge.send('modelChange', { modelId });
+  },
+
+  modeChange: (mode: string) => {
+    jcefBridge.send('modeChange', { mode });
+  },
+
+  agentChange: (agentId: string) => {
+    jcefBridge.send('agentChange', { agentId });
+  },
+
+  thinkChange: (enabled: boolean) => {
+    jcefBridge.send('thinkChange', { enabled });
+  },
+
+  // Skill 操作
+  createSkill: (skill: Partial<Skill>) => {
+    dataService.createSkill(skill);
+  },
+
+  updateSkill: (skill: Partial<Skill>) => {
+    dataService.updateSkill(skill);
+  },
+
+  deleteSkill: (skillId: string) => {
+    dataService.deleteSkill(skillId);
+  },
+
+  // Agent 操作
+  createAgent: (agent: Partial<Agent>) => {
+    dataService.createAgent(agent);
+  },
+
+  updateAgent: (agent: Partial<Agent>) => {
+    dataService.updateAgent(agent);
+  },
+
+  deleteAgent: (agentId: string) => {
+    dataService.deleteAgent(agentId);
+  },
+
+  // Provider 操作
+  createProvider: (provider: Partial<Provider>) => {
+    dataService.createProvider(provider);
+  },
+
+  updateProvider: (provider: Partial<Provider>) => {
+    dataService.updateProvider(provider);
+  },
+
+  deleteProvider: (providerId: string) => {
+    dataService.deleteProvider(providerId);
+  },
+
+  // 强化提示词
+  enhancePrompt: (text: string) => {
+    jcefBridge.send('enhancePrompt', { text });
+  },
+
+  // 打开设置
+  openSettings: () => {
+    jcefBridge.send('openSettings');
+  },
+
+  // 关闭插件窗口
   closePlugin: () => {
     jcefBridge.send('closePlugin');
   },
 
-  // 增强
-  enhancePrompt: (text: string) => {
-    jcefBridge.send('enhancePrompt', text);
+  // 检查 CLI 更新
+  checkCliUpdate: () => {
+    jcefBridge.send('checkCliUpdate');
   }
-};
-
-// 检查是否在 JCEF 环境中
-export const isInJcefEnvironment = (): boolean => {
-  return typeof window !== 'undefined' && !!window.javaBridge;
 };

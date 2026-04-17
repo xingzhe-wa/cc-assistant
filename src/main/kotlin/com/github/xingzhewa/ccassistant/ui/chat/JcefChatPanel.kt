@@ -39,9 +39,6 @@ class JcefChatPanel : Disposable {
     private var isLoaded = false
     private val disposed = java.util.concurrent.atomic.AtomicBoolean(false)
 
-    // MOCK_MODE: true = 不注入 javaBridge，让 JS 使用 Mock 模式
-    var mockMode: Boolean = false
-
     // ========== JS → Java 回调接口 ==========
 
     var onCopyMessage: ((String, String) -> Unit)? = null
@@ -234,10 +231,8 @@ class JcefChatPanel : Disposable {
             null
         }
 
-        // 注入 javaBridge (Mock 模式下跳过)
-        if (!mockMode) {
-            injectJavaBridge()
-        }
+        // 注入 javaBridge (始终执行)
+        injectJavaBridge()
 
         // 注入 marked 和 hljs 实例
         injectLibraries()

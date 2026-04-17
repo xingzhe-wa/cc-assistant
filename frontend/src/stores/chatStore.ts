@@ -178,7 +178,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       )
     }));
     if (session) {
-      jcefBridge.toggleFavorite(id, !session.fav);
+      jcefBridge.toggleFavorite(id);
     }
   },
 

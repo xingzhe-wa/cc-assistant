@@ -95,8 +95,30 @@ export const useJcefEvents = () => {
 
     // 监听 CCProviders 数据变更
     const handleProviders = (e: CustomEvent) => {
-      console.log('[JCEF] Providers data:', e.detail);
-      // 可以更新 store 中的 providers 数据
+      const { providers, models, agents } = e.detail;
+      console.log('[JCEF] Providers data:', { providers, models, agents });
+      // 更新 configStore 中的 providers/models/agents
+      try {
+        const configState = useConfigStore.getState();
+        if (providers && providers.length > 0) {
+          // 转换后端数据格式并更新
+          const mappedProviders = (providers as Array<{id: string, name: string, url: string}>).map(p => ({
+            id: p.id,
+            name: p.name,
+            url: p.url,
+            apiKey: '',
+            models: { default: '', opus: '', max: '' },
+            status: 'ok' as const
+          }));
+          // 直接替换 providers
+          (configState as any).providers = mappedProviders;
+        }
+        if (agents && agents.length > 0) {
+          useConfigStore.setState({ agents: agents as any });
+        }
+      } catch (err) {
+        console.warn('[JCEF] Failed to update providers in store:', err);
+      }
     };
 
     // 监听会话列表更新

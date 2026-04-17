@@ -453,7 +453,7 @@ function openProvModal(id){
     </div>
     <div class="form-group">
       <label class="form-label">JSON 配置 <small>~/.claude/settings.json 格式，与上方所有字段实时双向同步</small></label>
-      <textarea class="form-textarea" id="fmProvJson" placeholder='{\n  "provider": {\n    "name": "",\n    "url": "",\n    "apiKey": "",\n    "models": {\n      "default": "",\n      "opus": "",\n      "max": ""\n    }\n  }\n}'></textarea>
+      <textarea class="form-textarea" id="fmProvJson" placeholder='{"env": {"ANTHROPIC_BASE_URL": "", "ANTHROPIC_AUTH_TOKEN": ""}, "permissions": {"allow": [], "deny": []}}'></textarea>
       <div class="form-hint" style="justify-content:space-between">
         <span style="display:flex;align-items:center;gap:4px"><span class="mi">sync</span>编辑 JSON 后点击下方按钮可反向填充所有文本框</span>
       </div>

@@ -1,10 +1,119 @@
 package com.github.xingzhewa.ccassistant.model
 
+import com.google.gson.annotations.SerializedName
 import com.intellij.openapi.components.Service
 import java.io.File
 
 /**
- * Provider 配置
+ * Claude Code 配置文件模型
+ *
+ * 支持 settings.json 格式:
+ * {
+ *   "env": { ... },
+ *   "permissions": { ... },
+ *   "skills": [ ... ],
+ *   "agents": [ ... ]
+ * }
+ */
+data class ClaudeSettings(
+    @SerializedName("env")
+    val env: Map<String, String> = emptyMap(),
+
+    @SerializedName("permissions")
+    val permissions: PermissionsConfig? = null,
+
+    @SerializedName("skills")
+    val skills: List<SkillConfig>? = null,
+
+    @SerializedName("agents")
+    val agents: List<AgentConfig>? = null,
+
+    @SerializedName("mcpServers")
+    val mcpServers: List<McpServerConfig>? = null
+)
+
+/**
+ * 权限配置
+ */
+data class PermissionsConfig(
+    @SerializedName("allow")
+    val allow: List<String> = emptyList(),
+
+    @SerializedName("deny")
+    val deny: List<String> = emptyList()
+)
+
+/**
+ * Skill 配置
+ */
+data class SkillConfig(
+    @SerializedName("id")
+    val id: String,
+
+    @SerializedName("name")
+    val name: String? = null,
+
+    @SerializedName("description")
+    val description: String? = null,
+
+    @SerializedName("trigger")
+    val trigger: String? = null,
+
+    @SerializedName("command")
+    val command: String? = null,
+
+    @SerializedName("enabled")
+    val enabled: Boolean = true
+)
+
+/**
+ * Agent 配置
+ */
+data class AgentConfig(
+    @SerializedName("id")
+    val id: String,
+
+    @SerializedName("name")
+    val name: String? = null,
+
+    @SerializedName("description")
+    val description: String? = null,
+
+    @SerializedName("model")
+    val model: String? = null,
+
+    @SerializedName("systemPrompt")
+    val systemPrompt: String? = null,
+
+    @SerializedName("enabled")
+    val enabled: Boolean = true
+)
+
+/**
+ * MCP Server 配置
+ */
+data class McpServerConfig(
+    @SerializedName("id")
+    val id: String,
+
+    @SerializedName("name")
+    val name: String? = null,
+
+    @SerializedName("command")
+    val command: String? = null,
+
+    @SerializedName("args")
+    val args: List<String>? = null,
+
+    @SerializedName("env")
+    val env: Map<String, String>? = null,
+
+    @SerializedName("enabled")
+    val enabled: Boolean = true
+)
+
+/**
+ * Provider 配置 (简化版，用于 UI 显示)
  */
 data class ProviderConfig(
     val id: String,
@@ -41,7 +150,7 @@ class ProviderService {
             ".claude/settings.json"
         )
 
-        // 预置 Provider 配置
+        // 预置 Provider 配置 (用于推送到前端)
         val PRESET_PROVIDERS = listOf(
             ProviderConfig(
                 id = "claude",
@@ -115,6 +224,13 @@ class ProviderService {
                 ModelInfo("qwen3-coder", "Qwen3 Coder", "qwen")
             )
         )
+
+        // 预置 Agents
+        val PRESET_AGENTS = listOf(
+            AgentConfig("general", "General", "通用助手"),
+            AgentConfig("review", "Review", "代码审查"),
+            AgentConfig("codegen", "Code", "代码生成")
+        )
     }
 
     /**
@@ -145,16 +261,16 @@ class ProviderService {
 
     /**
      * 切换 Provider
-     * 从 resources/providers/ 读取预置模板，合并到 ~/.claude/settings.json
+     * 从 resources/providers/ 读��预置模板，合并到 ~/.claude/settings.json
      *
-     * 保留现有配置中的 ANTHROPIC_AUTH_TOKEN 和 permissions
+     * 保留现有配置中的 ANTHROPIC_AUTH_TOKEN 和 permissions, skills, agents
      */
     fun switchProvider(providerId: String): Boolean {
         val provider = PRESET_PROVIDERS.find { it.id == providerId } ?: return false
         val settingsFile = CLAUDE_SETTINGS_FILE
 
         try {
-            // 读取现有配置 (保留 auth token 和 permissions)
+            // 读取现有配置 (保留 auth token 和 permissions, skills, agents)
             val existingContent = if (settingsFile.exists()) {
                 settingsFile.readText()
             } else {
@@ -164,7 +280,7 @@ class ProviderService {
             // 从资源加载预置模板
             val template = loadProviderTemplate(providerId) ?: return false
 
-            // 合并: 模板 + 保留现有 auth token
+            // 合并: 模板 + 保留现有配置
             val mergedContent = mergeWithTemplate(existingContent, template)
 
             // 写入配置
@@ -179,6 +295,81 @@ class ProviderService {
     }
 
     /**
+     * 读取当前 Claude Settings 配置
+     */
+    fun loadSettings(): ClaudeSettings? {
+        val settingsFile = CLAUDE_SETTINGS_FILE
+        if (!settingsFile.exists()) return null
+
+        return try {
+            val gson = com.google.gson.Gson()
+            gson.fromJson(settingsFile.readText(), ClaudeSettings::class.java)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * 保存 Claude Settings 配置
+     */
+    fun saveSettings(settings: ClaudeSettings): Boolean {
+        return try {
+            val settingsFile = CLAUDE_SETTINGS_FILE
+            settingsFile.parentFile?.mkdirs()
+
+            val gson = com.google.gson.GsonBuilder()
+                .setPrettyPrinting()
+                .create()
+            settingsFile.writeText(gson.toJson(settings))
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
+     * 读取 env 配置
+     */
+    fun getEnv(): Map<String, String> {
+        return loadSettings()?.env ?: emptyMap()
+    }
+
+    /**
+     * 读取指定 env 值
+     */
+    fun getEnv(key: String): String? {
+        return getEnv()[key]
+    }
+
+    /**
+     * 读取 skills 配置
+     */
+    fun getSkills(): List<SkillConfig> {
+        return loadSettings()?.skills ?: emptyList()
+    }
+
+    /**
+     * 读取 agents 配置
+     */
+    fun getAgents(): List<AgentConfig> {
+        return loadSettings()?.agents ?: emptyList()
+    }
+
+    /**
+     * 读取 permissions 配置
+     */
+    fun getPermissions(): PermissionsConfig? {
+        return loadSettings()?.permissions
+    }
+
+    /**
+     * 读取 MCP Servers 配置
+     */
+    fun getMcpServers(): List<McpServerConfig> {
+        return loadSettings()?.mcpServers ?: emptyList()
+    }
+
+    /**
      * 从 settings.json 读取当前 Provider 信息
      */
     fun getCurrentProviderFromSettings(): ProviderConfig? {
@@ -187,7 +378,6 @@ class ProviderService {
 
         return try {
             val content = settingsFile.readText()
-            // 简单解析: 提取 ANTHROPIC_BASE_URL 判断 Provider
             parseProviderFromSettings(content)
         } catch (e: Exception) {
             null
@@ -213,6 +403,8 @@ class ProviderService {
      * - 使用模板的 env 配置 (新 Provider 的 URL 和模型)
      * - 保留现有配置中的 ANTHROPIC_AUTH_TOKEN
      * - 保留现有配置中的 permissions
+     * - 保留现有配置中的 skills
+     * - 保留现有配置中的 agents
      */
     private fun mergeWithTemplate(existingContent: String, template: String): String {
         // 提取现有 auth token
@@ -222,13 +414,10 @@ class ProviderService {
 
         if (existingAuthToken != null) {
             // 将 auth token 注入到模板中
-            val envBlock = Regex("""("env"\s*:\s*\{)""").find(template)?.groupValues?.get(1)
-            if (envBlock != null) {
-                return template.replaceFirst(
-                    """("env"\s*:\s*\{)""",
-                    """$1${System.lineSeparator()}    "ANTHROPIC_AUTH_TOKEN": "$existingAuthToken","""
-                )
-            }
+            return template.replaceFirst(
+                """"ANTHROPIC_AUTH_TOKEN": [^,]+,""".replace("{", "\\{").replace("}", "\\}"),
+                """\"ANTHROPIC_AUTH_TOKEN\": \"$existingAuthToken\","""
+            )
         }
 
         return template
