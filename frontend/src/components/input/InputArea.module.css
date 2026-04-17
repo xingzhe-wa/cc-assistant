@@ -8,6 +8,26 @@
   gap: 6px;
 }
 
+/* AI Status - 强制在顶部 */
+.container > :first-child {
+  order: 1;
+}
+
+/* 附件按钮栏 - 强制在中间 */
+.container > :nth-child(2) {
+  order: 2;
+}
+
+/* 输入框 - 强制在中间 */
+.container > :nth-child(3) {
+  order: 3;
+}
+
+/* 工具栏 - 强制在底部 */
+.container > :nth-child(4) {
+  order: 4;
+}
+
 /* 附件按钮栏 */
 .attachBar {
   display: flex;

@@ -65,8 +65,8 @@
   line-height: 1.5;
   font-family: var(--font-sans);
   resize: none;
-  min-height: 75px;
-  max-height: 200px;
+  min-height: 105px; /* 5 行 ≈ 14px * 1.5 * 5 */
+  max-height: 210px; /* 10 行 */
 }
 
 .textarea::placeholder {

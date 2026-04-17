@@ -17,13 +17,13 @@
   --bg-hover: #292d3e;
 
   /* 强调色 */
-  --accent-primary: #c9873a;
-  --accent-secondary: #daa04e;
+  --accent-primary: #50b85e;
+  --accent-secondary: #6dd17a;
 
   /* 强调色透明变体 — 替代硬编码 rgba */
-  --accent-bg: rgba(201, 135, 58, 0.08);
-  --accent-border: rgba(201, 135, 58, 0.15);
-  --accent-glow: rgba(201, 135, 58, 0.2);
+  --accent-bg: rgba(80, 184, 94, 0.08);
+  --accent-border: rgba(80, 184, 94, 0.15);
+  --accent-glow: rgba(80, 184, 94, 0.2);
 
   /* 状态色 */
   --color-success: #50b85e;
@@ -60,7 +60,7 @@
   --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.45);
 
   /* Focus ring token */
-  --focus-ring: 0 0 0 3px rgba(201, 135, 58, 0.15);
+  --focus-ring: 0 0 0 3px rgba(80, 184, 94, 0.15);
 
   /* 过渡 token */
   --transition-fast: 0.12s ease;
@@ -82,8 +82,8 @@
   --sf: #151720;
   --el: #1e2130;
   --hv: #292d3e;
-  --ac: #c9873a;
-  --ac2: #daa04e;
+  --ac: #50b85e;
+  --ac2: #6dd17a;
   --gn: #50b85e;
   --gn2: rgba(80, 184, 94, 0.1);
   --rd: #d95555;

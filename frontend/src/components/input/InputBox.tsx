@@ -69,10 +69,14 @@ export const InputBox = forwardRef<InputBoxHandle, InputBoxProps>(({
     { name: 'global.css', path: 'frontend/src/styles/global.css', type: 'file' },
   ]);
 
+  // 自动高度调整，默认 5 行，最大约 10 行
   useEffect(() => {
     if (textareaRef.current) {
+      const lineHeight = 21; // 14px * 1.5
+      const defaultHeight = lineHeight * 5; // 5 行 ≈ 105px
+      const maxHeight = lineHeight * 10; // 最多 10 行
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 100)}px`;
+      textareaRef.current.style.height = `${Math.min(Math.max(textareaRef.current.scrollHeight, defaultHeight), maxHeight)}px`;
     }
   }, [value]);
 
