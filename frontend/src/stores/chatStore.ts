@@ -221,7 +221,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setInputValue: (value) => set({ inputValue: value }),
 
   sendMessage: () => {
-    const { inputValue, activeSessionId, addMessage, setStreaming, appendStreamingContent, currentProvider, currentModel, currentMode, thinkEnabled, streamEnabled } = get();
+    const { inputValue, activeSessionId, addMessage, setStreaming, currentProvider, currentModel, currentMode, thinkEnabled, streamEnabled } = get();
     if (!inputValue.trim() || !activeSessionId) return;
 
     const userMessage: MockMessage = {
@@ -236,7 +236,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     setStreaming(true, '');
     set({ agentStatus: 'thinking', statusMessage: 'Analyzing...' });
 
-    // Notify Java backend
+    // 通知 Java 后端处理消息
+    // AI 响应将通过 JCEF 回调返回，不会在这里 mock
     jcefBridge.sendMessage(inputValue, {
       stream: streamEnabled,
       think: thinkEnabled,
@@ -244,41 +245,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
       model: currentModel,
       provider: currentProvider
     });
-
-    // Mock AI response
-    const mockResponses = [
-      "好的，我来帮你分析这个问题。让我先看一下代码结构...\n\n根据代码分析，我发现了几个可以优化的地方：\n\n1. **性能优化**：可以在关键路径添加缓存\n2. **代码风格**：建议使用更现代的语法\n3. **错误处理**：建议增加异常捕获\n\n```kotlin\nval cache = mutableMapOf<String, Any>()\n```",
-      "这是一个很好的问题！我建议从以下几个方面考虑：\n\n- 代码可读性\n- 性能表现\n- 可维护性\n\n让我给你展示一个示例实现：\n\n```typescript\nfunction optimize(data: any[]) {\n  return data.filter(item => item.active)\n}\n```\n\n还有其他需要帮助的吗？",
-      "我来帮你检查一下这个问题。主要需要关注以下几点：\n\n1. 数据类型是否匹配\n2. 边界条件处理\n3. 异常情况捕获\n\n```diff\n- const result = data.map(item => item.value)\n+ const result = data\n+   .filter(item => item != null)\n+   .map(item => item.value)\n```"
-    ];
-
-    const randomResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
-
-    // Simulate streaming
-    let index = 0;
-    const streamInterval = setInterval(() => {
-      const chunk = randomResponse.slice(index, index + 5);
-      if (chunk) {
-        if (index === 0) {
-          set({ agentStatus: 'working', statusMessage: 'Generating...' });
-        }
-        appendStreamingContent(chunk);
-        index += 5;
-      }
-      if (index >= randomResponse.length) {
-        clearInterval(streamInterval);
-        setStreaming(false);
-        set({ agentStatus: 'idle', statusMessage: '' });
-
-        const aiMessage: MockMessage = {
-          id: `ai-${Date.now()}`,
-          role: 'assistant',
-          content: randomResponse,
-          time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-        };
-        get().addMessage(activeSessionId, aiMessage);
-      }
-    }, 50);
   },
 
   stopGeneration: () => {

@@ -4,42 +4,29 @@ import path from 'path'
 import fs from 'fs'
 import type { Plugin } from 'vite'
 
-// 插件：构建后复制 index.html 为 chat.html，并输出产物体积报告
+// 插件：构建后复制 index.html 为 chat.html
+// Java 侧 loadHtmlContent() 会读取此文件检查是否存在，并分别读取 CSS/JS 资源
 function copyChatHtml(): Plugin {
   return {
     name: 'copy-chat-html',
     writeBundle() {
       const distDir = path.resolve(__dirname, 'dist')
-      const indexHtml = path.join(distDir, 'index.html')
-      const chatHtml = path.join(distDir, 'chat.html')
+      const indexHtmlPath = path.resolve(distDir, 'index.html')
+      const chatHtmlPath = path.resolve(distDir, 'chat.html')
 
-      if (fs.existsSync(indexHtml)) {
-        let content = fs.readFileSync(indexHtml, 'utf-8')
-        // 修改相对路径，确保在 JCEF 中正确加载
-        content = content.replace(/href="\//g, 'href="./')
-          .replace(/src="\//g, 'src="./')
-        // 移除 Google Fonts CDN（JCEF 环境无法访问）
-        content = content.replace(/<link[^>]*fonts\.googleapis\.com[^>]*>\s*/g, '')
-        fs.writeFileSync(chatHtml, content)
-        console.log('✓ Created chat.html from index.html')
-      }
+      if (!fs.existsSync(indexHtmlPath)) return
 
-      // 构建产物体积报告
-      const assetsDir = path.join(distDir, 'assets')
-      if (fs.existsSync(assetsDir)) {
-        const files = fs.readdirSync(assetsDir)
-        console.log('\n📦 Build size report:')
-        let totalSize = 0
-        for (const file of files) {
-          const filePath = path.join(assetsDir, file)
-          const stat = fs.statSync(filePath)
-          totalSize += stat.size
-          const kb = (stat.size / 1024).toFixed(1)
-          const tag = stat.size > 200 * 1024 ? ' ⚠️ LARGE' : ''
-          console.log(`   ${file}: ${kb} KB${tag}`)
-        }
-        console.log(`   Total: ${(totalSize / 1024).toFixed(1)} KB\n`)
-      }
+      let content = fs.readFileSync(indexHtmlPath, 'utf-8')
+
+      // 移除 Google Fonts CDN（JCEF 环境无法访问）
+      content = content.replace(/<link[^>]*fonts\.googleapis\.com[^>]*>\s*/g, '')
+
+      // 修改相对路径为绝对路径
+      content = content.replace(/href="\//g, 'href="./')
+        .replace(/src="\//g, 'src="./')
+
+      fs.writeFileSync(chatHtmlPath, content)
+      console.log('✓ Created chat.html from index.html')
     }
   }
 }
@@ -107,9 +94,11 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     minify: true,
+    // 不使用 code splitting，保持 CSS/JS 分离
+    // Java 侧 loadHtmlContent() 会分别读取 index.css 和 index.js
     rollupOptions: {
       output: {
-        // 确保资源文件名稳定（JCEF loadHTML 要求单文件内联，不做代码分割）
+        // 资源文件名稳定
         assetFileNames: 'assets/[name][extname]',
         chunkFileNames: 'assets/[name].js',
         entryFileNames: 'assets/[name].js',
