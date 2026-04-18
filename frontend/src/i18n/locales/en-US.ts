@@ -98,7 +98,10 @@ export const enUS = {
     theme: 'Theme',
     language: 'Language',
     stream: 'Stream Output',
-    think: 'Show Thinking'
+    think: 'Show Thinking',
+    configureNewProvider: 'Configure New Provider',
+    configureNewAgent: 'Configure New Agent',
+    configureNewSkill: 'Configure New Skill'
   },
 
   // 提示

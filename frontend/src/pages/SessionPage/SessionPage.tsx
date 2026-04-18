@@ -2,7 +2,7 @@ import React, { useCallback } from 'react';
 import { AppLayout } from '@/components/layout';
 import { MessageArea } from '@/components/message';
 import { InputArea, PromptEnhancePanel } from '@/components/input';
-import { useChatStore } from '@/stores';
+import { useChatStore, useConfigStore } from '@/stores';
 import { useI18n } from '@/hooks/useI18n';
 import type { MockSession } from '@/types/mock';
 
@@ -53,6 +53,7 @@ export const SessionPage: React.FC<SessionPageProps> = ({ className = '' }) => {
     setCurrentModel,
     setCurrentMode,
     setCurrentAgent,
+    setCurrentSkill,
     setCurrentPage,
     addToast,
     enhancePrompt,
@@ -67,8 +68,10 @@ export const SessionPage: React.FC<SessionPageProps> = ({ className = '' }) => {
     statusMessage,
     subAgentName,
     diffFiles,
+    currentSkill,
   } = useChatStore();
   const { t } = useI18n();
+  const { skills } = useConfigStore();
 
   const activeSession = sessions.find(s => s.id === activeSessionId);
 
@@ -188,6 +191,9 @@ export const SessionPage: React.FC<SessionPageProps> = ({ className = '' }) => {
           agents={[]}
           currentAgent={currentAgent}
           onAgentChange={setCurrentAgent}
+          skills={skills}
+          currentSkill={currentSkill}
+          onSkillChange={setCurrentSkill}
           thinkEnabled={thinkEnabled}
           onThinkToggle={toggleThink}
           contextUsed={contextUsed}

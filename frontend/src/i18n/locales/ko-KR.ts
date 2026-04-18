@@ -98,7 +98,10 @@ export const koKR = {
     theme: '테마',
     language: '언어',
     stream: '스트림 출력',
-    think: '생각 표시'
+    think: '생각 표시',
+    configureNewProvider: '새 공급자 구성',
+    configureNewAgent: '새 에이전트 구성',
+    configureNewSkill: '새 스킬 구성'
   },
 
   // 提示

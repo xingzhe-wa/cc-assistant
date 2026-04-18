@@ -11,7 +11,8 @@ data class AppConfigState(
     var defaultWorkingDirectory: String = "",
     var autoSaveSession: Boolean = true,
     var restoreLastSessionOnStartup: Boolean = true,
-    var language: String = "auto"
+    var language: String = "auto",
+    var selectedProviderId: String = ""  // 当前选中的 Provider ID
 )
 
 /**

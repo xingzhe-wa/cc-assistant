@@ -3,7 +3,7 @@ import { InputToolbar } from './InputToolbar';
 import { InputBox } from './InputBox';
 import { AIStatusBar } from './AIStatusBar';
 import { Icon } from '../common';
-import type { MockProvider, MockModel, MockAgent, Mode, SendOptions, Attachment, AgentStatus, MockDiffFile } from '@/types/mock';
+import type { Mode, SendOptions, Attachment, AgentStatus, MockDiffFile } from '@/types/mock';
 import styles from './InputArea.module.css';
 
 interface InputAreaProps {
@@ -13,20 +13,48 @@ interface InputAreaProps {
   onStop: () => void;
   streaming: boolean;
   // Provider
-  providers: MockProvider[];
+  providers: Array<{
+    id: string;
+    name: string;
+    url: string;
+    apiKey: string;
+    models: {
+      default: string;
+      opus: string;
+      max: string;
+    };
+    status: 'ok' | 'err' | 'off';
+  }>;
   currentProvider: string;
   onProviderChange: (id: string) => void;
   // Model
-  models: MockModel[];
+  models: Array<{
+    id: string;
+    name: string;
+  }>;
   currentModel: string;
   onModelChange: (id: string) => void;
   // Mode
   currentMode: Mode;
   onModeChange: (mode: Mode) => void;
   // Agent
-  agents: MockAgent[];
+  agents: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    scope?: 'global' | 'project';
+  }>;
   currentAgent: string;
   onAgentChange: (id: string) => void;
+  // Skill
+  skills: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    scope?: 'global' | 'project';
+  }>;
+  currentSkill: string;
+  onSkillChange: (id: string) => void;
   // Think
   thinkEnabled: boolean;
   onThinkToggle: () => void;
@@ -63,6 +91,9 @@ export const InputArea: React.FC<InputAreaProps> = ({
   agents,
   currentAgent,
   onAgentChange,
+  skills,
+  currentSkill,
+  onSkillChange,
   thinkEnabled,
   onThinkToggle,
   contextUsed,
@@ -161,6 +192,9 @@ export const InputArea: React.FC<InputAreaProps> = ({
           agents={agents}
           currentAgent={currentAgent}
           onAgentChange={onAgentChange}
+          skills={skills}
+          currentSkill={currentSkill}
+          onSkillChange={onSkillChange}
           thinkEnabled={thinkEnabled}
           onThinkToggle={onThinkToggle}
           contextUsed={contextUsed}

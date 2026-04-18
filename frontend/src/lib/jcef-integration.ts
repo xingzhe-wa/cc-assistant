@@ -22,6 +22,8 @@ interface ICCApp {
   setTheme: (themeId: string) => void;
   applyI18n: (messages: Record<string, string>) => void;
   setLocale: (locale: string) => void;
+  openSettings: (tab?: string) => void;  // 打开设置页面，可指定 tab
+  clearInput: () => void;  // 清空输入框
 }
 
 // CCProviders 接口
@@ -150,6 +152,20 @@ window.CCApp = {
     window.dispatchEvent(new CustomEvent('cc-locale', {
       detail: { locale }
     }));
+  },
+
+  // 打开设置页面（由 Java 层调用）
+  openSettings: (tab?: string) => {
+    console.log('[CCApp] openSettings', tab);
+    window.dispatchEvent(new CustomEvent('cc-open-settings', {
+      detail: { tab: tab || null }
+    }));
+  },
+
+  // 清空输入框（由 Java 层调用）
+  clearInput: () => {
+    console.log('[CCApp] clearInput');
+    window.dispatchEvent(new CustomEvent('cc-clear-input'));
   }
 };
 

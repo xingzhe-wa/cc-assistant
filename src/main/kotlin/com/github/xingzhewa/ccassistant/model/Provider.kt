@@ -1,7 +1,9 @@
 package com.github.xingzhewa.ccassistant.model
 
+import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import com.intellij.openapi.components.Service
+import com.intellij.openapi.diagnostic.thisLogger
 import java.io.File
 
 /**
@@ -141,6 +143,7 @@ data class ModelInfo(
 @Service
 class ProviderService {
 
+    private val logger = thisLogger()
     private var _activeProviderId: String = "claude"
 
     companion object {
@@ -261,35 +264,33 @@ class ProviderService {
 
     /**
      * 切换 Provider
-     * 从 resources/providers/ 读��预置模板，合并到 ~/.claude/settings.json
-     *
-     * 保留现有配置中的 ANTHROPIC_AUTH_TOKEN 和 permissions, skills, agents
+     * 只覆盖 env 属性，保留现有配置中的 permissions, skills, agents 和其他 env 变量
      */
     fun switchProvider(providerId: String): Boolean {
         val provider = PRESET_PROVIDERS.find { it.id == providerId } ?: return false
-        val settingsFile = CLAUDE_SETTINGS_FILE
 
         try {
-            // 读取现有配置 (保留 auth token 和 permissions, skills, agents)
-            val existingContent = if (settingsFile.exists()) {
-                settingsFile.readText()
-            } else {
-                "{}"
+            // 读取现有配置 (保留 permissions, skills, agents, env)
+            val existingSettings = loadSettings() ?: ClaudeSettings()
+
+            // 从资源加载预置模板中的 env
+            val templateEnv = loadProviderEnv(providerId) ?: return false
+
+            // 合并 env：模板覆盖现有，但保留现有的 ANTHROPIC_AUTH_TOKEN 等
+            val mergedEnv = existingSettings.env.toMutableMap()
+            mergedEnv.putAll(templateEnv)
+
+            // 写回：只更新 env，保留其他配置
+            val newSettings = existingSettings.copy(env = mergedEnv)
+            val saved = saveSettings(newSettings)
+
+            if (saved) {
+                _activeProviderId = providerId
+                logger.info("Switched to provider: $providerId, env updated")
             }
-
-            // 从资源加载预置模板
-            val template = loadProviderTemplate(providerId) ?: return false
-
-            // 合并: 模板 + 保留现有配置
-            val mergedContent = mergeWithTemplate(existingContent, template)
-
-            // 写入配置
-            settingsFile.parentFile?.mkdirs()
-            settingsFile.writeText(mergedContent)
-
-            _activeProviderId = providerId
-            return true
+            return saved
         } catch (e: Exception) {
+            logger.error("Failed to switch provider: $providerId", e)
             return false
         }
     }
@@ -392,6 +393,21 @@ class ProviderService {
             val resourcePath = "/providers/settings-$providerId.json"
             javaClass.getResourceAsStream(resourcePath)?.bufferedReader()?.readText()
         } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * 从资源加载 Provider 模板的 env 部分
+     */
+    private fun loadProviderEnv(providerId: String): Map<String, String>? {
+        return try {
+            val template = loadProviderTemplate(providerId) ?: return null
+            val gson = com.google.gson.Gson()
+            val settings = gson.fromJson(template, ClaudeSettings::class.java)
+            settings.env
+        } catch (e: Exception) {
+            logger.warn("Failed to load provider env for $providerId", e)
             null
         }
     }

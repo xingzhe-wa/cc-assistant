@@ -3,25 +3,47 @@ import { Dropdown } from './Dropdown';
 import { ContextBar } from './ContextBar';
 import { Icon, Button } from '../common';
 import { useI18n } from '@/hooks/useI18n';
-import type { MockProvider, MockModel, MockAgent, Mode } from '@/types/mock';
+import { jcefBridge } from '@/utils/jcef';
+import type { Mode } from '@/types/mock';
 import styles from './InputToolbar.module.css';
 
 interface InputToolbarProps {
   // Provider
-  providers: MockProvider[];
+  providers: Array<{
+    id: string;
+    name: string;
+    url: string;
+    apiKey: string;
+    models: { default: string; opus: string; max: string };
+    status: 'ok' | 'err' | 'off';
+  }>;
   currentProvider: string;
   onProviderChange: (id: string) => void;
   // Model
-  models: MockModel[];
+  models: Array<{ id: string; name: string }>;
   currentModel: string;
   onModelChange: (id: string) => void;
   // Mode
   currentMode: Mode;
   onModeChange: (mode: Mode) => void;
   // Agent
-  agents: MockAgent[];
+  agents: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    scope?: 'global' | 'project';
+  }>;
   currentAgent: string;
   onAgentChange: (id: string) => void;
+  // Skill
+  skills: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    scope?: 'global' | 'project';
+  }>;
+  currentSkill: string;
+  onSkillChange: (id: string) => void;
   // Think
   thinkEnabled: boolean;
   onThinkToggle: () => void;
@@ -41,6 +63,9 @@ export const InputToolbar: React.FC<InputToolbarProps> = ({
   agents,
   currentAgent,
   onAgentChange,
+  skills,
+  currentSkill,
+  onSkillChange,
   thinkEnabled,
   onThinkToggle,
   contextUsed,
@@ -53,11 +78,15 @@ export const InputToolbar: React.FC<InputToolbarProps> = ({
     { id: 'agent', name: t('modes.agent'), icon: 'smart_toy' }
   ] as const;
 
-  const providerOptions = providers.map(p => ({
-    id: p.id,
-    name: p.name,
-    icon: 'dns'
-  }));
+  const providerOptions = [
+    ...providers.map(p => ({
+      id: p.id,
+      name: p.name,
+      icon: 'dns'
+    })),
+    { id: '__divider_provider__', name: '', isDivider: true },
+    { id: '__configure_provider__', name: t('settings.configureNewProvider') || 'Configure new Provider', icon: 'add', isAction: true }
+  ];
 
   const modelOptions = models.map(m => ({
     id: m.id,
@@ -65,11 +94,25 @@ export const InputToolbar: React.FC<InputToolbarProps> = ({
     icon: 'model_training'
   }));
 
-  const agentOptions = agents.map(a => ({
-    id: a.id,
-    name: a.scope === 'global' ? `[G] ${a.name}` : a.scope === 'project' ? `[P] ${a.name}` : a.name,
-    icon: 'smart_toy'
-  }));
+  const agentOptions = [
+    ...agents.map(a => ({
+      id: a.id,
+      name: a.scope === 'global' ? `[G] ${a.name}` : a.scope === 'project' ? `[P] ${a.name}` : a.name,
+      icon: 'smart_toy'
+    })),
+    { id: '__divider_agent__', name: '', isDivider: true },
+    { id: '__configure_agent__', name: t('settings.configureNewAgent') || 'Configure new Agent', icon: 'add', isAction: true }
+  ];
+
+  const skillOptions = [
+    ...skills.map(s => ({
+      id: s.id,
+      name: s.scope === 'global' ? `[G] ${s.name}` : s.scope === 'project' ? `[P] ${s.name}` : s.name,
+      icon: 'auto_awesome'
+    })),
+    { id: '__divider_skill__', name: '', isDivider: true },
+    { id: '__configure_skill__', name: t('settings.configureNewSkill') || 'Configure new Skill', icon: 'add', isAction: true }
+  ];
 
   const currentProv = providers.find(p => p.id === currentProvider);
 
@@ -89,7 +132,13 @@ export const InputToolbar: React.FC<InputToolbarProps> = ({
           }
           options={providerOptions}
           value={currentProvider}
-          onChange={onProviderChange}
+          onChange={(id) => {
+            if (id === '__configure_provider__') {
+              jcefBridge.openSettings('providers');
+            } else {
+              onProviderChange(id);
+            }
+          }}
         />
 
         <Dropdown
@@ -139,7 +188,32 @@ export const InputToolbar: React.FC<InputToolbarProps> = ({
           }
           options={agentOptions}
           value={currentAgent}
-          onChange={onAgentChange}
+          onChange={(id) => {
+            if (id === '__configure_agent__') {
+              jcefBridge.openSettings('agents');
+            } else {
+              onAgentChange(id);
+            }
+          }}
+        />
+
+        <Dropdown
+          trigger={
+            <div className={styles.trigger}>
+              <Icon name="auto_awesome" />
+              <span>{skills.find(s => s.id === currentSkill)?.name || t('settings.skill')}</span>
+              <Icon name="expand_more" size="xs" />
+            </div>
+          }
+          options={skillOptions}
+          value={currentSkill}
+          onChange={(id) => {
+            if (id === '__configure_skill__') {
+              jcefBridge.openSettings('skills');
+            } else {
+              onSkillChange(id);
+            }
+          }}
         />
       </div>
     </div>

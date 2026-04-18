@@ -45,7 +45,10 @@
       "Bash(./gradlew koverXmlReport)",
       "Bash(npx tsc *)",
       "Bash(grep -v \"^$\")",
-      "Bash(./gradlew copyFrontendResources)"
+      "Bash(./gradlew copyFrontendResources)",
+      "Bash(openspec status:*)",
+      "Bash(openspec new:*)",
+      "Bash(cd E:\\\\work-File\\\\code\\\\cc-assistant:*)"
     ]
   },
   "enabledPlugins": {

@@ -162,7 +162,6 @@ class ReactChatPanel(
 
         onProviderChange = { providerId ->
             logger.info("Provider change: $providerId")
-            // TODO: 实现供应商切换
         }
 
         onCheckCli = {
@@ -189,6 +188,18 @@ class ReactChatPanel(
         onSearchFiles = { query ->
             handleSearchFiles(query)
         }
+
+        // 打开设置页面回调
+        onOpenSettings = { tab ->
+            logger.info("Open settings: $tab")
+            jcefPanel?.openSettings(tab)
+        }
+
+        // Skill 切换回调
+        onSkillChange = { skillId ->
+            logger.info("Skill change: $skillId")
+            // TODO: 实现 Skill 切换逻辑
+        }
     }
 
     private fun initCliBridge() {
@@ -205,16 +216,36 @@ class ReactChatPanel(
     private fun handleSendMessage(text: String, options: JcefChatPanel.MessageOptions) {
         if (text.isBlank()) return
 
-        // 追加用户消息到 JCEF
+        // 1. 先立即显示用户消息（给用户即时反馈）
         val timestamp = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
             .format(java.util.Date())
         jcefPanel?.appendUserMessage("user-${System.currentTimeMillis()}", text, timestamp)
 
-        // 执行 CLI (目前不支持 sessionId 和 model 参数)
+        // 2. 清空输入框
+        jcefPanel?.clearInput()
+
+        // 3. 执行 CLI（使用选项中的 model，如果未指定则从当前 provider 的默认模型获取）
+        val modelToUse = options.model ?: getDefaultModelForProvider(options.provider)
         cliService.executePrompt(
             prompt = text,
-            workingDir = workingDir
+            workingDir = workingDir,
+            model = modelToUse
         )
+    }
+
+    /**
+     * 获取指定 Provider 的默认模型
+     */
+    private fun getDefaultModelForProvider(providerId: String?): String? {
+        if (providerId == null) return null
+        return try {
+            val provider = ProviderService.PRESET_PROVIDERS.find { it.id == providerId }
+            val models = ProviderService.PRESET_MODELS[providerId]
+            models?.firstOrNull()?.id
+        } catch (e: Exception) {
+            logger.warn("Failed to get default model for provider $providerId", e)
+            null
+        }
     }
 
     /**

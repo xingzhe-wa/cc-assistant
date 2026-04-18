@@ -98,7 +98,10 @@ export const zhCN = {
     theme: '主题',
     language: '语言',
     stream: '流式输出',
-    think: '显示思考'
+    think: '显示思考',
+    configureNewProvider: '配置新供应商',
+    configureNewAgent: '配置新 Agent',
+    configureNewSkill: '配置新 Skill'
   },
 
   // 提示

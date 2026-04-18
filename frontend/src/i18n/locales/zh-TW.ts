@@ -98,7 +98,10 @@ export const zhTW = {
     theme: '主題',
     language: '語言',
     stream: '串流輸出',
-    think: '顯示思考'
+    think: '顯示思考',
+    configureNewProvider: '設定新供應商',
+    configureNewAgent: '設定新代理',
+    configureNewSkill: '設定新技能'
   },
 
   // 提示

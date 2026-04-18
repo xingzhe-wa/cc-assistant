@@ -221,9 +221,18 @@ export const jcefBridge = {
     jcefBridge.send('enhancePrompt', { text });
   },
 
-  // 打开设置
-  openSettings: () => {
-    jcefBridge.send('openSettings');
+  // 打开设置（可选指定 tab）
+  openSettings: (tab?: string) => {
+    if (tab) {
+      jcefBridge.send('openSettings:' + tab);
+    } else {
+      jcefBridge.send('openSettings');
+    }
+  },
+
+  // Skill 切换
+  skillChange: (skillId: string) => {
+    jcefBridge.send('skillChange', skillId);
   },
 
   // 关闭插件窗口

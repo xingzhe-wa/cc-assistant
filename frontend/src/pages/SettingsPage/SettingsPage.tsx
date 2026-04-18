@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useConfigStore } from '@/stores';
 import { useI18n } from '@/hooks/useI18n';
 import { ConfirmDialog } from '@/components/common';
@@ -9,6 +9,7 @@ import { SkillEditModal } from './SkillEditModal';
 
 interface SettingsPageProps {
   onClose: () => void;
+  initialTab?: 'basic' | 'provider' | 'agent' | 'skill';
 }
 
 type SettingsTab = 'basic' | 'provider' | 'agent' | 'skill';
@@ -20,9 +21,16 @@ interface SettingSection {
   group: string;
 }
 
-export const SettingsPage: React.FC<SettingsPageProps> = ({ onClose }) => {
+export const SettingsPage: React.FC<SettingsPageProps> = ({ onClose, initialTab = 'basic' }) => {
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = useState<SettingsTab>('basic');
+  const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
+
+  // 当 initialTab 变化时更新 activeTab
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   // 编辑弹窗状态
   const [providerModalOpen, setProviderModalOpen] = useState(false);

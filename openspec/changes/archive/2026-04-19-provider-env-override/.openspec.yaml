@@ -1,0 +1,5 @@
+name: provider-env-override
+description: Provider 切换时只覆盖 env 属性，保留其他配置
+proposal: ./proposal.md
+tasks: ./tasks.md
+status: done

@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import type { MockSession, MockMessage, Toast as ToastType, ToastType as ToastVariant, Attachment, AgentStatus } from '@/types/mock';
 import type { PageType } from '@/pages/types';
-import { mockSessions, createMockSession, mockDiffFiles, getMockModelsByProvider } from '@/mock';
+import { mockSessions, createMockSession, mockDiffFiles } from '@/mock';
 import { jcefBridge } from '@/utils/jcef';
+import { useConfigStore } from './chatStoreExtensions';
 
 interface ChatState {
   // Sessions
@@ -46,6 +47,7 @@ interface ChatState {
   currentModel: string;
   currentMode: 'auto' | 'plan' | 'agent';
   currentAgent: string;
+  currentSkill: string;
   contextUsed: number;
 
   // Actions
@@ -81,6 +83,7 @@ interface ChatState {
   setCurrentModel: (id: string) => void;
   setCurrentMode: (mode: 'auto' | 'plan' | 'agent') => void;
   setCurrentAgent: (id: string) => void;
+  setCurrentSkill: (id: string) => void;
 
   // Toast Actions
   addToast: (message: string, type?: ToastVariant) => void;
@@ -123,6 +126,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   currentModel: 'claude-4.5',
   currentMode: 'auto',
   currentAgent: 'default',
+  currentSkill: 'default',
   contextUsed: 30,
 
   // Session Actions
@@ -208,12 +212,30 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   setStreaming: (streaming, content = '') => {
-    set({ streaming, streamingContent: streaming ? content : '' });
+    // 会话级别隔离：只在当前活动会话上设置 streaming 状态
+    const { activeSessionId } = get();
+    if (!activeSessionId) return;
+
+    set((state) => ({
+      sessions: state.sessions.map((s) =>
+        s.id === activeSessionId
+          ? { ...s, streaming: streaming, streamingContent: streaming ? content : '' }
+          : s
+      )
+    }));
   },
 
   appendStreamingContent: (content) => {
+    // 会话级别隔离：追加到当前活动会话
+    const { activeSessionId } = get();
+    if (!activeSessionId) return;
+
     set((state) => ({
-      streamingContent: state.streamingContent + content
+      sessions: state.sessions.map((s) =>
+        s.id === activeSessionId
+          ? { ...s, streamingContent: (s.streamingContent || '') + content }
+          : s
+      )
     }));
   },
 
@@ -248,7 +270,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   stopGeneration: () => {
-    set({ streaming: false, streamingContent: '' });
+    // 会话级别隔离：停止当前活动会话的流式输出
+    const { activeSessionId } = get();
+    if (!activeSessionId) return;
+
+    set((state) => ({
+      sessions: state.sessions.map((s) =>
+        s.id === activeSessionId
+          ? { ...s, streaming: false, streamingContent: '' }
+          : s
+      )
+    }));
   },
 
   // UI Actions
@@ -281,8 +313,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   // Settings Actions
   setCurrentProvider: (id) => {
-    const models = getMockModelsByProvider(id);
-    const defaultModel = models[0]?.id || '';
+    // 从 configStore 获取 provider 的 models
+    const { providers } = useConfigStore.getState();
+    const provider = providers.find(p => p.id === id);
+    const models = provider?.models;
+    // 优先使用 provider 配置的 default model，否则使用第一个可用 model
+    let defaultModel = '';
+    if (models) {
+      if (models.default) defaultModel = models.default;
+      else if (models.opus) defaultModel = models.opus;
+      else if (models.max) defaultModel = models.max;
+    }
     set({ currentProvider: id, currentModel: defaultModel });
     jcefBridge.providerChange(id);
   },
@@ -297,6 +338,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setCurrentAgent: (id) => {
     set({ currentAgent: id });
     jcefBridge.agentChange(id);
+  },
+  setCurrentSkill: (id) => {
+    set({ currentSkill: id });
+    jcefBridge.skillChange(id);
   },
 
   // Toast Actions

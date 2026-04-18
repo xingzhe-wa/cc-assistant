@@ -6,6 +6,8 @@ interface DropdownOption {
   id: string;
   name: string;
   icon?: string;
+  isAction?: boolean;  // Special action option (e.g., "Configure new...")
+  isDivider?: boolean;  // Divider line
 }
 
 interface DropdownProps {
@@ -48,19 +50,24 @@ export const Dropdown: React.FC<DropdownProps> = ({
         {trigger}
       </div>
       <div className={`${styles.menu} ${isOpen ? styles.open : ''} ${styles[align]}`}>
-        {options.map((option) => (
-          <div
-            key={option.id}
-            className={`${styles.item} ${option.id === value ? styles.active : ''}`}
-            onClick={() => handleSelect(option.id)}
-          >
-            {option.icon && <Icon name={option.icon} />}
-            <span>{option.name}</span>
-            {option.id === value && (
-              <Icon name="check" className={styles.checkIcon} />
-            )}
-          </div>
-        ))}
+        {options.map((option, index) => {
+          if (option.isDivider) {
+            return <div key={`divider-${index}`} className={styles.divider} />;
+          }
+          return (
+            <div
+              key={option.id}
+              className={`${styles.item} ${option.id === value ? styles.active : ''} ${option.isAction ? styles.action : ''}`}
+              onClick={() => handleSelect(option.id)}
+            >
+              {option.icon && <Icon name={option.icon} />}
+              <span>{option.name}</span>
+              {option.id === value && !option.isAction && (
+                <Icon name="check" className={styles.checkIcon} />
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

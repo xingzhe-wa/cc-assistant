@@ -98,7 +98,10 @@ export const jaJP = {
     theme: 'テーマ',
     language: '言語',
     stream: 'ストリーム出力',
-    think: '思考を表示'
+    think: '思考を表示',
+    configureNewProvider: '新規プロバイダー設定',
+    configureNewAgent: '新規エージェント設定',
+    configureNewSkill: '新規スキル設定'
   },
 
   // トースト

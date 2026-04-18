@@ -65,6 +65,8 @@ class JcefChatPanel : Disposable {
     var onDeleteSession: ((String) -> Unit)? = null
     var onOpenDiff: ((String) -> Unit)? = null
     var onSearchFiles: ((String) -> Unit)? = null
+    var onOpenSettings: ((String) -> Unit)? = null  // 打开设置页面，参数为 tab 名称
+    var onSkillChange: ((String) -> Unit)? = null   // 切换 Skill
 
     data class MessageOptions(
         val stream: Boolean = true,
@@ -400,6 +402,8 @@ class JcefChatPanel : Disposable {
             "deleteSession" -> invokeLater { onDeleteSession?.invoke(data) }
             "openDiff" -> invokeLater { onOpenDiff?.invoke(data) }
             "searchFiles" -> invokeLater { onSearchFiles?.invoke(data) }
+            "openSettings" -> invokeLater { onOpenSettings?.invoke(data) }
+            "skillChange" -> invokeLater { onSkillChange?.invoke(data) }
             else -> logger.warn("Unknown action: $action")
         }
 
@@ -480,6 +484,13 @@ class JcefChatPanel : Disposable {
      */
     fun clearMessages() {
         executeScript("CCChat.clearMessages()")
+    }
+
+    /**
+     * 清空输入框
+     */
+    fun clearInput() {
+        executeScript("CCApp.clearInput?.() ?? CCChat.clearInput?.() ?? (() => {})")
     }
 
     /**
@@ -623,5 +634,17 @@ class JcefChatPanel : Disposable {
         val skillsJson = gson.toJson(skills)
         val agentsJson = gson.toJson(agents)
         executeScript("CCProviders.setSkillsAndAgents($skillsJson, $agentsJson)")
+    }
+
+    /**
+     * 打开设置页面
+     * @param tab 可选的 tab 名称，如 "providers", "agents", "skills"
+     */
+    fun openSettings(tab: String?) {
+        if (tab != null) {
+            executeScript("CCApp.openSettings('$tab')")
+        } else {
+            executeScript("CCApp.openSettings()")
+        }
     }
 }

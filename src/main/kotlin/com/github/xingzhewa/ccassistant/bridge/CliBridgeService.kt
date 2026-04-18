@@ -132,9 +132,10 @@ class CliBridgeService : Disposable {
      *
      * @param prompt 用户输入
      * @param workingDir 工作目录 (可选，默认为当前项目目录)
+     * @param model 模型名称 (可选)
      * @return true 如果进程成功启动
      */
-    fun executePrompt(prompt: String, workingDir: String? = null): Boolean {
+    fun executePrompt(prompt: String, workingDir: String? = null, model: String? = null): Boolean {
         if (!isExecuting.compareAndSet(false, true)) {
             notifyError("Another prompt is already executing")
             return false
@@ -150,10 +151,13 @@ class CliBridgeService : Disposable {
         // 停止已有进程
         stopCurrentProcess()
 
-        val command = listOf(
-            cli, "-p", prompt,
-            "--output-format", "stream-json"
-        )
+        // 构建命令
+        val command = mutableListOf(cli, "-p", prompt, "--output-format", "stream-json")
+        model?.let {
+            command.add("--model")
+            command.add(it)
+        }
+
         logger.info("Starting CLI process: ${command.take(3).joinToString(" ")}...")
 
         try {

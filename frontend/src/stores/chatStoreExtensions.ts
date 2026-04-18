@@ -81,6 +81,8 @@ interface ConfigState {
   // Backend data injection
   setAgentsFromBackend: (agents: Array<Record<string, unknown>>) => void;
   setSkillsFromBackend: (skills: Array<Record<string, unknown>>) => void;
+  setProvidersFromBackend: (providers: Array<Record<string, unknown>>) => void;
+  setModelsFromBackend: (models: Record<string, Array<Record<string, unknown>>>) => void;
 }
 
 export const useConfigStore = create<ConfigState>((set) => ({
@@ -242,5 +244,34 @@ export const useConfigStore = create<ConfigState>((set) => ({
       ];
       return { skills: merged };
     });
+  },
+
+  setProvidersFromBackend: (backendProviders) => {
+    set((state) => {
+      const mapped = backendProviders.map((p: Record<string, unknown>): ConfigState['providers'][0] => ({
+        id: String(p.id || ''),
+        name: String(p.name || ''),
+        url: String(p.url || ''),
+        apiKey: String(p.key || ''),
+        models: {
+          default: '',
+          opus: '',
+          max: '',
+        },
+        status: (p.st === 'ok' || p.st === 'err' || p.st === 'off') ? p.st : 'ok',
+      }));
+      const existingIds = new Set(mapped.map(p => p.id));
+      const merged: ConfigState['providers'] = [
+        ...state.providers.filter(p => !existingIds.has(p.id)),
+        ...mapped,
+      ];
+      return { providers: merged };
+    });
+  },
+
+  setModelsFromBackend: (_models) => {
+    // Models are stored per-provider in configStore as part of provider.models
+    // The current model is selected in chatStore.currentModel
+    // This method can be extended if models need separate tracking
   }
 }));

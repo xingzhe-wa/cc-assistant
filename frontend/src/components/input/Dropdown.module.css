@@ -72,3 +72,18 @@
   font-size: 14px;
   color: var(--accent-primary);
 }
+
+.divider {
+  height: 1px;
+  background: var(--border-default);
+  margin: 3px 8px;
+}
+
+.action {
+  color: var(--accent-primary);
+  font-weight: 500;
+}
+
+.action .material-icons-round {
+  opacity: 1;
+}

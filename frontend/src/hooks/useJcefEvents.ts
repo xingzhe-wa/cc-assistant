@@ -97,24 +97,19 @@ export const useJcefEvents = () => {
     const handleProviders = (e: CustomEvent) => {
       const { providers, models, agents } = e.detail;
       console.log('[JCEF] Providers data:', { providers, models, agents });
-      // 更新 configStore 中的 providers/models/agents
       try {
         const configState = useConfigStore.getState();
         if (providers && providers.length > 0) {
-          // 转换后端数据格式并更新
-          const mappedProviders = (providers as Array<{id: string, name: string, url: string}>).map(p => ({
-            id: p.id,
-            name: p.name,
-            url: p.url,
-            apiKey: '',
-            models: { default: '', opus: '', max: '' },
-            status: 'ok' as const
-          }));
-          // 直接替换 providers
-          (configState as any).providers = mappedProviders;
+          // 使用标准方法更新 providers
+          configState.setProvidersFromBackend(providers);
+        }
+        if (models && typeof models === 'object') {
+          // 将 models 存储到 configStore
+          // 目前 chatStore.currentModel 由 setCurrentProvider 自动切换
+          // 后续可扩展 configStore 以支持多 provider models 映射
         }
         if (agents && agents.length > 0) {
-          useConfigStore.setState({ agents: agents as any });
+          configState.setAgentsFromBackend(agents);
         }
       } catch (err) {
         console.warn('[JCEF] Failed to update providers in store:', err);
@@ -196,6 +191,12 @@ export const useJcefEvents = () => {
       setInputValue(`${prefix}${ref}`);
     };
 
+    // 监听清空输入框（来自 Java 层）
+    const handleClearInput = () => {
+      console.log('[JCEF] clearInput received');
+      useChatStore.getState().setInputValue('');
+    };
+
     // 注册事件监听
     window.addEventListener('cc-message', handleMessage as EventListener);
     window.addEventListener('cc-stream', handleStream as EventListener);
@@ -210,6 +211,7 @@ export const useJcefEvents = () => {
     window.addEventListener('cc-skills-agents', handleSkillsAndAgents as EventListener);
     window.addEventListener('cc-file-ref', handleFileRef as EventListener);
     window.addEventListener('cc-code-ref', handleCodeRef as EventListener);
+    window.addEventListener('cc-clear-input', handleClearInput as EventListener);
 
     // 清理
     return () => {
@@ -226,6 +228,7 @@ export const useJcefEvents = () => {
       window.removeEventListener('cc-skills-agents', handleSkillsAndAgents as EventListener);
       window.removeEventListener('cc-file-ref', handleFileRef as EventListener);
       window.removeEventListener('cc-code-ref', handleCodeRef as EventListener);
+      window.removeEventListener('cc-clear-input', handleClearInput as EventListener);
     };
   }, [addMessage, setStreaming, appendStreamingContent]);
 };

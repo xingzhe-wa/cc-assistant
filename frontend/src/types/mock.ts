@@ -13,6 +13,10 @@ export interface MockSession {
   msgs: MockMessage[];
   /** 会话是否已有首次交互，用于控制是否计入历史 */
   hasFirstMessage: boolean;
+  /** 流式输出状态（会话级别隔离） */
+  streaming?: boolean;
+  /** 流式输出内容（会话级别隔离） */
+  streamingContent?: string;
 }
 
 // ========== 消息 ==========
