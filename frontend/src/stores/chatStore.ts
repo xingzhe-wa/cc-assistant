@@ -122,7 +122,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   enhancePanelOpen: false,
   streamEnabled: true,
   thinkEnabled: false,
-  currentProvider: 'p0',
+  currentProvider: 'claude',
   currentModel: 'claude-4.5',
   currentMode: 'auto',
   currentAgent: 'default',
@@ -243,7 +243,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setInputValue: (value) => set({ inputValue: value }),
 
   sendMessage: () => {
-    const { inputValue, activeSessionId, addMessage, setStreaming, currentProvider, currentModel, currentMode, thinkEnabled, streamEnabled } = get();
+    const { inputValue, activeSessionId, addMessage, setStreaming, currentProvider, currentModel, currentMode, currentAgent, thinkEnabled, streamEnabled } = get();
     if (!inputValue.trim() || !activeSessionId) return;
 
     const userMessage: MockMessage = {
@@ -265,7 +265,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       think: thinkEnabled,
       mode: currentMode,
       model: currentModel,
-      provider: currentProvider
+      provider: currentProvider,
+      agent: currentAgent
     });
   },
 

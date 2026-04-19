@@ -22,6 +22,184 @@ class SkillAgentService(private val project: Project) {
     }
 
     private val globalDir = File(System.getProperty("user.home"), ".claude")
+    private val globalAgentsDir: File get() = File(globalDir, "agents")
+    private val globalSkillsDir: File get() = File(globalDir, "skills")
+
+    // ---- Agent CRUD ----
+
+    /**
+     * 创建 Agent 文件
+     */
+    fun createAgent(id: String, name: String, description: String, systemPrompt: String): Boolean {
+        return try {
+            val fileName = id.replace(Regex("[^a-zA-Z0-9_-]"), "-")
+            val agentFile = File(globalAgentsDir, "$fileName.md")
+            agentFile.parentFile?.mkdirs()
+
+            val content = buildString {
+                append("---\n")
+                append("name: $name\n")
+                append("description: $description\n")
+                append("---\n")
+                append("# $name\n")
+                if (systemPrompt.isNotBlank()) {
+                    append("\n$systemPrompt\n")
+                }
+            }
+
+            agentFile.writeText(content, Charsets.UTF_8)
+            logger.info("Created agent file: ${agentFile.absolutePath}")
+            true
+        } catch (e: Exception) {
+            logger.error("Failed to create agent: $id", e)
+            false
+        }
+    }
+
+    /**
+     * 更新 Agent 文件
+     */
+    fun updateAgent(id: String, name: String, description: String, systemPrompt: String): Boolean {
+        return try {
+            val fileName = id.replace(Regex("[^a-zA-Z0-9_-]"), "-")
+            val agentFile = File(globalAgentsDir, "$fileName.md")
+            if (!agentFile.exists()) {
+                logger.warn("Agent file not found: ${agentFile.absolutePath}")
+                return false
+            }
+
+            val content = buildString {
+                append("---\n")
+                append("name: $name\n")
+                append("description: $description\n")
+                append("---\n")
+                append("# $name\n")
+                if (systemPrompt.isNotBlank()) {
+                    append("\n$systemPrompt\n")
+                }
+            }
+
+            agentFile.writeText(content, Charsets.UTF_8)
+            logger.info("Updated agent file: ${agentFile.absolutePath}")
+            true
+        } catch (e: Exception) {
+            logger.error("Failed to update agent: $id", e)
+            false
+        }
+    }
+
+    /**
+     * 删除 Agent 文件
+     */
+    fun deleteAgent(id: String): Boolean {
+        return try {
+            val fileName = id.replace(Regex("[^a-zA-Z0-9_-]"), "-")
+            val agentFile = File(globalAgentsDir, "$fileName.md")
+            if (agentFile.exists()) {
+                val deleted = agentFile.delete()
+                logger.info("Deleted agent file: ${agentFile.absolutePath}, success: $deleted")
+                deleted
+            } else {
+                logger.warn("Agent file not found for deletion: ${agentFile.absolutePath}")
+                true
+            }
+        } catch (e: Exception) {
+            logger.error("Failed to delete agent: $id", e)
+            false
+        }
+    }
+
+    // ---- Skill CRUD ----
+
+    /**
+     * 创建 Skill 目录和 SKILL.md 文件
+     */
+    fun createSkill(id: String, name: String, description: String, instructions: String, trigger: String? = null): Boolean {
+        return try {
+            val dirName = id.replace(Regex("[^a-zA-Z0-9_-]"), "-")
+            val skillDir = File(globalSkillsDir, dirName)
+            skillDir.mkdirs()
+
+            val skillFile = File(skillDir, "SKILL.md")
+            val content = buildString {
+                append("---\n")
+                append("name: $name\n")
+                append("description: $description\n")
+                if (!trigger.isNullOrBlank()) {
+                    append("when_to_use: $trigger\n")
+                }
+                append("---\n")
+                append("# $name\n")
+                if (instructions.isNotBlank()) {
+                    append("\n$instructions\n")
+                }
+            }
+
+            skillFile.writeText(content, Charsets.UTF_8)
+            logger.info("Created skill file: ${skillFile.absolutePath}")
+            true
+        } catch (e: Exception) {
+            logger.error("Failed to create skill: $id", e)
+            false
+        }
+    }
+
+    /**
+     * 更新 Skill SKILL.md 文件
+     */
+    fun updateSkill(id: String, name: String, description: String, instructions: String, trigger: String? = null): Boolean {
+        return try {
+            val dirName = id.replace(Regex("[^a-zA-Z0-9_-]"), "-")
+            val skillDir = File(globalSkillsDir, dirName)
+            val skillFile = File(skillDir, "SKILL.md")
+
+            if (!skillDir.exists()) {
+                skillDir.mkdirs()
+            }
+
+            val content = buildString {
+                append("---\n")
+                append("name: $name\n")
+                append("description: $description\n")
+                if (!trigger.isNullOrBlank()) {
+                    append("when_to_use: $trigger\n")
+                }
+                append("---\n")
+                append("# $name\n")
+                if (instructions.isNotBlank()) {
+                    append("\n$instructions\n")
+                }
+            }
+
+            skillFile.writeText(content, Charsets.UTF_8)
+            logger.info("Updated skill file: ${skillFile.absolutePath}")
+            true
+        } catch (e: Exception) {
+            logger.error("Failed to update skill: $id", e)
+            false
+        }
+    }
+
+    /**
+     * 删除 Skill 目录
+     */
+    fun deleteSkill(id: String): Boolean {
+        return try {
+            val dirName = id.replace(Regex("[^a-zA-Z0-9_-]"), "-")
+            val skillDir = File(globalSkillsDir, dirName)
+            if (skillDir.exists()) {
+                val deleted = skillDir.deleteRecursively()
+                logger.info("Deleted skill directory: ${skillDir.absolutePath}, success: $deleted")
+                deleted
+            } else {
+                logger.warn("Skill directory not found for deletion: ${skillDir.absolutePath}")
+                true
+            }
+        } catch (e: Exception) {
+            logger.error("Failed to delete skill: $id", e)
+            false
+        }
+    }
 
     fun scanSkills(): List<SkillInfo> {
         val skills = mutableListOf<SkillInfo>()

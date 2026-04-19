@@ -5,10 +5,12 @@ import { ErrorBoundary } from './components/common';
 // JCEF 集成 - 在 React 初始化前注入全局对象
 import './lib/jcef-integration';
 
+const app = (
+  <ErrorBoundary>
+    <App />
+  </ErrorBoundary>
+);
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
-  </React.StrictMode>
+  import.meta.env.DEV ? <React.StrictMode>{app}</React.StrictMode> : app
 );

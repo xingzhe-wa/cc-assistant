@@ -1,16 +1,27 @@
 /**
  * JCEF 事件监听 Hook
  * 监听 Java → JS 的全局对象调用（CCChat、CCApp、CCProviders）
+ *
+ * 使用 isMounted ref 防止在 React mount 期间 Java→JS bridge 事件
+ * 触发级联 store 更新导致 React error #185（Maximum update depth exceeded）
  */
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useChatStore, useConfigStore } from '@/stores';
 
 export const useJcefEvents = () => {
-  const { addMessage, setStreaming, appendStreamingContent } = useChatStore();
+  // 注意：不要在这里解构函数，避免无限循环
+  // 事件处理函数内部使用 useChatStore.getState() 获取最新的状态和方法
+
+  // mount 防护：防止在 effect 注册阶段（StrictMode 双重调用等）处理 store 更新
+  const isMounted = useRef(false);
 
   useEffect(() => {
+    // 标记 mount 完成，可以安全处理事件
+    isMounted.current = true;
+
     // 监听 CCChat.appendMessage / appendStreamingContent / finishStreaming
     const handleMessage = (e: CustomEvent) => {
+      if (!isMounted.current) return;
       const { type, role, content, id, timestamp, thinking } = e.detail;
 
       switch (type) {
@@ -52,6 +63,7 @@ export const useJcefEvents = () => {
 
     // 监听 CCStream 流式消息
     const handleStream = (e: CustomEvent) => {
+      if (!isMounted.current) return;
       const { type, content, messageId } = e.detail;
 
       switch (type) {
@@ -59,10 +71,10 @@ export const useJcefEvents = () => {
           // 开始流式输出或追加内容
           if (!useChatStore.getState().streaming) {
             // 首次开始流式
-            setStreaming(true, content || '');
+            useChatStore.getState().setStreaming(true, content || '');
           } else {
             // 追加内容
-            appendStreamingContent(content || '');
+            useChatStore.getState().appendStreamingContent(content || '');
           }
           break;
         }
@@ -81,7 +93,7 @@ export const useJcefEvents = () => {
               useChatStore.getState().addMessage(activeSessionId, aiMessage);
             }
           }
-          setStreaming(false);
+          useChatStore.getState().setStreaming(false);
           break;
         }
       }
@@ -95,6 +107,7 @@ export const useJcefEvents = () => {
 
     // 监听 CCProviders 数据变更
     const handleProviders = (e: CustomEvent) => {
+      if (!isMounted.current) return;
       const { providers, models, agents } = e.detail;
       console.log('[JCEF] Providers data:', { providers, models, agents });
       try {
@@ -128,6 +141,7 @@ export const useJcefEvents = () => {
 
     // 监听语言变更
     const handleLocale = (e: CustomEvent) => {
+      if (!isMounted.current) return;
       console.log('[JCEF] Locale change:', e.detail);
       const { locale } = e.detail;
       if (locale) {
@@ -159,6 +173,7 @@ export const useJcefEvents = () => {
 
     // 监听 Skills+Agents 含作用域的批量更新
     const handleSkillsAndAgents = (e: CustomEvent) => {
+      if (!isMounted.current) return;
       const { skills, agents } = e.detail;
       console.log('[JCEF] Skills+Agents update:', skills?.length, 'skills,', agents?.length, 'agents');
       // 更新 configStore 中来自后端的数据
@@ -177,6 +192,7 @@ export const useJcefEvents = () => {
 
     // 监听文件路径注入（来自 Project View 右键菜单）
     const handleFileRef = (e: CustomEvent) => {
+      if (!isMounted.current) return;
       const { path } = e.detail;
       const { inputValue, setInputValue } = useChatStore.getState();
       const prefix = inputValue ? inputValue + '\n' : '';
@@ -185,6 +201,7 @@ export const useJcefEvents = () => {
 
     // 监听代码片段注入（来自编辑器右键菜单）
     const handleCodeRef = (e: CustomEvent) => {
+      if (!isMounted.current) return;
       const { ref } = e.detail;
       const { inputValue, setInputValue } = useChatStore.getState();
       const prefix = inputValue ? inputValue + '\n' : '';
@@ -193,8 +210,17 @@ export const useJcefEvents = () => {
 
     // 监听清空输入框（来自 Java 层）
     const handleClearInput = () => {
+      if (!isMounted.current) return;
       console.log('[JCEF] clearInput received');
       useChatStore.getState().setInputValue('');
+    };
+
+    // 监听 CLI 错误消息（来自 Java 层）
+    const handleError = (e: CustomEvent) => {
+      if (!isMounted.current) return;
+      const { message } = e.detail;
+      useChatStore.getState().addToast(message || 'Unknown error', 'error');
+      useChatStore.getState().setStreaming(false);
     };
 
     // 注册事件监听
@@ -212,9 +238,11 @@ export const useJcefEvents = () => {
     window.addEventListener('cc-file-ref', handleFileRef as EventListener);
     window.addEventListener('cc-code-ref', handleCodeRef as EventListener);
     window.addEventListener('cc-clear-input', handleClearInput as EventListener);
+    window.addEventListener('cc-error', handleError as EventListener);
 
     // 清理
     return () => {
+      isMounted.current = false;
       window.removeEventListener('cc-message', handleMessage as EventListener);
       window.removeEventListener('cc-stream', handleStream as EventListener);
       window.removeEventListener('cc-theme', handleTheme as EventListener);
@@ -229,6 +257,7 @@ export const useJcefEvents = () => {
       window.removeEventListener('cc-file-ref', handleFileRef as EventListener);
       window.removeEventListener('cc-code-ref', handleCodeRef as EventListener);
       window.removeEventListener('cc-clear-input', handleClearInput as EventListener);
+      window.removeEventListener('cc-error', handleError as EventListener);
     };
-  }, [addMessage, setStreaming, appendStreamingContent]);
+  }, []);
 };

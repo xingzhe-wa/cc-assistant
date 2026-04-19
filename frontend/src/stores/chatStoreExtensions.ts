@@ -86,7 +86,7 @@ interface ConfigState {
 }
 
 export const useConfigStore = create<ConfigState>((set) => ({
-  // Initial State
+  // Initial State - 数据由 Java 后端通过 setProvidersFromBackend 等方法注入
   cliVersion: '1.0.28',
   cliAutoUpdate: true,
   language: 'zh-CN',
@@ -94,36 +94,9 @@ export const useConfigStore = create<ConfigState>((set) => ({
   chatBackground: 'default',
   messageBubbleColor: '#1a1b20',
   codeBlockColor: '#111214',
-  providers: [
-    {
-      id: 'p0',
-      name: 'Claude',
-      url: 'https://api.anthropic.com',
-      apiKey: 'sk-ant-***',
-      models: {
-        default: 'claude-4.5',
-        opus: 'claude-opus-4',
-        max: 'claude-max'
-      },
-      status: 'ok'
-    }
-  ],
-  agents: [
-    {
-      id: 'a0',
-      name: '代码助手',
-      description: '专注于代码编写、优化和调试',
-      systemPrompt: '你是一个代码助手。'
-    }
-  ],
-  skills: [
-    {
-      id: 'sk0',
-      name: '代码审查',
-      description: '对代码进行静态分析和质量评估',
-      triggerRule: '关键词触发'
-    }
-  ],
+  providers: [],
+  agents: [],
+  skills: [],
 
   // Actions
   setCliVersion: (version) => set({ cliVersion: version }),

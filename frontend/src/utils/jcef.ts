@@ -80,9 +80,7 @@ export interface JcefCallbacks {
 declare global {
   interface Window {
     javaBridge?: JavaBridge;
-    cefQuery?: {
-      inject: (payload: string) => void;
-    };
+    cefQuery?: (payload: string) => void;
   }
 }
 
@@ -94,7 +92,7 @@ export const jcefBridge = {
       const payload = data !== undefined
         ? `${action}:${JSON.stringify(data)}`
         : `${action}:`;
-      window.cefQuery.inject(payload);
+      window.cefQuery(payload);
     }
   },
 
@@ -118,7 +116,7 @@ export const jcefBridge = {
 
   // 发送消息
   sendMessage: (text: string, options?: SendOptions) => {
-    jcefBridge.send('sendMessage', { text, ...options });
+    jcefBridge.send('sendMessage', { text, options });
   },
 
   // 停止生成

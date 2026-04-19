@@ -153,6 +153,12 @@ class ProviderService {
             ".claude/settings.json"
         )
 
+        @JvmStatic
+        fun getInstance(): ProviderService {
+            return com.intellij.openapi.application.ApplicationManager.getApplication()
+                .getService(ProviderService::class.java)
+        }
+
         // 预置 Provider 配置 (用于推送到前端)
         val PRESET_PROVIDERS = listOf(
             ProviderConfig(
@@ -234,6 +240,20 @@ class ProviderService {
             AgentConfig("review", "Review", "代码审查"),
             AgentConfig("codegen", "Code", "代码生成")
         )
+
+        // Provider 切换时需要管理的 ENV key 白名单
+        // 只覆盖这些 key，保留其他所有 env 字段
+        private val PROVIDER_ENV_KEYS = listOf(
+            "ANTHROPIC_BASE_URL",
+            "ANTHROPIC_MODEL",
+            "ANTHROPIC_SMALL_FAST_MODEL",
+            "API_TIMEOUT_MS",
+            "CLAUDE_CODE_MAX_OUTPUT_TOKENS",
+            "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
+            "ANTHROPIC_DEFAULT_SONNET_MODEL",
+            "ANTHROPIC_DEFAULT_OPUS_MODEL",
+            "ANTHROPIC_DEFAULT_HAIKU_MODEL"
+        )
     }
 
     /**
@@ -265,6 +285,7 @@ class ProviderService {
     /**
      * 切换 Provider
      * 只覆盖 env 属性，保留现有配置中的 permissions, skills, agents 和其他 env 变量
+     * 使用智能合并：只更新白名单内的 key，ANTHROPIC_AUTH_TOKEN 天然保留
      */
     fun switchProvider(providerId: String): Boolean {
         val provider = PRESET_PROVIDERS.find { it.id == providerId } ?: return false
@@ -276,9 +297,15 @@ class ProviderService {
             // 从资源加载预置模板中的 env
             val templateEnv = loadProviderEnv(providerId) ?: return false
 
-            // 合并 env：模板覆盖现有，但保留现有的 ANTHROPIC_AUTH_TOKEN 等
-            val mergedEnv = existingSettings.env.toMutableMap()
-            mergedEnv.putAll(templateEnv)
+            // 检查是否需要更新（避免无意义的文件写操作）
+            if (!needsEnvUpdate(existingSettings.env, templateEnv)) {
+                logger.info("Provider $providerId env unchanged, skipping write")
+                _activeProviderId = providerId
+                return true
+            }
+
+            // 智能合并：只覆盖白名单内的 key
+            val mergedEnv = getMergedEnv(existingSettings.env, templateEnv)
 
             // 写回：只更新 env，保留其他配置
             val newSettings = existingSettings.copy(env = mergedEnv)
@@ -292,6 +319,57 @@ class ProviderService {
         } catch (e: Exception) {
             logger.error("Failed to switch provider: $providerId", e)
             return false
+        }
+    }
+
+    /**
+     * 创建/更新 Provider 配置
+     * 将 Provider 的 env 配置写入 settings.json
+     */
+    fun saveProvider(provider: ProviderConfig, apiKey: String?): Boolean {
+        return try {
+            val existingSettings = loadSettings() ?: ClaudeSettings()
+
+            // 构建 env 配置
+            val newEnv = mutableMapOf<String, String>(
+                "ANTHROPIC_BASE_URL" to provider.endpoint,
+                "ANTHROPIC_MODEL" to provider.defaultModel
+            )
+            if (!provider.fastModel.isNullOrBlank()) {
+                newEnv["ANTHROPIC_SMALL_FAST_MODEL"] = provider.fastModel
+            }
+            if (!apiKey.isNullOrBlank()) {
+                newEnv["ANTHROPIC_AUTH_TOKEN"] = apiKey
+            }
+
+            // 合并 env：保留现有的 ANTHROPIC_AUTH_TOKEN（除非明确提供新的）
+            val mergedEnv = existingSettings.env.toMutableMap()
+            if (!apiKey.isNullOrBlank()) {
+                mergedEnv["ANTHROPIC_AUTH_TOKEN"] = apiKey
+            }
+            mergedEnv.putAll(newEnv)
+
+            // 写回
+            val newSettings = existingSettings.copy(env = mergedEnv)
+            saveSettings(newSettings)
+        } catch (e: Exception) {
+            logger.error("Failed to save provider: ${provider.id}", e)
+            false
+        }
+    }
+
+    /**
+     * 删除 Provider 配置（从 settings.json 的 env 中移除）
+     */
+    fun deleteProvider(providerId: String): Boolean {
+        return try {
+            val existingSettings = loadSettings() ?: return true
+            // 当前实现中我们不实际删除，只是标记（因为 settings.json 的 env 是全局的）
+            logger.info("Delete provider requested: $providerId (no-op for settings.json)")
+            true
+        } catch (e: Exception) {
+            logger.error("Failed to delete provider: $providerId", e)
+            false
         }
     }
 
@@ -410,6 +488,29 @@ class ProviderService {
             logger.warn("Failed to load provider env for $providerId", e)
             null
         }
+    }
+
+    /**
+     * 检查 env 是否需要更新
+     * 比较白名单内的 key 是否与目标值一致
+     */
+    internal fun needsEnvUpdate(existingEnv: Map<String, String>, targetEnv: Map<String, String>): Boolean {
+        return PROVIDER_ENV_KEYS.any { key ->
+            existingEnv[key] != targetEnv[key]
+        }
+    }
+
+    /**
+     * 智能合并 env
+     * 只覆盖白名单内的 key，保留其他所有字段
+     * ANTHROPIC_AUTH_TOKEN 不在白名单中，因此天然保留
+     */
+    internal fun getMergedEnv(existingEnv: Map<String, String>, providerEnv: Map<String, String>): Map<String, String> {
+        val merged = existingEnv.toMutableMap()
+        for (key in PROVIDER_ENV_KEYS) {
+            providerEnv[key]?.let { merged[key] = it }
+        }
+        return merged
     }
 
     /**

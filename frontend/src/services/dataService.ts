@@ -161,7 +161,7 @@ class DataService {
   switchProvider(providerId: string): void {
     // 发送切换请求到 Java 后端
     if (typeof window !== 'undefined' && (window as any).cefQuery) {
-      (window as any).cefQuery.inject(`providerChange:${providerId}`);
+      (window as any).cefQuery(`providerChange:${providerId}`);
     }
   }
 
@@ -170,7 +170,7 @@ class DataService {
    */
   createProvider(data: Partial<Provider>): void {
     if (typeof window !== 'undefined' && (window as any).cefQuery) {
-      (window as any).cefQuery.inject(`providerCreate:${JSON.stringify(data)}`);
+      (window as any).cefQuery(`providerCreate:${JSON.stringify(data)}`);
     }
   }
 
@@ -179,7 +179,7 @@ class DataService {
    */
   updateProvider(data: Partial<Provider>): void {
     if (typeof window !== 'undefined' && (window as any).cefQuery) {
-      (window as any).cefQuery.inject(`providerUpdate:${JSON.stringify(data)}`);
+      (window as any).cefQuery(`providerUpdate:${JSON.stringify(data)}`);
     }
   }
 
@@ -188,7 +188,7 @@ class DataService {
    */
   deleteProvider(providerId: string): void {
     if (typeof window !== 'undefined' && (window as any).cefQuery) {
-      (window as any).cefQuery.inject(`providerDelete:${providerId}`);
+      (window as any).cefQuery(`providerDelete:${providerId}`);
     }
   }
 
@@ -197,7 +197,7 @@ class DataService {
    */
   createSkill(data: Partial<Skill>): void {
     if (typeof window !== 'undefined' && (window as any).cefQuery) {
-      (window as any).cefQuery.inject(`skillCreate:${JSON.stringify(data)}`);
+      (window as any).cefQuery(`skillCreate:${JSON.stringify(data)}`);
     }
   }
 
@@ -206,7 +206,7 @@ class DataService {
    */
   updateSkill(data: Partial<Skill>): void {
     if (typeof window !== 'undefined' && (window as any).cefQuery) {
-      (window as any).cefQuery.inject(`skillUpdate:${JSON.stringify(data)}`);
+      (window as any).cefQuery(`skillUpdate:${JSON.stringify(data)}`);
     }
   }
 
@@ -215,7 +215,7 @@ class DataService {
    */
   deleteSkill(skillId: string): void {
     if (typeof window !== 'undefined' && (window as any).cefQuery) {
-      (window as any).cefQuery.inject(`skillDelete:${skillId}`);
+      (window as any).cefQuery(`skillDelete:${skillId}`);
     }
   }
 
@@ -224,7 +224,7 @@ class DataService {
    */
   createAgent(data: Partial<Agent>): void {
     if (typeof window !== 'undefined' && (window as any).cefQuery) {
-      (window as any).cefQuery.inject(`agentCreate:${JSON.stringify(data)}`);
+      (window as any).cefQuery(`agentCreate:${JSON.stringify(data)}`);
     }
   }
 
@@ -233,7 +233,7 @@ class DataService {
    */
   updateAgent(data: Partial<Agent>): void {
     if (typeof window !== 'undefined' && (window as any).cefQuery) {
-      (window as any).cefQuery.inject(`agentUpdate:${JSON.stringify(data)}`);
+      (window as any).cefQuery(`agentUpdate:${JSON.stringify(data)}`);
     }
   }
 
@@ -242,7 +242,7 @@ class DataService {
    */
   deleteAgent(agentId: string): void {
     if (typeof window !== 'undefined' && (window as any).cefQuery) {
-      (window as any).cefQuery.inject(`agentDelete:${agentId}`);
+      (window as any).cefQuery(`agentDelete:${agentId}`);
     }
   }
 }
@@ -313,7 +313,7 @@ class SessionService {
    */
   switchSession(sessionId: string): void {
     if (typeof window !== 'undefined' && (window as any).cefQuery) {
-      (window as any).cefQuery.inject(`sessionSwitch:${sessionId}`);
+      (window as any).cefQuery(`sessionSwitch:${sessionId}`);
     }
   }
 
@@ -322,7 +322,7 @@ class SessionService {
    */
   createSession(): void {
     if (typeof window !== 'undefined' && (window as any).cefQuery) {
-      (window as any).cefQuery.inject('sessionCreate:');
+      (window as any).cefQuery('sessionCreate:');
     }
   }
 
@@ -331,7 +331,7 @@ class SessionService {
    */
   deleteSession(sessionId: string): void {
     if (typeof window !== 'undefined' && (window as any).cefQuery) {
-      (window as any).cefQuery.inject(`sessionDelete:${sessionId}`);
+      (window as any).cefQuery(`sessionDelete:${sessionId}`);
     }
   }
 
@@ -340,7 +340,7 @@ class SessionService {
    */
   toggleFavorite(sessionId: string): void {
     if (typeof window !== 'undefined' && (window as any).cefQuery) {
-      (window as any).cefQuery.inject(`sessionToggleFavorite:${sessionId}`);
+      (window as any).cefQuery(`sessionToggleFavorite:${sessionId}`);
     }
   }
 
@@ -349,7 +349,7 @@ class SessionService {
    */
   renameSession(sessionId: string, title: string): void {
     if (typeof window !== 'undefined' && (window as any).cefQuery) {
-      (window as any).cefQuery.inject(`sessionRename:${sessionId}:${title}`);
+      (window as any).cefQuery(`sessionRename:${sessionId}:${title}`);
     }
   }
 }

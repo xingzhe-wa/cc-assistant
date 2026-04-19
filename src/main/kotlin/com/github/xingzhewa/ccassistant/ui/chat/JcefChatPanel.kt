@@ -48,18 +48,23 @@ class JcefChatPanel : Disposable {
     var onCopyCode: ((String) -> Unit)? = null
     var onInsertPrompt: ((String) -> Unit)? = null
     var onDiffSummaryUpdate: ((Int, Int) -> Unit)? = null
+    var onStopGeneration: (() -> Unit)? = null
 
     // 主题/语言/Provider 变更回调
     var onThemeChange: ((String) -> Unit)? = null
     var onProviderChange: ((String) -> Unit)? = null
+    var onProviderCreate: ((Map<String, String>) -> Unit)? = null
+    var onProviderUpdate: ((Map<String, String>) -> Unit)? = null
+    var onProviderDelete: ((String) -> Unit)? = null
     var onModelChange: ((String) -> Unit)? = null
     var onModeChange: ((String) -> Unit)? = null
     var onAgentChange: ((String) -> Unit)? = null
+    var onAgentCreate: ((Map<String, String>) -> Unit)? = null
+    var onAgentUpdate: ((Map<String, String>) -> Unit)? = null
+    var onAgentDelete: ((String) -> Unit)? = null
     var onThinkChange: ((Boolean) -> Unit)? = null
     var onSendMessage: ((String, MessageOptions) -> Unit)? = null
     var onCheckCli: (() -> Unit)? = null
-    var onDeleteProvider: ((String) -> Unit)? = null
-    var onSaveProvider: ((Map<String, String>) -> Unit)? = null
     var onToggleFavorite: ((String, Boolean) -> Unit)? = null
     var onRenameSession: ((String, String) -> Unit)? = null
     var onDeleteSession: ((String) -> Unit)? = null
@@ -67,13 +72,20 @@ class JcefChatPanel : Disposable {
     var onSearchFiles: ((String) -> Unit)? = null
     var onOpenSettings: ((String) -> Unit)? = null  // 打开设置页面，参数为 tab 名称
     var onSkillChange: ((String) -> Unit)? = null   // 切换 Skill
+    var onSkillCreate: ((Map<String, String>) -> Unit)? = null
+    var onSkillUpdate: ((Map<String, String>) -> Unit)? = null
+    var onSkillDelete: ((String) -> Unit)? = null
+
+    // 页面加载完成回调 — 供 ReactChatPanel 在 React 就绪后推送数据
+    var onPageLoaded: (() -> Unit)? = null
 
     data class MessageOptions(
         val stream: Boolean = true,
         val think: Boolean = false,
         val mode: String = "auto",
         val model: String? = null,
-        val provider: String? = null
+        val provider: String? = null,
+        val agent: String? = null
     )
 
     // ========== 生命周期 ==========
@@ -107,9 +119,11 @@ class JcefChatPanel : Disposable {
             loadSkeleton()
 
             // 阶段 2: 延迟加载完整应用（避免阻塞 IDE 启动）
+            // 注意：必须先 initializeJSBridge 再 loadHtmlContent，
+            // 因为 HTML 中的 cefQuery.inject('pageLoaded:') 需要 cefQuery 先存在
             invokeLater {
-                loadHtmlContent()
                 initializeJSBridge()
+                loadHtmlContent()
                 isInitialized = true
                 logger.info("JcefChatPanel created and initialized")
             }
@@ -205,6 +219,9 @@ class JcefChatPanel : Disposable {
                     append("  </script>\n")
                 }
 
+                // 页面加载完成通知 — 由 Java 侧在 initializeJSBridge() 完成后主动发送
+                // 不再依赖 HTML 内联脚本（cefQuery 注入时机问题）
+
                 append("</body>\n")
                 append("</html>")
             }
@@ -241,6 +258,7 @@ class JcefChatPanel : Disposable {
     }
 
     private fun injectLibraries() {
+        // 直接执行 JS（不通过 executeScript wrapper，因为此时 isInitialized 尚为 false）
         val script = """
             if (typeof marked !== 'undefined') {
                 window.markedInstance = marked;
@@ -249,93 +267,94 @@ class JcefChatPanel : Disposable {
                 window.hljsInstance = hljs;
             }
         """.trimIndent()
-        executeScript(script)
+        browser?.getCefBrowser()?.executeJavaScript(script, "", 0)
     }
 
     private fun injectJavaBridge() {
-        val queryRef = "cefQuery"
+        // JBCefJSQuery 暴露的全局函数是 cefQuery(data)
+        // 它接收数据并调用 Java 端的 handler
         val script = """
             window.javaBridge = {
-                // 消息操作
+                // 消息操作 - cefQuery 是 JBCefJSQuery 注入的全局函数
                 onCopyMessage: function(id, content) {
-                    $queryRef.inject("copyMessage:" + JSON.stringify({id: id, content: content}));
+                    cefQuery("copyMessage:" + JSON.stringify({id: id, content: content}));
                 },
                 onQuoteMessage: function(id, content) {
-                    $queryRef.inject("quoteMessage:" + JSON.stringify({id: id, content: content}));
+                    cefQuery("quoteMessage:" + JSON.stringify({id: id, content: content}));
                 },
                 onRegenerate: function(id) {
-                    $queryRef.inject("regenerate:" + id);
+                    cefQuery("regenerate:" + id);
                 },
                 onRewind: function(id) {
-                    $queryRef.inject("rewind:" + id);
+                    cefQuery("rewind:" + id);
                 },
                 onCopyCode: function(code) {
-                    $queryRef.inject("copyCode:" + code);
+                    cefQuery("copyCode:" + code);
                 },
                 onInsertPrompt: function(text) {
-                    $queryRef.inject("insertPrompt:" + text);
+                    cefQuery("insertPrompt:" + text);
                 },
                 onDiffSummaryUpdate: function(summary) {
-                    $queryRef.inject("diffSummary:" + JSON.stringify({add: summary.add, del: summary.del}));
+                    cefQuery("diffSummary:" + JSON.stringify({add: summary.add, del: summary.del}));
                 },
                 // 主题
                 onThemeChange: function(themeId) {
-                    $queryRef.inject("themeChange:" + themeId);
+                    cefQuery("themeChange:" + themeId);
                 },
                 // Provider
                 onProviderChange: function(providerId) {
-                    $queryRef.inject("providerChange:" + providerId);
+                    cefQuery("providerChange:" + providerId);
                 },
                 onModelChange: function(modelId) {
-                    $queryRef.inject("modelChange:" + modelId);
+                    cefQuery("modelChange:" + modelId);
                 },
                 onModeChange: function(mode) {
-                    $queryRef.inject("modeChange:" + mode);
+                    cefQuery("modeChange:" + mode);
                 },
                 onAgentChange: function(agentId) {
-                    $queryRef.inject("agentChange:" + agentId);
+                    cefQuery("agentChange:" + agentId);
                 },
                 onThinkChange: function(enabled) {
-                    $queryRef.inject("thinkChange:" + enabled);
+                    cefQuery("thinkChange:" + enabled);
                 },
                 // 发送消息
                 onSendMessage: function(text, options) {
-                    $queryRef.inject("sendMessage:" + JSON.stringify({text: text, options: options}));
+                    cefQuery("sendMessage:" + JSON.stringify({text: text, options: options}));
                 },
                 // 设置
                 onCheckCli: function() {
-                    $queryRef.inject("checkCli:");
+                    cefQuery("checkCli:");
                 },
                 onDeleteProvider: function(id) {
-                    $queryRef.inject("deleteProvider:" + id);
+                    cefQuery("deleteProvider:" + id);
                 },
                 onSaveProvider: function(data) {
-                    $queryRef.inject("saveProvider:" + JSON.stringify(data));
+                    cefQuery("saveProvider:" + JSON.stringify(data));
                 },
                 // 会话
                 onToggleFavorite: function(id, fav) {
-                    $queryRef.inject("toggleFavorite:" + JSON.stringify({id: id, fav: fav}));
+                    cefQuery("toggleFavorite:" + JSON.stringify({id: id, fav: fav}));
                 },
                 onRenameSession: function(id, title) {
-                    $queryRef.inject("renameSession:" + JSON.stringify({id: id, title: title}));
+                    cefQuery("renameSession:" + JSON.stringify({id: id, title: title}));
                 },
                 onDeleteSession: function(id) {
-                    $queryRef.inject("deleteSession:" + id);
+                    cefQuery("deleteSession:" + id);
                 },
                 // Diff
                 onOpenDiff: function(file) {
-                    $queryRef.inject("openDiff:" + file);
+                    cefQuery("openDiff:" + file);
                 },
                 // File search
                 onSearchFiles: function(query) {
-                    $queryRef.inject("searchFiles:" + query);
+                    cefQuery("searchFiles:" + query);
                 }
             };
             window.javaBridgePresent = true;
             console.log('[JcefChatPanel] javaBridge injected');
         """.trimIndent()
-
-        executeScript(script)
+        // 直接执行 JS（不通过 executeScript wrapper，因为此时 isInitialized 尚为 false）
+        browser?.getCefBrowser()?.executeJavaScript(script, "", 0)
     }
 
     private fun handleJSMessage(request: String): String? {
@@ -380,17 +399,45 @@ class JcefChatPanel : Disposable {
                             think = msg.options?.think ?: false,
                             mode = msg.options?.mode ?: "auto",
                             model = msg.options?.model,
-                            provider = msg.options?.provider
+                            provider = msg.options?.provider,
+                            agent = msg.options?.agent
                         )
                     )
                 }
             }
             "checkCli" -> invokeLater { onCheckCli?.invoke() }
-            "deleteProvider" -> invokeLater { onDeleteProvider?.invoke(data) }
+            "providerCreate" -> {
+                val map = gson.fromJson(data, Map::class.java)
+                invokeLater { onProviderCreate?.invoke(map as Map<String, String>) }
+            }
+            "providerUpdate" -> {
+                val map = gson.fromJson(data, Map::class.java)
+                invokeLater { onProviderUpdate?.invoke(map as Map<String, String>) }
+            }
+            "providerDelete" -> invokeLater { onProviderDelete?.invoke(data) }
+            "deleteProvider" -> invokeLater { onProviderDelete?.invoke(data) }
             "saveProvider" -> {
                 val map = gson.fromJson(data, Map::class.java)
-                invokeLater { onSaveProvider?.invoke(map as Map<String, String>) }
+                invokeLater { onProviderUpdate?.invoke(map as Map<String, String>) }
             }
+            "agentCreate" -> {
+                val map = gson.fromJson(data, Map::class.java)
+                invokeLater { onAgentCreate?.invoke(map as Map<String, String>) }
+            }
+            "agentUpdate" -> {
+                val map = gson.fromJson(data, Map::class.java)
+                invokeLater { onAgentUpdate?.invoke(map as Map<String, String>) }
+            }
+            "agentDelete" -> invokeLater { onAgentDelete?.invoke(data) }
+            "skillCreate" -> {
+                val map = gson.fromJson(data, Map::class.java)
+                invokeLater { onSkillCreate?.invoke(map as Map<String, String>) }
+            }
+            "skillUpdate" -> {
+                val map = gson.fromJson(data, Map::class.java)
+                invokeLater { onSkillUpdate?.invoke(map as Map<String, String>) }
+            }
+            "skillDelete" -> invokeLater { onSkillDelete?.invoke(data) }
             "toggleFavorite" -> {
                 val fav = gson.fromJson(data, FavData::class.java)
                 invokeLater { onToggleFavorite?.invoke(fav.id, fav.fav) }
@@ -404,6 +451,11 @@ class JcefChatPanel : Disposable {
             "searchFiles" -> invokeLater { onSearchFiles?.invoke(data) }
             "openSettings" -> invokeLater { onOpenSettings?.invoke(data) }
             "skillChange" -> invokeLater { onSkillChange?.invoke(data) }
+            "stopGeneration" -> invokeLater { onStopGeneration?.invoke() }
+            "pageLoaded" -> {
+                logger.info("Page loaded notification received from React app")
+                invokeLater { onPageLoaded?.invoke() }
+            }
             else -> logger.warn("Unknown action: $action")
         }
 
@@ -491,6 +543,14 @@ class JcefChatPanel : Disposable {
      */
     fun clearInput() {
         executeScript("CCApp.clearInput?.() ?? CCChat.clearInput?.() ?? (() => {})")
+    }
+
+    /**
+     * 显示错误消息（触发前端 Toast 通知）
+     */
+    fun appendErrorMessage(message: String) {
+        val json = gson.toJson(message)
+        executeScript("window.dispatchEvent(new CustomEvent('cc-error', {detail: {message: $json}}))")
     }
 
     /**
@@ -590,7 +650,7 @@ class JcefChatPanel : Disposable {
     private data class CopyMessageData(val id: String, val content: String)
     private data class DiffSummaryData(val add: Int, val del: Int)
     private data class SendMessageData(val text: String, val options: SendOptions?)
-    private data class SendOptions(val stream: Boolean?, val think: Boolean?, val mode: String?, val model: String?, val provider: String?)
+    private data class SendOptions(val stream: Boolean?, val think: Boolean?, val mode: String?, val model: String?, val provider: String?, val agent: String?)
     private data class FavData(val id: String, val fav: Boolean)
     private data class RenameSessionData(val id: String, val title: String)
 

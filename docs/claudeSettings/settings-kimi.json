@@ -1,15 +1,12 @@
 {
   "env": {
-    "ANTHROPIC_AUTH_TOKEN": "sk-CjWJZaTE7SHU1tVoSpm2a4awKskrn8kHapPwSrRmWdcFsBIO",
-    "ANTHROPIC_BASE_URL": "https://api.moonshot.cn/anthropic",
-    "API_TIMEOUT_MS": "600000",
-    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "200000",
-    "ANTHROPIC_MODEL": "kimi-k2-turbo-preview",
-    "ANTHROPIC_SMALL_FAST_MODEL": "kimi-k2-turbo-preview",
-    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": 1
-  },
-  "permissions": {
-    "allow": [],
-    "deny": []
+    "ANTHROPIC_BASE_URL": "https://api.minimaxi.com/anthropic",
+    "ANTHROPIC_AUTH_TOKEN": "sk-cp-RafK54PXagCa0brgBRpaBXoJq4MiDlLldQdLbOrkKa_A6oRTlEhpz07UOvTcd5bQKH6R0jcgy7Crj_gQcT8bjDxqCxZ2v4Ur7rYk5eapEguFvNMNFiZ8CDs",
+    "API_TIMEOUT_MS": "3000000",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "ANTHROPIC_MODEL": "MiniMax-M2.7",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "MiniMax-M2.7",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "MiniMax-M2.7",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "MiniMax-M2.7"
   }
 }

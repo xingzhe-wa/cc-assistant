@@ -19,19 +19,30 @@ const App: React.FC = () => {
   // 应用主题
   useTheme();
 
+  // React 渲染完成后通知 Java 层（pageLoaded）
+  // 确保 cefQuery 已注入（由 Java 侧的 JBCefJSQuery.create() 创建）
+  useEffect(() => {
+    const notifyPageLoaded = () => {
+      if (window.cefQuery) {
+        window.cefQuery('pageLoaded:');
+        console.info('[App] pageLoaded sent to Java');
+      } else {
+        // cefQuery 尚未注入，延迟重试
+        setTimeout(notifyPageLoaded, 100);
+      }
+    };
+    notifyPageLoaded();
+  }, []);
+
   // 监听 Java 层打开设置页面事件
   const [settingsTab, setSettingsTab] = useState<'basic' | 'provider' | 'agent' | 'skill'>('basic');
   // 用于强制重新渲染设置页面
   const [settingsKey, setSettingsKey] = useState(0);
 
-  // 从 store 获取需要的状态（提前获取，供 useEffect 使用）
-  const storeForEffect = useChatStore(state => ({ setCurrentPage: state.setCurrentPage, currentPage: state.currentPage }));
-
   useEffect(() => {
     const handleOpenSettings = (e: Event) => {
       const customEvent = e as CustomEvent<{ tab: string | null }>;
       const tab = customEvent.detail?.tab;
-      console.log('[App] openSettings event received, tab:', tab);
       // 根据 tab 参数设置跳转目标
       let targetTab: 'basic' | 'provider' | 'agent' | 'skill' = 'basic';
       if (tab === 'providers' || tab === 'provider') {
@@ -43,8 +54,9 @@ const App: React.FC = () => {
       }
       setSettingsTab(targetTab);
       // 强制重新渲染设置页面：如果已在设置页面，强制重新挂载
-      if (storeForEffect.currentPage !== 'settings') {
-        storeForEffect.setCurrentPage('settings');
+      const latestPage = useChatStore.getState().currentPage;
+      if (latestPage !== 'settings') {
+        useChatStore.getState().setCurrentPage('settings');
       } else {
         // 通过 key 机制强制重新渲染 SettingsPage
         setSettingsKey(prev => prev + 1);
@@ -52,58 +64,62 @@ const App: React.FC = () => {
     };
     window.addEventListener('cc-open-settings', handleOpenSettings);
     return () => window.removeEventListener('cc-open-settings', handleOpenSettings);
-  }, [storeForEffect.setCurrentPage, storeForEffect.currentPage]);
+  }, []);
 
   const { t } = useI18n();
-  const {
-    sessions,
-    activeSessionId,
-    openTabs,
-    streamEnabled,
-    currentPage,
-    inputValue,
-    currentProvider,
-    currentModel,
-    currentMode,
-    currentAgent,
-    currentSkill,
-    thinkEnabled,
-    contextUsed,
-    toasts,
-    setActiveSession,
-    createSession,
-    closeSession,
-    deleteSession,
-    toggleSessionFavorite,
-    renameSession,
-    setInputValue,
-    sendMessage,
-    stopGeneration,
-    toggleHistory,
-    toggleFavoritePanel,
-    toggleStream,
-    toggleThink,
-    setCurrentProvider,
-    setCurrentModel,
-    setCurrentMode,
-    setCurrentAgent,
-    setCurrentSkill,
-    setCurrentPage,
-    addToast,
-    removeToast,
-    enhancePrompt,
-    attachments,
-    addAttachment,
-    addAttachments,
-    removeAttachment,
-    agentStatus,
-    statusMessage,
-    subAgentName,
-    diffFiles,
-  } = useChatStore();
 
-  // 从 configStore 获取 providers、skills（来自后端）
-  const { providers, agents: configAgents, skills } = useConfigStore();
+  // --- 精确 Zustand selectors：状态值 ---
+  const sessions = useChatStore(state => state.sessions);
+  const activeSessionId = useChatStore(state => state.activeSessionId);
+  const openTabs = useChatStore(state => state.openTabs);
+  const streamEnabled = useChatStore(state => state.streamEnabled);
+  const currentPage = useChatStore(state => state.currentPage);
+  const inputValue = useChatStore(state => state.inputValue);
+  const currentProvider = useChatStore(state => state.currentProvider);
+  const currentModel = useChatStore(state => state.currentModel);
+  const currentMode = useChatStore(state => state.currentMode);
+  const currentAgent = useChatStore(state => state.currentAgent);
+  const currentSkill = useChatStore(state => state.currentSkill);
+  const thinkEnabled = useChatStore(state => state.thinkEnabled);
+  const contextUsed = useChatStore(state => state.contextUsed);
+  const toasts = useChatStore(state => state.toasts);
+  const attachments = useChatStore(state => state.attachments);
+  const agentStatus = useChatStore(state => state.agentStatus);
+  const statusMessage = useChatStore(state => state.statusMessage);
+  const subAgentName = useChatStore(state => state.subAgentName);
+  const diffFiles = useChatStore(state => state.diffFiles);
+
+  // --- 精确 Zustand selectors：action 函数（引用稳定，不会触发重渲染）---
+  const setActiveSession = useChatStore(state => state.setActiveSession);
+  const createSession = useChatStore(state => state.createSession);
+  const closeSession = useChatStore(state => state.closeSession);
+  const deleteSession = useChatStore(state => state.deleteSession);
+  const toggleSessionFavorite = useChatStore(state => state.toggleSessionFavorite);
+  const renameSession = useChatStore(state => state.renameSession);
+  const setInputValue = useChatStore(state => state.setInputValue);
+  const sendMessage = useChatStore(state => state.sendMessage);
+  const stopGeneration = useChatStore(state => state.stopGeneration);
+  const toggleHistory = useChatStore(state => state.toggleHistory);
+  const toggleFavoritePanel = useChatStore(state => state.toggleFavoritePanel);
+  const toggleStream = useChatStore(state => state.toggleStream);
+  const toggleThink = useChatStore(state => state.toggleThink);
+  const setCurrentProvider = useChatStore(state => state.setCurrentProvider);
+  const setCurrentModel = useChatStore(state => state.setCurrentModel);
+  const setCurrentMode = useChatStore(state => state.setCurrentMode);
+  const setCurrentAgent = useChatStore(state => state.setCurrentAgent);
+  const setCurrentSkill = useChatStore(state => state.setCurrentSkill);
+  const setCurrentPage = useChatStore(state => state.setCurrentPage);
+  const addToast = useChatStore(state => state.addToast);
+  const removeToast = useChatStore(state => state.removeToast);
+  const enhancePrompt = useChatStore(state => state.enhancePrompt);
+  const addAttachment = useChatStore(state => state.addAttachment);
+  const addAttachments = useChatStore(state => state.addAttachments);
+  const removeAttachment = useChatStore(state => state.removeAttachment);
+
+  // 从 configStore 获取 providers、skills（来自后端）— 精确 selector
+  const providers = useConfigStore(state => state.providers);
+  const configAgents = useConfigStore(state => state.agents);
+  const skills = useConfigStore(state => state.skills);
 
   const activeSession = sessions.find(s => s.id === activeSessionId);
   // 会话级别隔离的 streaming 状态

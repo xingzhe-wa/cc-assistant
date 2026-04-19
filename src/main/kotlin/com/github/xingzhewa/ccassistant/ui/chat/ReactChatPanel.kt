@@ -30,10 +30,14 @@ class ReactChatPanel(
 
     private val cliService: CliBridgeService = CliBridgeService.getInstance()
     private var jcefPanel: JcefChatPanel? = null
+    private var cliCallback: CliMessageCallback? = null
 
     // 当前会话状态
     private var currentSessionId: String? = null
     private var currentMessageId: String? = null
+
+    // 防止重复推送数据（onPageLoaded 可能触发多次）
+    private var isDataPushed = false
 
     companion object {
         private val panels = java.util.concurrent.ConcurrentHashMap<String, ReactChatPanel>()
@@ -103,16 +107,19 @@ class ReactChatPanel(
         jcefPanel = JcefChatPanel().apply {
             // 设置 JS → Java 回调
             setupCallbacks()
+
+            // 页面加载完成后再推送数据，避免与 React mount 竞态
+            onPageLoaded = {
+                if (!isDataPushed) {
+                    isDataPushed = true
+                    pushProvidersToFrontend()
+                    scanAndPushSkillsAgents()
+                }
+            }
         }
 
         val panel = jcefPanel!!.createPanel()
         add(panel, BorderLayout.CENTER)
-
-        // 初始化后扫描 Skills/Agents 并推送到前端
-        invokeLater { scanAndPushSkillsAgents() }
-
-        // 注入预置 Provider 数据（从后端获取）
-        invokeLater { pushProvidersToFrontend() }
 
         logger.info("ReactChatPanel initialized with JcefChatPanel")
     }
@@ -154,6 +161,11 @@ class ReactChatPanel(
             handleSendMessage(text, options)
         }
 
+        onStopGeneration = {
+            logger.info("Stop generation requested")
+            cliService.interrupt()
+        }
+
         // 主题/设置回调
         onThemeChange = { themeId ->
             logger.info("Theme change: $themeId")
@@ -162,6 +174,42 @@ class ReactChatPanel(
 
         onProviderChange = { providerId ->
             logger.info("Provider change: $providerId")
+            ProviderService.getInstance().switchProvider(providerId)
+        }
+
+        onProviderCreate = { data ->
+            val id = data["id"]
+            if (id != null) {
+                logger.info("Provider create: $id")
+                val provider = ProviderService.PRESET_PROVIDERS.find { it.id == id }
+                    ?: com.github.xingzhewa.ccassistant.model.ProviderConfig(
+                        id = id,
+                        name = data["name"] ?: "",
+                        endpoint = data["endpoint"] ?: data["url"] ?: "",
+                        defaultModel = data["defaultModel"] ?: ""
+                    )
+                ProviderService.getInstance().saveProvider(provider, data["apiKey"])
+            }
+        }
+
+        onProviderUpdate = { data ->
+            val id = data["id"]
+            if (id != null) {
+                logger.info("Provider update: $id")
+                val provider = ProviderService.PRESET_PROVIDERS.find { it.id == id }
+                    ?: com.github.xingzhewa.ccassistant.model.ProviderConfig(
+                        id = id,
+                        name = data["name"] ?: "",
+                        endpoint = data["endpoint"] ?: data["url"] ?: "",
+                        defaultModel = data["defaultModel"] ?: ""
+                    )
+                ProviderService.getInstance().saveProvider(provider, data["apiKey"])
+            }
+        }
+
+        onProviderDelete = { providerId ->
+            logger.info("Provider delete: $providerId")
+            ProviderService.getInstance().deleteProvider(providerId)
         }
 
         onCheckCli = {
@@ -200,37 +248,126 @@ class ReactChatPanel(
             logger.info("Skill change: $skillId")
             // TODO: 实现 Skill 切换逻辑
         }
+
+        // Agent CRUD 回调
+        onAgentCreate = { data ->
+            val id = data["id"]
+            val project = associatedProject
+            if (id != null && project != null) {
+                logger.info("Agent create: $id")
+                val service = SkillAgentService(project)
+                service.createAgent(
+                    id = id,
+                    name = data["name"] ?: "",
+                    description = data["description"] ?: "",
+                    systemPrompt = data["systemPrompt"] ?: data["description"] ?: ""
+                )
+            }
+        }
+
+        onAgentUpdate = { data ->
+            val id = data["id"]
+            val project = associatedProject
+            if (id != null && project != null) {
+                logger.info("Agent update: $id")
+                val service = SkillAgentService(project)
+                service.updateAgent(
+                    id = id,
+                    name = data["name"] ?: "",
+                    description = data["description"] ?: "",
+                    systemPrompt = data["systemPrompt"] ?: data["description"] ?: ""
+                )
+            }
+        }
+
+        onAgentDelete = { agentId ->
+            val project = associatedProject
+            if (project != null) {
+                logger.info("Agent delete: $agentId")
+                val service = SkillAgentService(project)
+                service.deleteAgent(agentId)
+            }
+        }
+
+        // Skill CRUD 回调
+        onSkillCreate = { data ->
+            val id = data["id"]
+            val project = associatedProject
+            if (id != null && project != null) {
+                logger.info("Skill create: $id")
+                val service = SkillAgentService(project)
+                service.createSkill(
+                    id = id,
+                    name = data["name"] ?: "",
+                    description = data["description"] ?: "",
+                    instructions = data["instructions"] ?: data["description"] ?: "",
+                    trigger = data["trigger"]
+                )
+            }
+        }
+
+        onSkillUpdate = { data ->
+            val id = data["id"]
+            val project = associatedProject
+            if (id != null && project != null) {
+                logger.info("Skill update: $id")
+                val service = SkillAgentService(project)
+                service.updateSkill(
+                    id = id,
+                    name = data["name"] ?: "",
+                    description = data["description"] ?: "",
+                    instructions = data["instructions"] ?: data["description"] ?: "",
+                    trigger = data["trigger"]
+                )
+            }
+        }
+
+        onSkillDelete = { skillId ->
+            val project = associatedProject
+            if (project != null) {
+                logger.info("Skill delete: $skillId")
+                val service = SkillAgentService(project)
+                service.deleteSkill(skillId)
+            }
+        }
     }
 
     private fun initCliBridge() {
-        val callback = object : CliMessageCallback {
+        cliCallback = object : CliMessageCallback {
             override fun onMessage(message: CliMessage) {
                 ApplicationManager.getApplication().invokeLater {
                     handleCliMessage(message)
                 }
             }
         }
-        cliService.registerCallback(callback)
+        cliCallback?.let { cliService.registerCallback(it) }
     }
 
     private fun handleSendMessage(text: String, options: JcefChatPanel.MessageOptions) {
         if (text.isBlank()) return
 
-        // 1. 先立即显示用户消息（给用户即时反馈）
-        val timestamp = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
-            .format(java.util.Date())
-        jcefPanel?.appendUserMessage("user-${System.currentTimeMillis()}", text, timestamp)
-
-        // 2. 清空输入框
+        // 1. 清空输入框（用户消息由前端 chatStore 添加，不在此处重复添加）
         jcefPanel?.clearInput()
 
-        // 3. 执行 CLI（使用选项中的 model，如果未指定则从当前 provider 的默认模型获取）
+        // 2. 执行 CLI（使用选项中的 model，如果未指定则从当前 provider 的默认模型获取）
         val modelToUse = options.model ?: getDefaultModelForProvider(options.provider)
         cliService.executePrompt(
             prompt = text,
             workingDir = workingDir,
-            model = modelToUse
+            model = modelToUse,
+            agent = options.agent,
+            sessionId = currentSessionId,
+            mode = options.mode,
+            think = options.think
         )
+    }
+
+    /**
+     * 加载会话到当前面板（用于会话恢复）
+     */
+    fun loadSession(sessionId: String) {
+        this.currentSessionId = sessionId
+        logger.info("Loaded session: $sessionId")
     }
 
     /**
@@ -338,6 +475,7 @@ class ReactChatPanel(
             is CliMessage.Error -> {
                 jcefPanel?.finishStreaming(currentMessageId)
                 currentMessageId = null
+                jcefPanel?.appendErrorMessage(message.message)
                 logger.error("CLI Error: ${message.message}")
             }
             else -> { /* 忽略其他类型 */ }
@@ -360,6 +498,8 @@ class ReactChatPanel(
      */
     fun dispose() {
         associatedProject?.let { unregister(it.name) }
+        cliCallback?.let { cliService.unregisterCallback(it) }
+        cliCallback = null
         jcefPanel?.dispose()
         jcefPanel = null
     }

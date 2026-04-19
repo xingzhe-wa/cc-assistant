@@ -129,6 +129,7 @@ export interface SendOptions {
   mode?: Mode;
   model?: string;
   provider?: string;
+  agent?: string;
   attachments?: Attachment[];
 }
 

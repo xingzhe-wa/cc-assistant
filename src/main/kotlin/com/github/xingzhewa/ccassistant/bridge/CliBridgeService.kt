@@ -133,9 +133,23 @@ class CliBridgeService : Disposable {
      * @param prompt 用户输入
      * @param workingDir 工作目录 (可选，默认为当前项目目录)
      * @param model 模型名称 (可选)
+     * @param agent Agent名称 (可选，非 "default" 时传递)
+     * @param sessionId 会话ID (可选，用于--resume恢复)
+     * @param mode 工作模式 (可选: "auto"/"plan"/"agent")
+     * @param think 是否启用扩展思考 (可选，当前 CLI 无对应 flag，保留参数位)
+     * @param permissionMode 权限模式 (可选，覆盖 mode 的默认映射)
      * @return true 如果进程成功启动
      */
-    fun executePrompt(prompt: String, workingDir: String? = null, model: String? = null): Boolean {
+    fun executePrompt(
+        prompt: String,
+        workingDir: String? = null,
+        model: String? = null,
+        agent: String? = null,
+        sessionId: String? = null,
+        mode: String? = null,
+        think: Boolean? = null,
+        permissionMode: String? = null
+    ): Boolean {
         if (!isExecuting.compareAndSet(false, true)) {
             notifyError("Another prompt is already executing")
             return false
@@ -152,13 +166,42 @@ class CliBridgeService : Disposable {
         stopCurrentProcess()
 
         // 构建命令
-        val command = mutableListOf(cli, "-p", prompt, "--output-format", "stream-json")
+        val command = mutableListOf<String>()
+
+        // sessionId 优先：使用 --resume 恢复会话
+        if (sessionId != null) {
+            command.addAll(listOf(cli, "--resume", sessionId, "--output-format", "stream-json"))
+        } else {
+            // 首次会话：使用 -p 模式
+            command.addAll(listOf(cli, "-p", prompt, "--output-format", "stream-json"))
+        }
+
+        // model 参数
         model?.let {
             command.add("--model")
             command.add(it)
         }
 
-        logger.info("Starting CLI process: ${command.take(3).joinToString(" ")}...")
+        // agent 参数（非 "default" 时传递）
+        agent?.let {
+            if (it != "default") {
+                command.add("--agent")
+                command.add(it)
+            }
+        }
+
+        // 权限模式：permissionMode 显式指定时优先；否则根据 mode 映射
+        val effectivePermissionMode = permissionMode ?: when (mode) {
+            "auto", "agent" -> "accept-all"
+            "plan" -> null  // plan 模式不传 permission-mode，CLI 会暂停等确认
+            else -> "accept-all"  // 默认 auto 行为
+        }
+        effectivePermissionMode?.let {
+            command.add("--permission-mode")
+            command.add(it)
+        }
+
+        logger.info("Starting CLI process: ${command.take(3).joinToString(" ")}... mode=$mode, agent=$agent")
 
         try {
             val builder = ProcessBuilder(command)
