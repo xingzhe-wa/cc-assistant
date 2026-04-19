@@ -4,7 +4,6 @@ import { MessageArea } from './components/message';
 import { InputArea } from './components/input';
 import { ToastContainer } from './components/common';
 import { useChatStore, useConfigStore } from './stores';
-import { getMockModelsByProvider } from './mock';
 import { useJcefEvents } from './hooks/useJcefEvents';
 import { useI18n } from './hooks/useI18n';
 import { useTheme } from './hooks/useTheme';
@@ -132,7 +131,7 @@ const App: React.FC = () => {
         id: key,
         name: value || key
       }))
-    : getMockModelsByProvider(currentProvider);
+    : [];
   // 只显示在Tab栏中打开的会话
   const openTabSessions = sessions.filter(s => openTabs.includes(s.id));
 

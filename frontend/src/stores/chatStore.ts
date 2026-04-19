@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import type { MockSession, MockMessage, Toast as ToastType, ToastType as ToastVariant, Attachment, AgentStatus } from '@/types/mock';
+import type { MockSession, MockMessage, MockDiffFile, Toast as ToastType, ToastType as ToastVariant, Attachment, AgentStatus } from '@/types/mock';
 import type { PageType } from '@/pages/types';
-import { mockSessions, createMockSession, mockDiffFiles } from '@/mock';
+import { createMockSession } from '@/mock';
 import { jcefBridge } from '@/utils/jcef';
 import { useConfigStore } from './chatStoreExtensions';
 
@@ -17,7 +17,7 @@ interface ChatState {
   streamingContent: string;
 
   // Diff
-  diffFiles: typeof mockDiffFiles;
+  diffFiles: MockDiffFile[];
 
   // AI Status
   agentStatus: AgentStatus;
@@ -103,12 +103,12 @@ interface ChatState {
 
 export const useChatStore = create<ChatState>((set, get) => ({
   // Initial State
-  sessions: mockSessions,
-  activeSessionId: mockSessions[0]?.id || null,
-  openTabs: mockSessions.map(s => s.id), // 所有会话默认显示为Tab
+  sessions: [],
+  activeSessionId: null,
+  openTabs: [], // 所有会话默认显示为Tab
   streaming: false,
   streamingContent: '',
-  diffFiles: mockDiffFiles,
+  diffFiles: [],
   agentStatus: 'idle' as AgentStatus,
   statusMessage: '',
   subAgentName: null,

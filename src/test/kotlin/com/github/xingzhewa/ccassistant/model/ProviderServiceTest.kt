@@ -42,78 +42,36 @@ class ProviderServiceTest {
         assert(providers.size == 6) { "Expected 6 providers" }
     }
 
-    // === ENV Smart Merge Tests ===
-
     @Test
-    fun testNeedsEnvUpdate_sameEnv_returnsFalse() {
-        val existingEnv = mapOf(
-            "ANTHROPIC_BASE_URL" to "https://api.anthropic.com",
-            "ANTHROPIC_MODEL" to "claude-sonnet-4-20250514",
-            "CUSTOM_USER_KEY" to "user-value"
-        )
-        val targetEnv = mapOf(
-            "ANTHROPIC_BASE_URL" to "https://api.anthropic.com",
-            "ANTHROPIC_MODEL" to "claude-sonnet-4-20250514"
-        )
-        assert(!providerService.needsEnvUpdate(existingEnv, targetEnv)) {
-            "Same env should not trigger update"
-        }
+    fun testGetProviderEnvVars_returnsCorrectEnvForClaude() {
+        val envVars = providerService.getProviderEnvVars("claude")
+        assert(envVars != null) { "Should return env vars for claude" }
+        val vars = envVars!!
+        assert(vars["ANTHROPIC_BASE_URL"] == "https://api.anthropic.com") { "Should have correct base URL" }
+        assert(vars["ANTHROPIC_MODEL"] == "claude-sonnet-4-20250514") { "Should have correct model" }
+        assert(vars["ANTHROPIC_SMALL_FAST_MODEL"] == "claude-3-5-haiku-20241022") { "Should have fast model" }
     }
 
     @Test
-    fun testNeedsEnvUpdate_differentEnv_returnsTrue() {
-        val existingEnv = mapOf(
-            "ANTHROPIC_BASE_URL" to "https://api.anthropic.com",
-            "ANTHROPIC_MODEL" to "claude-sonnet-4-20250514"
-        )
-        val targetEnv = mapOf(
-            "ANTHROPIC_BASE_URL" to "https://api.deepseek.com/anthropic",
-            "ANTHROPIC_MODEL" to "deepseek-reasoner"
-        )
-        assert(providerService.needsEnvUpdate(existingEnv, targetEnv)) {
-            "Different env should trigger update"
-        }
+    fun testGetProviderEnvVars_returnsCorrectEnvForDeepSeek() {
+        val envVars = providerService.getProviderEnvVars("deepseek")
+        assert(envVars != null) { "Should return env vars for deepseek" }
+        val vars = envVars!!
+        assert(vars["ANTHROPIC_BASE_URL"] == "https://api.deepseek.com/anthropic") { "Should have correct base URL" }
+        assert(vars["ANTHROPIC_MODEL"] == "deepseek-reasoner") { "Should have correct model" }
     }
 
     @Test
-    fun testGetMergedEnv_preservesUserCustomKeys() {
-        val existingEnv = mapOf(
-            "ANTHROPIC_AUTH_TOKEN" to "user-secret-key",
-            "CUSTOM_USER_KEY" to "user-value",
-            "ANOTHER_CUSTOM" to "another-value"
-        )
-        val providerEnv = mapOf(
-            "ANTHROPIC_BASE_URL" to "https://api.deepseek.com/anthropic",
-            "ANTHROPIC_MODEL" to "deepseek-reasoner"
-        )
-        val merged = providerService.getMergedEnv(existingEnv, providerEnv)
-
-        // User custom keys should be preserved
-        assert(merged["CUSTOM_USER_KEY"] == "user-value") { "CUSTOM_USER_KEY should be preserved" }
-        assert(merged["ANOTHER_CUSTOM"] == "another-value") { "ANOTHER_CUSTOM should be preserved" }
-        // Provider keys should be updated
-        assert(merged["ANTHROPIC_BASE_URL"] == "https://api.deepseek.com/anthropic") { "ANTHROPIC_BASE_URL should be updated" }
-        assert(merged["ANTHROPIC_MODEL"] == "deepseek-reasoner") { "ANTHROPIC_MODEL should be updated" }
+    fun testGetProviderEnvVars_doesNotContainAuthToken() {
+        val envVars = providerService.getProviderEnvVars("claude")
+        assert(envVars != null) { "Should return env vars" }
+        val vars = envVars!!
+        assert(!vars.containsKey("ANTHROPIC_AUTH_TOKEN")) { "Should NOT contain ANTHROPIC_AUTH_TOKEN" }
     }
 
     @Test
-    fun testGetMergedEnv_preservesAuthToken() {
-        val existingEnv = mapOf(
-            "ANTHROPIC_AUTH_TOKEN" to "user-secret-key",
-            "ANTHROPIC_BASE_URL" to "https://api.anthropic.com"
-        )
-        val providerEnv = mapOf(
-            "ANTHROPIC_BASE_URL" to "https://api.deepseek.com/anthropic"
-        )
-        val merged = providerService.getMergedEnv(existingEnv, providerEnv)
-
-        // ANTHROPIC_AUTH_TOKEN should NEVER be overwritten
-        assert(merged["ANTHROPIC_AUTH_TOKEN"] == "user-secret-key") {
-            "ANTHROPIC_AUTH_TOKEN should be preserved (not overwritten by provider template)"
-        }
-        // Provider keys should be updated
-        assert(merged["ANTHROPIC_BASE_URL"] == "https://api.deepseek.com/anthropic") {
-            "ANTHROPIC_BASE_URL should be updated"
-        }
+    fun testGetProviderEnvVars_returnsNullForUnknownProvider() {
+        val envVars = providerService.getProviderEnvVars("unknown-provider")
+        assert(envVars == null) { "Should return null for unknown provider" }
     }
 }

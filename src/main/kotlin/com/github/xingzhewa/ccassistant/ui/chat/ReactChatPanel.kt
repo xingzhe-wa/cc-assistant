@@ -349,7 +349,11 @@ class ReactChatPanel(
         // 1. 清空输入框（用户消息由前端 chatStore 添加，不在此处重复添加）
         jcefPanel?.clearInput()
 
-        // 2. 执行 CLI（使用选项中的 model，如果未指定则从当前 provider 的默认模型获取）
+        // 2. 获取 Provider 的环境变量（包含 ANTHROPIC_BASE_URL, ANTHROPIC_MODEL 等）
+        // 注意：ANTHROPIC_AUTH_TOKEN 不会包含在 envVars 中，它保持在 settings.json 中
+        val envVars = options.provider?.let { ProviderService.getInstance().getProviderEnvVars(it) }
+
+        // 3. 执行 CLI（使用选项中的 model，如果未指定则从当前 provider 的默认模型获取）
         val modelToUse = options.model ?: getDefaultModelForProvider(options.provider)
         cliService.executePrompt(
             prompt = text,
@@ -358,7 +362,8 @@ class ReactChatPanel(
             agent = options.agent,
             sessionId = currentSessionId,
             mode = options.mode,
-            think = options.think
+            think = options.think,
+            envVars = envVars
         )
     }
 
@@ -543,14 +548,22 @@ class ReactChatPanel(
 
     /**
      * 推送预置 Provider 数据到前端
+     * 2.1: 验证 PRESET_PROVIDERS -> JcefChatPanel.ProviderData 映射正确
+     * 2.2: 验证 PRESET_MODELS -> ModelData 映射正确
+     * 2.3: 添加空安全处理
      */
     private fun pushProvidersToFrontend() {
         try {
-            // 从预置配置转换为前端数据格式
+            // 2.1: PRESET_PROVIDERS (ProviderConfig) -> JcefChatPanel.ProviderData
+            // ProviderConfig: id, name, endpoint
+            // ProviderData: id, name, url
             val providers = ProviderService.PRESET_PROVIDERS.map {
                 JcefChatPanel.ProviderData(it.id, it.name, it.endpoint)
             }
 
+            // 2.2: PRESET_MODELS (Map<String, List<ModelInfo>>) -> Map<String, List<ModelData>>
+            // ModelInfo: id, name, providerId
+            // ModelData: id, name
             val models = ProviderService.PRESET_MODELS.mapValues { (_, models) ->
                 models.map { JcefChatPanel.ModelData(it.id, it.name) }
             }
@@ -559,10 +572,14 @@ class ReactChatPanel(
                 JcefChatPanel.AgentData(it.id, it.name ?: it.id)
             }
 
-            if (providers.isNotEmpty()) {
-                jcefPanel?.setProviders(providers, models, agents)
-                logger.info("Pushed ${providers.size} providers to frontend")
+            // 2.3: 空安全处理 - 即使 providers 为空也不抛异常
+            if (providers.isEmpty()) {
+                logger.warn("No preset providers available, skipping push")
+                return
             }
+
+            jcefPanel?.setProviders(providers, models, agents)
+            logger.info("Pushed ${providers.size} providers to frontend")
         } catch (e: Exception) {
             logger.warn("Failed to push providers to frontend", e)
         }

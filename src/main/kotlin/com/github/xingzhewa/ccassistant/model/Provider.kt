@@ -240,20 +240,6 @@ class ProviderService {
             AgentConfig("review", "Review", "代码审查"),
             AgentConfig("codegen", "Code", "代码生成")
         )
-
-        // Provider 切换时需要管理的 ENV key 白名单
-        // 只覆盖这些 key，保留其他所有 env 字段
-        private val PROVIDER_ENV_KEYS = listOf(
-            "ANTHROPIC_BASE_URL",
-            "ANTHROPIC_MODEL",
-            "ANTHROPIC_SMALL_FAST_MODEL",
-            "API_TIMEOUT_MS",
-            "CLAUDE_CODE_MAX_OUTPUT_TOKENS",
-            "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC",
-            "ANTHROPIC_DEFAULT_SONNET_MODEL",
-            "ANTHROPIC_DEFAULT_OPUS_MODEL",
-            "ANTHROPIC_DEFAULT_HAIKU_MODEL"
-        )
     }
 
     /**
@@ -283,43 +269,37 @@ class ProviderService {
     }
 
     /**
-     * 切换 Provider
-     * 只覆盖 env 属性，保留现有配置中的 permissions, skills, agents 和其他 env 变量
-     * 使用智能合并：只更新白名单内的 key，ANTHROPIC_AUTH_TOKEN 天然保留
+     * 获取指定 Provider 的环境变量
+     *
+     * 返回的 Map 可直接传递给 CliBridgeService.executePrompt() 的 envVars 参数。
+     * 注意：此方法不包含 ANTHROPIC_AUTH_TOKEN（应保持在 settings.json 中）。
+     *
+     * @param providerId Provider ID
+     * @return 环境变量映射，如果 provider 不存在则返回 null
      */
+    fun getProviderEnvVars(providerId: String): Map<String, String>? {
+        val provider = PRESET_PROVIDERS.find { it.id == providerId } ?: return null
+        return buildMap {
+            put("ANTHROPIC_BASE_URL", provider.endpoint)
+            put("ANTHROPIC_MODEL", provider.defaultModel)
+            if (provider.fastModel.isNotBlank()) {
+                put("ANTHROPIC_SMALL_FAST_MODEL", provider.fastModel)
+            }
+        }
+    }
+
+    /**
+     * 切换 Provider (仅内存级别)
+     *
+     * @deprecated 此方法不再修改 settings.json。Provider 切换通过 CLI 进程环境变量实现。
+     *             若需将 Provider 配置保存到 settings.json，请使用 saveProvider() 方法。
+     */
+    @Deprecated("Provider switching is now done via env vars passed to CLI process. Use saveProvider() for persistent config.")
     fun switchProvider(providerId: String): Boolean {
         val provider = PRESET_PROVIDERS.find { it.id == providerId } ?: return false
-
-        try {
-            // 读取现有配置 (保留 permissions, skills, agents, env)
-            val existingSettings = loadSettings() ?: ClaudeSettings()
-
-            // 从资源加载预置模板中的 env
-            val templateEnv = loadProviderEnv(providerId) ?: return false
-
-            // 检查是否需要更新（避免无意义的文件写操作）
-            if (!needsEnvUpdate(existingSettings.env, templateEnv)) {
-                logger.info("Provider $providerId env unchanged, skipping write")
-                _activeProviderId = providerId
-                return true
-            }
-
-            // 智能合并：只覆盖白名单内的 key
-            val mergedEnv = getMergedEnv(existingSettings.env, templateEnv)
-
-            // 写回：只更新 env，保留其他配置
-            val newSettings = existingSettings.copy(env = mergedEnv)
-            val saved = saveSettings(newSettings)
-
-            if (saved) {
-                _activeProviderId = providerId
-                logger.info("Switched to provider: $providerId, env updated")
-            }
-            return saved
-        } catch (e: Exception) {
-            logger.error("Failed to switch provider: $providerId", e)
-            return false
-        }
+        _activeProviderId = providerId
+        logger.info("Switched to provider (memory only): $providerId")
+        return true
     }
 
     /**
@@ -461,83 +441,6 @@ class ProviderService {
         } catch (e: Exception) {
             null
         }
-    }
-
-    /**
-     * 从资源加载 Provider 模板 JSON
-     */
-    private fun loadProviderTemplate(providerId: String): String? {
-        return try {
-            val resourcePath = "/providers/settings-$providerId.json"
-            javaClass.getResourceAsStream(resourcePath)?.bufferedReader()?.readText()
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    /**
-     * 从资源加载 Provider 模板的 env 部分
-     */
-    private fun loadProviderEnv(providerId: String): Map<String, String>? {
-        return try {
-            val template = loadProviderTemplate(providerId) ?: return null
-            val gson = com.google.gson.Gson()
-            val settings = gson.fromJson(template, ClaudeSettings::class.java)
-            settings.env
-        } catch (e: Exception) {
-            logger.warn("Failed to load provider env for $providerId", e)
-            null
-        }
-    }
-
-    /**
-     * 检查 env 是否需要更新
-     * 比较白名单内的 key 是否与目标值一致
-     */
-    internal fun needsEnvUpdate(existingEnv: Map<String, String>, targetEnv: Map<String, String>): Boolean {
-        return PROVIDER_ENV_KEYS.any { key ->
-            existingEnv[key] != targetEnv[key]
-        }
-    }
-
-    /**
-     * 智能合并 env
-     * 只覆盖白名单内的 key，保留其他所有字段
-     * ANTHROPIC_AUTH_TOKEN 不在白名单中，因此天然保留
-     */
-    internal fun getMergedEnv(existingEnv: Map<String, String>, providerEnv: Map<String, String>): Map<String, String> {
-        val merged = existingEnv.toMutableMap()
-        for (key in PROVIDER_ENV_KEYS) {
-            providerEnv[key]?.let { merged[key] = it }
-        }
-        return merged
-    }
-
-    /**
-     * 合并模板与现有配置
-     *
-     * 策略:
-     * - 使用模板的 env 配置 (新 Provider 的 URL 和模型)
-     * - 保留现有配置中的 ANTHROPIC_AUTH_TOKEN
-     * - 保留现有配置中的 permissions
-     * - 保留现有配置中的 skills
-     * - 保留现有配置中的 agents
-     */
-    private fun mergeWithTemplate(existingContent: String, template: String): String {
-        // 提取现有 auth token
-        val existingAuthToken = Regex(
-            """"ANTHROPIC_AUTH_TOKEN"\s*:\s*"([^"]+)""""
-        ).find(existingContent)?.groupValues?.get(1)
-
-        if (existingAuthToken != null) {
-            // 将 auth token 注入到模板中
-            return template.replaceFirst(
-                """"ANTHROPIC_AUTH_TOKEN": [^,]+,""".replace("{", "\\{").replace("}", "\\}"),
-                """\"ANTHROPIC_AUTH_TOKEN\": \"$existingAuthToken\","""
-            )
-        }
-
-        return template
     }
 
     /**

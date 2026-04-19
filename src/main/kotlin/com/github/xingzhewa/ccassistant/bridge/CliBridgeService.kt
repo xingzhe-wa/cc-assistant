@@ -138,6 +138,7 @@ class CliBridgeService : Disposable {
      * @param mode 工作模式 (可选: "auto"/"plan"/"agent")
      * @param think 是否启用扩展思考 (可选，当前 CLI 无对应 flag，保留参数位)
      * @param permissionMode 权限模式 (可选，覆盖 mode 的默认映射)
+     * @param envVars 环境变量映射 (可选，会被合并到进程环境，ANTHROPIC_AUTH_TOKEN 不会通过此参数传递)
      * @return true 如果进程成功启动
      */
     fun executePrompt(
@@ -148,7 +149,8 @@ class CliBridgeService : Disposable {
         sessionId: String? = null,
         mode: String? = null,
         think: Boolean? = null,
-        permissionMode: String? = null
+        permissionMode: String? = null,
+        envVars: Map<String, String>? = null
     ): Boolean {
         if (!isExecuting.compareAndSet(false, true)) {
             notifyError("Another prompt is already executing")
@@ -207,6 +209,19 @@ class CliBridgeService : Disposable {
             val builder = ProcessBuilder(command)
             workingDir?.let { builder.directory(File(it)) }
             builder.redirectErrorStream(false)
+
+            // 合并环境变量（不包含 ANTHROPIC_AUTH_TOKEN，它应保持在 settings.json 中）
+            envVars?.let { vars ->
+                if (vars.isNotEmpty()) {
+                    val env = builder.environment()
+                    vars.forEach { (key, value) ->
+                        // ANTHROPIC_AUTH_TOKEN 必须通过 settings.json 管理，不传 env var
+                        if (key != "ANTHROPIC_AUTH_TOKEN") {
+                            env[key] = value
+                        }
+                    }
+                }
+            }
 
             val process = builder.start()
             currentProcess = process

@@ -1,5 +1,0 @@
-name: fix-ui-and-cli-integration
-description: 修复 UI 和 CLI 集成问题 - 包括设置页面跳转、消息发送卡顿、Provider 配置不生效
-proposal: ./proposal.md
-tasks: ./tasks.md
-status: implementing
